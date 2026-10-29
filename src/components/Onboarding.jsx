@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { triggerAiQueryGeneration } from '../services/opportunityEngine'
+import {
+  generateOnboardingCopy,
+  triggerAiQueryGeneration,
+} from '../services/opportunityEngine'
 
 const idealListFields = ['target_countries', 'ideal_client_types', 'rejection_rules']
 const emptyPortfolioForm = {
@@ -95,6 +98,8 @@ function Onboarding({ user, workspace, onComplete }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [aiAssistField, setAiAssistField] = useState('')
+  const [aiAssistMessage, setAiAssistMessage] = useState('')
   const [services, setServices] = useState([])
   const [servicesLoading, setServicesLoading] = useState(false)
   const [servicesMessage, setServicesMessage] = useState('')
@@ -118,6 +123,122 @@ function Onboarding({ user, workspace, onComplete }) {
   const workspaceId = workspace?.id
   const serviceMutationPending = serviceSaving || serviceTogglingId !== null
   const portfolioMutationPending = portfolioSaving || portfolioTogglingId !== null || completingSetup
+
+  const handleAiAssist = async (fieldType) => {
+    if (!workspace?.id || aiAssistField) return
+
+    let roughText = ''
+    let context = {}
+
+    if (fieldType === 'main_goal') {
+      roughText = primaryGoal
+      context = {
+        business_name: businessName.trim(),
+        business_type: businessType,
+        website: websiteUrl.trim(),
+        preferred_language: preferredLanguage,
+        services: services
+          .filter((service) => service.active !== false)
+          .map((service) => ({
+            name: service.name,
+            description: service.description,
+            keywords: service.keywords,
+            problems_solved: service.problems_solved,
+          })),
+      }
+    } else if (fieldType === 'service_description') {
+      roughText =
+        serviceForm.description.trim() ||
+        serviceForm.name.trim() ||
+        serviceKeywordText.trim() ||
+        serviceProblemText.trim()
+
+      context = {
+        business_name: businessName.trim(),
+        business_type: businessType,
+        primary_goal: primaryGoal.trim(),
+        service_name: serviceForm.name.trim(),
+        keywords: serviceKeywordText
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
+        problems_solved: serviceProblemText
+          .split(/\n|,/)
+          .map((item) => item.trim())
+          .filter(Boolean),
+      }
+    } else if (fieldType === 'good_opportunity') {
+      roughText = idealForm.good_opportunity_definition
+      context = {
+        primary_goal: primaryGoal.trim(),
+        target_countries: idealForm.target_countries,
+        ideal_client_types: idealForm.ideal_client_types,
+        rejection_rules: idealForm.rejection_rules,
+        services: services
+          .filter((service) => service.active !== false)
+          .map((service) => ({
+            name: service.name,
+            description: service.description,
+            keywords: service.keywords,
+            problems_solved: service.problems_solved,
+          })),
+      }
+    } else {
+      return
+    }
+
+    const hasContext = Object.values(context).some((value) =>
+      Array.isArray(value)
+        ? value.length > 0
+        : Boolean(value)
+    )
+
+    if (!roughText.trim() && !hasContext) {
+      setAiAssistMessage(
+        'Add a few details first so AI has something accurate to work with.'
+      )
+      return
+    }
+
+    setAiAssistField(fieldType)
+    setAiAssistMessage('')
+
+    try {
+      const result = await generateOnboardingCopy({
+        workspaceId: workspace.id,
+        fieldType,
+        roughText,
+        context,
+      })
+
+      if (fieldType === 'main_goal') {
+        setPrimaryGoal(result.generated_text)
+      } else if (fieldType === 'service_description') {
+        setServiceForm((previous) => ({
+          ...previous,
+          description: result.generated_text,
+        }))
+      } else if (fieldType === 'good_opportunity') {
+        setIdealForm((previous) => ({
+          ...previous,
+          good_opportunity_definition: result.generated_text,
+        }))
+        setIdealMessage('')
+      }
+
+      setAiAssistMessage(
+        'AI draft generated. Review and edit it before continuing.'
+      )
+    } catch (error) {
+      console.error('Unable to generate onboarding copy:', error)
+      setAiAssistMessage(
+        error?.message ||
+          'Unable to generate AI-assisted copy right now.'
+      )
+    } finally {
+      setAiAssistField('')
+    }
+  }
 
   const openNewServiceForm = () => {
     if (serviceMutationPending) return
@@ -1180,14 +1301,36 @@ function Onboarding({ user, workspace, onComplete }) {
               <Field label="What is your main goal?" required>
                 <textarea
                   rows="4"
-                  disabled={saving}
+                  disabled={saving || aiAssistField === 'main_goal'}
                   value={primaryGoal}
-                  onChange={(e) => setPrimaryGoal(e.target.value)}
+                  onChange={(e) => {
+                    setPrimaryGoal(e.target.value)
+                    setAiAssistMessage('')
+                  }}
                   placeholder="Example: Find businesses that currently need WordPress, Shopify or website development services."
                   className={`${inputClass} resize-none`}
                 />
               </Field>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs leading-5 text-slate-500">
+                  Add a short goal first, then let AI expand it into a buyer-focused brief.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void handleAiAssist('main_goal')}
+                  disabled={saving || Boolean(aiAssistField)}
+                  className="rounded-lg border border-violet-700 bg-violet-950/40 px-4 py-2 text-sm font-semibold text-violet-200 transition hover:bg-violet-900/50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {aiAssistField === 'main_goal' ? 'Generating...' : '✨ Generate with AI'}
+                </button>
+              </div>
             </div>
+
+            {aiAssistMessage && currentStep === 1 && (
+              <div className="mt-4 rounded-xl border border-violet-900 bg-violet-950/30 px-4 py-3 text-sm text-violet-200">
+                {aiAssistMessage}
+              </div>
+            )}
 
             {message && (
               <div className="mt-6 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-300">
@@ -1235,6 +1378,12 @@ function Onboarding({ user, workspace, onComplete }) {
                 to find and score relevant opportunities.
               </p>
             </div>
+
+            {aiAssistMessage && currentStep === 2 && (
+              <div className="mb-5 rounded-xl border border-violet-900 bg-violet-950/30 px-4 py-3 text-sm text-violet-200">
+                {aiAssistMessage}
+              </div>
+            )}
 
             {showServiceForm && (
               <form
@@ -1312,16 +1461,30 @@ function Onboarding({ user, workspace, onComplete }) {
                       <textarea
                         rows={3}
                         value={serviceForm.description}
-                        onChange={(event) =>
+                        onChange={(event) => {
                           setServiceForm((previous) => ({
                             ...previous,
                             description: event.target.value,
                           }))
-                        }
+                          setAiAssistMessage('')
+                        }}
                         placeholder="Example: WordPress development, Elementor implementation and WooCommerce development."
                         className={`${serviceInputClass} resize-none`}
                       />
                     </Field>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs leading-5 text-slate-500">
+                        AI can use the service name, keywords and problems you solve to create a clearer description.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void handleAiAssist('service_description')}
+                        disabled={serviceSaving || Boolean(aiAssistField)}
+                        className="rounded-lg border border-violet-700 bg-violet-950/40 px-4 py-2 text-sm font-semibold text-violet-200 transition hover:bg-violet-900/50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {aiAssistField === 'service_description' ? 'Generating...' : '✨ Generate with AI'}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="md:col-span-2">
@@ -1634,13 +1797,33 @@ function Onboarding({ user, workspace, onComplete }) {
                         good_opportunity_definition: event.target.value,
                       }))
                       setIdealMessage('')
+                      setAiAssistMessage('')
                     }}
                     placeholder="Example: A business owner, startup or agency actively looking for someone to build, redesign or improve a website and willing to hire an external freelancer or agency."
                     className={`${inputClass} resize-none`}
                   />
                 </Field>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs leading-5 text-slate-500">
+                    AI will combine your target markets, ideal clients, services and rejection rules into a qualification brief.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void handleAiAssist('good_opportunity')}
+                    disabled={idealSaving || Boolean(aiAssistField)}
+                    className="rounded-lg border border-violet-700 bg-violet-950/40 px-4 py-2 text-sm font-semibold text-violet-200 transition hover:bg-violet-900/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {aiAssistField === 'good_opportunity' ? 'Generating...' : '✨ Generate with AI'}
+                  </button>
+                </div>
               </div>
             </fieldset>
+
+            {aiAssistMessage && currentStep === 3 && (
+              <p className="mt-6 rounded-xl border border-violet-900 bg-violet-950/30 px-4 py-3 text-sm text-violet-200">
+                {aiAssistMessage}
+              </p>
+            )}
 
             {idealMessage && (
               <p role="alert" className="mt-6 rounded-xl border border-red-900 bg-red-950/30 px-4 py-3 text-sm text-red-300">
