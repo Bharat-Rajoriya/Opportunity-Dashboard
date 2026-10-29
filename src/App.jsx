@@ -12,6 +12,7 @@ import { supabase } from './lib/supabase'
 import Onboarding from './components/Onboarding'
 import {
   generateOnboardingCopy,
+  generateOpportunityPitch,
   getLatestEngineRun,
   triggerAiQueryGeneration,
   triggerOpportunityEngine,
@@ -195,6 +196,8 @@ function App() {
   const [sendActionError, setSendActionError] = useState(null)
   const sendActionPendingRef = useRef(null)
   const [copiedOutreachId, setCopiedOutreachId] = useState(null)
+  const [manualPitchId, setManualPitchId] = useState(null)
+  const [manualPitchError, setManualPitchError] = useState(null)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [actionFilter, setActionFilter] = useState('all')
@@ -324,6 +327,8 @@ function App() {
           status,
           recommended_action,
           recommended_portfolio_id,
+          outreach_status,
+          outreach_review_status,
           outreach_channel,
           outreach_subject,
           outreach_message,
@@ -2685,6 +2690,66 @@ function App() {
     }
   }
 
+  const handleGenerateManualPitch = async (opportunity) => {
+    if (
+      manualPitchId ||
+      !workspace?.id ||
+      !opportunity?.id ||
+      opportunity.workspace_id !== workspace.id
+    ) {
+      return
+    }
+
+    if (
+      opportunity.outreach_message ||
+      (opportunity.outreach_status &&
+        opportunity.outreach_status !== 'not_generated')
+    ) {
+      setManualPitchError({
+        id: opportunity.id,
+        message: 'This opportunity already has an outreach draft.',
+      })
+      return
+    }
+
+    setManualPitchId(opportunity.id)
+    setManualPitchError(null)
+
+    try {
+      await generateOpportunityPitch({
+        workspaceId: workspace.id,
+        opportunityId: opportunity.id,
+      })
+
+      await Promise.all([
+        fetchOpportunities(workspace.id),
+        loadReviewQueue(workspace.id),
+      ])
+
+      if (selectedOpportunity?.id === opportunity.id) {
+        setSelectedOpportunity((current) =>
+          current?.id === opportunity.id
+            ? {
+                ...current,
+                outreach_status: 'drafted',
+                outreach_review_status: 'pending_review',
+              }
+            : current
+        )
+      }
+    } catch (error) {
+      console.error('Manual pitch generation failed:', error)
+      setManualPitchError({
+        id: opportunity.id,
+        message:
+          error?.message ||
+          'Unable to generate outreach for this opportunity.',
+      })
+    } finally {
+      setManualPitchId(null)
+    }
+  }
+
   const refreshDashboard = () => {
     if (
       reviewActionPendingRef.current ||
@@ -3859,6 +3924,19 @@ function App() {
                   key={opportunity.id}
                   opportunity={opportunity}
                   onViewDetails={() => setSelectedOpportunity(opportunity)}
+                  onGeneratePitch={() =>
+                    void handleGenerateManualPitch(opportunity)
+                  }
+                  pitchGenerating={manualPitchId === opportunity.id}
+                  pitchDisabled={
+                    manualPitchId !== null &&
+                    manualPitchId !== opportunity.id
+                  }
+                  pitchError={
+                    manualPitchError?.id === opportunity.id
+                      ? manualPitchError.message
+                      : ''
+                  }
                 />
               ))}
             </div>
@@ -5467,7 +5545,14 @@ function StatusBadge({ status = 'new' }) {
 // -----------------------------------------------------
 // OPPORTUNITY CARD
 // -----------------------------------------------------
-function OpportunityCard({ opportunity, onViewDetails }) {
+function OpportunityCard({
+  opportunity,
+  onViewDetails,
+  onGeneratePitch,
+  pitchGenerating,
+  pitchDisabled,
+  pitchError,
+}) {
   const score = Number(opportunity.total_score || 0)
   const followUpState = getFollowUpState(opportunity.next_follow_up_at)
 
@@ -5563,7 +5648,26 @@ function OpportunityCard({ opportunity, onViewDetails }) {
               </a>
             )}
 
+            {!opportunity.outreach_message &&
+              (!opportunity.outreach_status ||
+                opportunity.outreach_status === 'not_generated') && (
+                <button
+                  type="button"
+                  onClick={onGeneratePitch}
+                  disabled={pitchGenerating || pitchDisabled}
+                  className="text-sm px-4 py-2 rounded-lg border border-violet-500/50 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 transition font-medium disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {pitchGenerating ? 'Generating Pitch...' : '✨ Generate Pitch'}
+                </button>
+              )}
+
           </div>
+
+          {pitchError && (
+            <p role="alert" className="mt-3 text-sm text-red-300">
+              {pitchError}
+            </p>
+          )}
 
         </div>
 

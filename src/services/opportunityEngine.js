@@ -96,3 +96,31 @@ export async function generateOnboardingCopy({
 
   return data
 }
+
+
+export async function generateOpportunityPitch({
+  workspaceId,
+  opportunityId,
+}) {
+  const { data, error } = await supabase.functions.invoke(
+    'generate-opportunity-pitch',
+    {
+      body: {
+        workspace_id: workspaceId,
+        opportunity_id: opportunityId,
+      },
+    }
+  )
+
+  if (error) throw error
+
+  if (!data?.success) {
+    throw new Error(
+      data?.message ||
+        data?.error ||
+        'Unable to generate outreach for this opportunity.'
+    )
+  }
+
+  return data
+}
