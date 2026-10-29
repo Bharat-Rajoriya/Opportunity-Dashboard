@@ -36,6 +36,7 @@ master_execution_id
 search_query
 
 source
+source_environment
 source_item_id
 source_url
 
@@ -94,14 +95,28 @@ n8n workflow:
 
 `Freelancer Direct Source Collector V1`
 
-Status: draft / not connected to production.
+Status: sandbox verified / production locked.
 
-It uses the official Freelancer active-project search endpoint and normalizes project metadata, budget, skills and marketplace evidence.
+The sandbox adapter is connected to a server-side OAuth2 credential in n8n and has passed both API smoke testing and an end-to-end Quality v2 run.
 
-Activation requires a server-side Freelancer OAuth2 credential.
+The adapter currently uses Freelancer sandbox endpoints only. Normalized sandbox records must set `source_environment = sandbox` and must generate `freelancer-sandbox.com` project URLs. Production project URLs must never be generated for sandbox records.
+
+The dashboard exposes Freelancer as a sandbox-verified source but keeps live activation disabled unless `VITE_FREELANCER_PRODUCTION_ENABLED=true`. That frontend gate is only a UX safeguard; production activation also requires the n8n adapter itself to be switched to a production Freelancer credential and production API endpoint.
+
+Provider credentials remain server-side in n8n and are never stored in `search_profiles.source_preferences` or shipped to the frontend.
 
 ## Future adapters
 
 Upwork and Reddit should only be connected after their required developer/commercial API access is approved.
 
 Adapters should remain independent so a provider outage or policy change does not break the full Opportunity Engine.
+
+## Environment safety
+
+Sandbox and production provider environments must be treated as separate integrations.
+
+- sandbox credentials may only call sandbox API hosts
+- sandbox candidates must keep sandbox source URLs
+- production UI activation stays locked until the server-side production adapter is ready
+- changing a frontend environment flag alone is not sufficient to make a provider production-ready
+- test runs must not leave sandbox opportunities in live workspaces
