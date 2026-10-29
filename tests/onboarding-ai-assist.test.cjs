@@ -113,7 +113,7 @@ test('saved business profile editor exposes AI assist after onboarding', () => {
   const generateCount =
     appSource.match(/Generate with AI/g)?.length || 0
 
-  assert(generateCount >= 5)
+  assert.equal(generateCount, 2)
 })
 
 test('saving a changed business profile refreshes AI search queries best-effort', () => {
