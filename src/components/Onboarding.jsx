@@ -7,6 +7,8 @@ import {
 
 const idealListFields = ['target_countries', 'ideal_client_types', 'rejection_rules']
 const emptyPortfolioForm = {
+  proof_type: 'profile',
+  platform: '',
   project_name: '',
   client_name: '',
   industry: '',
@@ -398,8 +400,8 @@ function Onboarding({ user, workspace, onComplete }) {
     } catch (error) {
       if (requestId === portfolioLoadRequest.current) {
         console.error('Unable to load portfolio items:', error)
-        setPortfolioLoadError(error?.message || 'Unable to load portfolio projects.')
-        setPortfolioMessage(error?.message || 'Unable to load portfolio projects.')
+        setPortfolioLoadError(error?.message || 'Unable to load proof & profiles.')
+        setPortfolioMessage(error?.message || 'Unable to load proof & profiles.')
       }
       return false
     } finally {
@@ -557,6 +559,8 @@ function Onboarding({ user, workspace, onComplete }) {
 
     setEditingPortfolioId(item.id)
     setPortfolioForm({
+      proof_type: item.proof_type || 'project',
+      platform: item.platform || '',
       project_name: item.project_name || '',
       client_name: item.client_name || '',
       industry: item.industry || '',
@@ -590,7 +594,7 @@ function Onboarding({ user, workspace, onComplete }) {
       return
     }
     if (!portfolioForm.project_name.trim()) {
-      setPortfolioMessage('Project name is required.')
+      setPortfolioMessage('Proof title is required.')
       return
     }
 
@@ -600,7 +604,7 @@ function Onboarding({ user, workspace, onComplete }) {
         const url = new URL(projectUrl)
         if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Invalid protocol')
       } catch {
-        setPortfolioMessage('Please enter a valid project URL starting with http:// or https://.')
+        setPortfolioMessage('Please enter a valid proof/profile URL starting with http:// or https://.')
         return
       }
     }
@@ -611,6 +615,8 @@ function Onboarding({ user, workspace, onComplete }) {
 
     try {
       const payload = {
+        proof_type: portfolioForm.proof_type || 'other',
+        platform: portfolioForm.platform.trim() || null,
         project_name: portfolioForm.project_name.trim(),
         client_name: portfolioForm.client_name.trim() || null,
         industry: portfolioForm.industry.trim() || null,
@@ -638,7 +644,7 @@ function Onboarding({ user, workspace, onComplete }) {
 
       if (requestId !== profileLoadRequest.current) return
       if (result.error) throw result.error
-      if (!result.data?.id) throw new Error('Portfolio project could not be saved.')
+      if (!result.data?.id) throw new Error('Proof or profile could not be saved.')
 
       const refreshed = await loadPortfolioItems()
       if (requestId !== profileLoadRequest.current) return
@@ -647,12 +653,12 @@ function Onboarding({ user, workspace, onComplete }) {
       setEditingPortfolioId(null)
       setPortfolioForm({ ...emptyPortfolioForm })
       if (!refreshed) {
-        setPortfolioMessage('Project saved, but the list could not be refreshed. Please retry loading.')
+        setPortfolioMessage('Proof saved, but the list could not be refreshed. Please retry loading.')
       }
     } catch (error) {
       if (requestId === profileLoadRequest.current) {
         console.error('Unable to save portfolio item:', error)
-        setPortfolioMessage(error?.message || 'Unable to save portfolio project.')
+        setPortfolioMessage(error?.message || 'Unable to save proof or profile.')
       }
     } finally {
       portfolioMutationPendingRef.current = false
@@ -679,17 +685,17 @@ function Onboarding({ user, workspace, onComplete }) {
 
       if (requestId !== profileLoadRequest.current) return
       if (error) throw error
-      if (!data?.id) throw new Error('Portfolio project could not be found.')
+      if (!data?.id) throw new Error('Proof or profile could not be found.')
 
       const refreshed = await loadPortfolioItems()
       if (requestId !== profileLoadRequest.current) return
       if (!refreshed) {
-        setPortfolioMessage('Project status updated, but the list could not be refreshed. Please retry loading.')
+        setPortfolioMessage('Proof status updated, but the list could not be refreshed. Please retry loading.')
       }
     } catch (error) {
       if (requestId === profileLoadRequest.current) {
         console.error('Unable to update portfolio status:', error)
-        setPortfolioMessage(error?.message || 'Unable to update portfolio status.')
+        setPortfolioMessage(error?.message || 'Unable to update proof status.')
       }
     } finally {
       portfolioMutationPendingRef.current = false
@@ -2081,9 +2087,9 @@ function Onboarding({ user, workspace, onComplete }) {
                 <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 text-lg font-bold">
                   5
                 </div>
-                <h2 className="text-3xl font-bold">Portfolio</h2>
+                <h2 className="text-3xl font-bold">Proof &amp; Profiles</h2>
                 <p className="mt-3 text-slate-400">
-                  Add relevant work samples so the opportunity engine can match projects and create stronger outreach.
+                  Add links or evidence that show what you can do — for example Dribbble, Behance, YouTube, LinkedIn, GitHub, your website, case studies, publications or client work.
                 </p>
               </div>
               {!showPortfolioForm && (
@@ -2093,7 +2099,7 @@ function Onboarding({ user, workspace, onComplete }) {
                   disabled={portfolioMutationPending || portfolioLoading || Boolean(portfolioLoadError)}
                   className="rounded-xl bg-violet-600 px-5 py-3 font-semibold transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50 md:mt-14"
                 >
-                  + Add Project
+                  + Add Proof / Profile
                 </button>
               )}
             </div>
@@ -2109,10 +2115,10 @@ function Onboarding({ user, workspace, onComplete }) {
                 <div className="mb-6 flex items-start justify-between gap-4">
                   <div>
                     <h3 className="text-xl font-semibold">
-                      {editingPortfolioId ? 'Edit Portfolio Project' : 'Add Portfolio Project'}
+                      {editingPortfolioId ? 'Edit Proof / Profile' : 'Add Proof / Profile'}
                     </h3>
                     <p className="mt-1 text-sm text-slate-400">
-                      Add relevant project experience that can strengthen opportunity matching and outreach.
+                      Add evidence AI can safely use to understand your credibility and personalize outreach.
                     </p>
                   </div>
                   <button
@@ -2127,13 +2133,54 @@ function Onboarding({ user, workspace, onComplete }) {
                 </div>
 
                 <fieldset disabled={portfolioSaving} className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <Field label="Proof Type" required>
+                      <select
+                        value={portfolioForm.proof_type}
+                        onChange={(event) => {
+                          setPortfolioForm((previous) => ({
+                            ...previous,
+                            proof_type: event.target.value,
+                          }))
+                          setPortfolioMessage('')
+                        }}
+                        className={serviceInputClass}
+                      >
+                        <option value="profile">Profile / Portfolio Link</option>
+                        <option value="project">Project / Work Sample</option>
+                        <option value="case_study">Case Study</option>
+                        <option value="publication">Publication / Article</option>
+                        <option value="testimonial">Testimonial / Review</option>
+                        <option value="certification">Certification / Credential</option>
+                        <option value="other">Other Proof</option>
+                      </select>
+                    </Field>
+                  </div>
+
+                  <div>
+                    <Field label="Platform">
+                      <input
+                        value={portfolioForm.platform}
+                        onChange={(event) => {
+                          setPortfolioForm((previous) => ({
+                            ...previous,
+                            platform: event.target.value,
+                          }))
+                          setPortfolioMessage('')
+                        }}
+                        placeholder="Dribbble, Behance, YouTube, LinkedIn, GitHub..."
+                        className={serviceInputClass}
+                      />
+                    </Field>
+                  </div>
+
                   {[
-                    { field: 'project_name', label: 'Project Name', placeholder: 'Example: Cloudely Website', required: true },
-                    { field: 'client_name', label: 'Client Name', placeholder: 'Example: Cloudely' },
-                    { field: 'industry', label: 'Industry', placeholder: 'Technology' },
-                    { field: 'project_url', label: 'Project URL', placeholder: 'https://example.com', type: 'url' },
-                    { field: 'services', label: 'Services', placeholder: 'Website Development, SEO', help: 'Separate services with commas.' },
-                    { field: 'technologies', label: 'Technologies', placeholder: 'WordPress, Elementor, ACF', help: 'Separate technologies with commas.' },
+                    { field: 'project_name', label: 'Title', placeholder: 'Example: Brand Identity Portfolio', required: true },
+                    { field: 'client_name', label: 'Client / Organization (optional)', placeholder: 'Example: Acme Studio' },
+                    { field: 'industry', label: 'Industry / Category (optional)', placeholder: 'Branding, Legal, Ecommerce, Healthcare...' },
+                    { field: 'project_url', label: 'Link / Profile URL', placeholder: 'https://dribbble.com/username', type: 'url' },
+                    { field: 'services', label: 'Services Represented', placeholder: 'Logo Design, PPC, Legal Advisory, Video Editing', help: 'Separate services with commas.' },
+                    { field: 'technologies', label: 'Skills / Topics / Tools', placeholder: 'Brand Identity, Meta Ads, Contract Law, Premiere Pro', help: 'Separate items with commas.' },
                   ].map(({ field, label, placeholder, required, type, help }) => (
                     <div key={field}>
                       <Field label={label} required={required}>
@@ -2154,7 +2201,7 @@ function Onboarding({ user, workspace, onComplete }) {
                   ))}
 
                   <div className="md:col-span-2">
-                    <Field label="Project Summary">
+                    <Field label="Description">
                       <textarea
                         rows={4}
                         value={portfolioForm.summary}
@@ -2162,13 +2209,13 @@ function Onboarding({ user, workspace, onComplete }) {
                           setPortfolioForm((previous) => ({ ...previous, summary: event.target.value }))
                           setPortfolioMessage('')
                         }}
-                        placeholder="Briefly explain what you built and the problem you solved."
+                        placeholder="Explain what this proof shows and why it demonstrates your capability."
                         className={`${serviceInputClass} resize-none`}
                       />
                     </Field>
                   </div>
                   <div className="md:col-span-2">
-                    <Field label="Proof Points">
+                    <Field label="Evidence / Proof Points">
                       <textarea
                         rows={5}
                         value={portfolioForm.proof_points}
@@ -2176,7 +2223,7 @@ function Onboarding({ user, workspace, onComplete }) {
                           setPortfolioForm((previous) => ({ ...previous, proof_points: event.target.value }))
                           setPortfolioMessage('')
                         }}
-                        placeholder={'Improved site performance\nBuilt custom WordPress templates\nIntegrated dynamic ACF content'}
+                        placeholder={'Campaign improved qualified leads\nPublished work demonstrates expertise\nProfile contains relevant work samples'}
                         className={`${serviceInputClass} resize-none`}
                       />
                     </Field>
@@ -2203,7 +2250,7 @@ function Onboarding({ user, workspace, onComplete }) {
                     disabled={portfolioSaving}
                     className="rounded-xl bg-violet-600 px-6 py-3 font-semibold hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {portfolioSaving ? 'Saving...' : editingPortfolioId ? 'Update Project' : 'Add Project'}
+                    {portfolioSaving ? 'Saving...' : editingPortfolioId ? 'Update Proof' : 'Add Proof'}
                   </button>
                 </div>
               </form>
@@ -2211,7 +2258,7 @@ function Onboarding({ user, workspace, onComplete }) {
 
             {portfolioLoading ? (
               <p role="status" className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-slate-400">
-                Loading portfolio...
+                Loading proof & profiles...
               </p>
             ) : portfolioLoadError ? (
               <div className="rounded-xl border border-red-900 bg-red-950/30 p-6">
@@ -2231,7 +2278,15 @@ function Onboarding({ user, workspace, onComplete }) {
                   <div key={item.id} className="rounded-2xl border border-slate-800 bg-slate-950 p-6">
                     <div className="flex flex-wrap items-start justify-between gap-6">
                       <div className="flex flex-wrap items-center gap-3">
-                        <h3 className="text-xl font-semibold">{item.project_name || 'Untitled project'}</h3>
+                        <h3 className="text-xl font-semibold">{item.project_name || 'Untitled proof'}</h3>
+                        <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs capitalize text-slate-300">
+                          {(item.proof_type || 'project').replaceAll('_', ' ')}
+                        </span>
+                        {item.platform && (
+                          <span className="rounded-full border border-violet-700 bg-violet-950 px-3 py-1 text-xs text-violet-200">
+                            {item.platform}
+                          </span>
+                        )}
                         <span className={`rounded-full px-3 py-1 text-xs font-medium ${
                           item.active ? 'bg-emerald-950 text-emerald-300' : 'bg-slate-800 text-slate-400'
                         }`}>
@@ -2279,7 +2334,7 @@ function Onboarding({ user, workspace, onComplete }) {
                     )}
                     {normalizeIdealItems(item.technologies).length > 0 && (
                       <div className="mt-5">
-                        <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">Technologies</p>
+                        <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">Skills / Topics / Tools</p>
                         <div className="flex flex-wrap gap-2">
                           {normalizeIdealItems(item.technologies).map((technology) => (
                             <span key={technology} className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-sm text-slate-300">

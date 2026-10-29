@@ -147,6 +147,8 @@ function App() {
   const [portfolioSaveError, setPortfolioSaveError] = useState('')
   const [portfolioSaveMessage, setPortfolioSaveMessage] = useState('')
   const [portfolioForm, setPortfolioForm] = useState({
+    proof_type: 'project',
+    platform: '',
     project_name: '',
     client_name: '',
     industry: '',
@@ -769,6 +771,8 @@ function App() {
         .select(`
           id,
           workspace_id,
+          proof_type,
+          platform,
           project_name,
           client_name,
           industry,
@@ -801,6 +805,8 @@ function App() {
   const openNewPortfolio = () => {
     setEditingPortfolio(null)
     setPortfolioForm({
+      proof_type: 'profile',
+      platform: '',
       project_name: '',
       client_name: '',
       industry: '',
@@ -819,6 +825,8 @@ function App() {
   const openPortfolioEditor = (item) => {
     setEditingPortfolio(item)
     setPortfolioForm({
+      proof_type: item.proof_type || 'project',
+      platform: item.platform || '',
       project_name: item.project_name || '',
       client_name: item.client_name || '',
       industry: item.industry || '',
@@ -850,6 +858,8 @@ function App() {
   const savePortfolio = async () => {
     if (!workspace?.id || portfolioSaving) return
 
+    const proofType = portfolioForm.proof_type || 'other'
+    const platform = portfolioForm.platform.trim()
     const projectName = portfolioForm.project_name.trim()
     const clientName = portfolioForm.client_name.trim()
     const industry = portfolioForm.industry.trim()
@@ -870,7 +880,7 @@ function App() {
     const active = portfolioForm.active
 
     if (!projectName) {
-      setPortfolioSaveError('Project name is required.')
+      setPortfolioSaveError('Proof title is required.')
       return
     }
 
@@ -884,6 +894,8 @@ function App() {
         ? await supabase
             .from('portfolio_items')
             .update({
+              proof_type: proofType,
+              platform: platform || null,
               project_name: projectName,
               client_name: clientName || null,
               industry,
@@ -903,6 +915,8 @@ function App() {
             .from('portfolio_items')
             .insert({
               workspace_id: workspace.id,
+              proof_type: proofType,
+              platform: platform || null,
               project_name: projectName,
               client_name: clientName || null,
               industry,
@@ -925,6 +939,8 @@ function App() {
       )
       setEditingPortfolio(data)
       setPortfolioForm({
+        proof_type: data.proof_type || 'project',
+        platform: data.platform || '',
         project_name: data.project_name || '',
         client_name: data.client_name || '',
         industry: data.industry || '',
@@ -940,12 +956,12 @@ function App() {
         active: Boolean(data.active),
       })
       setPortfolioSaveMessage(
-        isEditing ? 'Project updated successfully.' : 'Project added successfully.'
+        isEditing ? 'Proof updated successfully.' : 'Proof added successfully.'
       )
     } catch (error) {
-      console.error('Unable to save portfolio project:', error)
+      console.error('Unable to save proof or profile:', error)
       setPortfolioSaveError(
-        error?.message || 'Unable to save portfolio project.'
+        error?.message || 'Unable to save proof or profile.'
       )
     } finally {
       setPortfolioSaving(false)
@@ -4116,10 +4132,10 @@ function App() {
             <section className="settings-section">
               <div className="settings-section-header">
                 <div>
-                  <span className="settings-eyebrow">PORTFOLIO</span>
-                  <h2>Your Portfolio</h2>
+                  <span className="settings-eyebrow">PROOF &amp; PROFILES</span>
+                  <h2>Proof &amp; Profiles</h2>
                   <p>
-                    Projects the Opportunity Engine can use when matching relevant work.
+                    Add profiles, work samples, case studies, publications or other evidence AI can use when matching opportunities and writing outreach.
                   </p>
                 </div>
 
@@ -4128,12 +4144,12 @@ function App() {
                   onClick={openNewPortfolio}
                   className="secondary-btn"
                 >
-                  + Add Project
+                  + Add Proof / Profile
                 </button>
               </div>
 
               {portfolioLoading && (
-                <p>Loading portfolio...</p>
+                <p>Loading proof & profiles...</p>
               )}
 
               {portfolioError && (
@@ -4144,7 +4160,7 @@ function App() {
 
               {!portfolioLoading && !portfolioError && portfolioItems.length === 0 && (
                 <div className="empty-settings-state">
-                  No portfolio items configured yet.
+                  No proof or profile links configured yet.
                 </div>
               )}
 
@@ -4156,7 +4172,17 @@ function App() {
                   >
                     <div className="service-card-heading">
                       <div>
-                        <h3>{item.project_name || 'Untitled project'}</h3>
+                        <h3>{item.project_name || 'Untitled proof'}</h3>
+
+                        <span className="service-status">
+                          {(item.proof_type || 'project').replaceAll('_', ' ')}
+                        </span>
+
+                        {item.platform && (
+                          <span className="service-status">
+                            {item.platform}
+                          </span>
+                        )}
 
                         <span
                           className={
@@ -4233,7 +4259,7 @@ function App() {
                         rel="noopener noreferrer"
                         className="mt-4 inline-block text-sm font-medium text-violet-300 underline hover:text-violet-200"
                       >
-                        View Project
+                        Open Proof ↗
                       </a>
                     )}
                   </article>
@@ -4622,7 +4648,7 @@ hiring React developer`}
                 <aside className="service-editor-panel">
                   <div className="service-editor-header">
                     <div>
-                      <span className="settings-eyebrow">PORTFOLIO</span>
+                      <span className="settings-eyebrow">PROOF &amp; PROFILES</span>
                       <h2>
                         {editingPortfolio ? 'Edit Project' : 'Add Project'}
                       </h2>
@@ -4645,7 +4671,43 @@ hiring React developer`}
                     }}
                   >
                     <label>
-                      Project Name
+                      Proof Type
+                      <select
+                        value={portfolioForm.proof_type}
+                        onChange={(event) =>
+                          setPortfolioForm((current) => ({
+                            ...current,
+                            proof_type: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="profile">Profile / Portfolio Link</option>
+                        <option value="project">Project / Work Sample</option>
+                        <option value="case_study">Case Study</option>
+                        <option value="publication">Publication / Article</option>
+                        <option value="testimonial">Testimonial / Review</option>
+                        <option value="certification">Certification / Credential</option>
+                        <option value="other">Other Proof</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      Platform
+                      <input
+                        type="text"
+                        value={portfolioForm.platform}
+                        placeholder="Dribbble, Behance, YouTube, LinkedIn, GitHub, Website..."
+                        onChange={(event) =>
+                          setPortfolioForm((current) => ({
+                            ...current,
+                            platform: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Title
                       <input
                         type="text"
                         value={portfolioForm.project_name}
@@ -4659,7 +4721,7 @@ hiring React developer`}
                     </label>
 
                     <label>
-                      Client Name
+                      Client / Organization (optional)
                       <input
                         type="text"
                         value={portfolioForm.client_name}
@@ -4673,7 +4735,7 @@ hiring React developer`}
                     </label>
 
                     <label>
-                      Industry
+                      Industry / Category (optional)
                       <input
                         type="text"
                         value={portfolioForm.industry}
@@ -4687,11 +4749,11 @@ hiring React developer`}
                     </label>
 
                     <label>
-                      Services
+                      Services Represented
                       <input
                         type="text"
                         value={portfolioForm.services}
-                        placeholder="WordPress, Shopify, UI design"
+                        placeholder="Logo Design, PPC, Legal Advisory, Video Editing..."
                         onChange={(event) =>
                           setPortfolioForm((current) => ({
                             ...current,
@@ -4702,11 +4764,11 @@ hiring React developer`}
                     </label>
 
                     <label>
-                      Technologies
+                      Skills / Topics / Tools
                       <input
                         type="text"
                         value={portfolioForm.technologies}
-                        placeholder="React, Supabase, Tailwind CSS"
+                        placeholder="Brand Identity, Meta Ads, Contract Law, Premiere Pro..."
                         onChange={(event) =>
                           setPortfolioForm((current) => ({
                             ...current,
@@ -4717,7 +4779,7 @@ hiring React developer`}
                     </label>
 
                     <label>
-                      Project URL
+                      Link / Profile URL
                       <input
                         type="url"
                         value={portfolioForm.project_url}
@@ -4731,7 +4793,7 @@ hiring React developer`}
                     </label>
 
                     <label>
-                      Summary
+                      Description
                       <textarea
                         value={portfolioForm.summary}
                         onChange={(event) =>
@@ -4744,7 +4806,7 @@ hiring React developer`}
                     </label>
 
                     <label>
-                      Proof Points
+                      Evidence / Proof Points
                       <textarea
                         value={portfolioForm.proof_points}
                         placeholder="One proof point per line"
@@ -4769,7 +4831,7 @@ hiring React developer`}
                         }
                       />
 
-                      Active Project
+                      Use this as AI evidence
                     </label>
 
                     {portfolioSaveError && (
@@ -4792,8 +4854,8 @@ hiring React developer`}
                       {portfolioSaving
                         ? 'Saving...'
                         : editingPortfolio
-                          ? 'Save Project'
-                          : 'Add Project'}
+                          ? 'Save Proof'
+                          : 'Add Proof'}
                     </button>
                   </form>
                 </aside>
