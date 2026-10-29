@@ -38,6 +38,34 @@ export function normalizeSourceKeys(items) {
     : ['google']
 }
 
+export function normalizeSourcePreferences(value) {
+  const preferences =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? value
+      : {}
+
+  const freelancer =
+    preferences.freelancer &&
+    typeof preferences.freelancer === 'object' &&
+    !Array.isArray(preferences.freelancer)
+      ? preferences.freelancer
+      : {}
+
+  const requestedLimit = Number(
+    freelancer.result_limit ?? freelancer.limit ?? 10
+  )
+
+  const resultLimit = Number.isFinite(requestedLimit)
+    ? Math.max(1, Math.min(50, Math.round(requestedLimit)))
+    : 10
+
+  return {
+    freelancer: {
+      result_limit: resultLimit,
+    },
+  }
+}
+
 export function normalizeSearchList(items) {
   if (!Array.isArray(items)) return []
 
@@ -79,6 +107,8 @@ export async function saveActiveSearchProfile({
   maxAgeHours,
   aiQueryGenerationEnabled,
   queryBatchSize,
+  enabledSources,
+  sourcePreferences,
 }) {
   const payload = {
     search_queries: normalizeSearchList(searchQueries),
@@ -87,6 +117,8 @@ export async function saveActiveSearchProfile({
     max_age_hours: Number(maxAgeHours),
     ai_query_generation_enabled: Boolean(aiQueryGenerationEnabled),
     query_batch_size: Number(queryBatchSize),
+    enabled_sources: normalizeSourceKeys(enabledSources),
+    source_preferences: normalizeSourcePreferences(sourcePreferences),
     updated_at: new Date().toISOString(),
   }
 
