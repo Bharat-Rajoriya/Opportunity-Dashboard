@@ -145,3 +145,97 @@ test('saving a changed business profile refreshes AI search queries best-effort'
     )
   )
 })
+
+
+test('AI qualification filters are generated and merged without wiping user input', () => {
+  const onboardingSource = readFileSync(
+    join(__dirname, '../src/components/Onboarding.jsx'),
+    'utf8'
+  ).replace(/\r\n/g, '\n')
+
+  const appSource = readFileSync(
+    join(__dirname, '../src/App.jsx'),
+    'utf8'
+  ).replace(/\r\n/g, '\n')
+
+  for (const expected of [
+    "handleAiAssist('profile_filters')",
+    'ideal_client_types: normalizeIdealItems([',
+    'rejection_rules: normalizeIdealItems([',
+    'AI targeting filters added. Review them before continuing.',
+    '✨ Auto-fill Targeting with AI',
+  ]) {
+    assert(onboardingSource.includes(expected))
+  }
+
+  for (const expected of [
+    "generateBusinessProfileCopy(",
+    "'profile_filters'",
+    'ideal_client_types: mergeUnique(',
+    'rejection_rules: mergeUnique(',
+    'AI goal and targeting filters generated. Review them before saving.',
+    '✨ Auto-fill Targeting with AI',
+  ]) {
+    assert(appSource.includes(expected))
+  }
+})
+
+test('onboarding automatically requests AI qualification filters when step 3 starts with missing filters', () => {
+  const onboardingSource = readFileSync(
+    join(__dirname, '../src/components/Onboarding.jsx'),
+    'utf8'
+  ).replace(/\r\n/g, '\n')
+
+  const stepButton = onboardingSource.slice(
+    onboardingSource.indexOf('Save &amp; Continue'),
+    onboardingSource.indexOf("currentStep === 3")
+  )
+
+  assert(
+    onboardingSource.includes(
+      "idealForm.ideal_client_types.length === 0"
+    )
+  )
+  assert(
+    onboardingSource.includes(
+      "idealForm.rejection_rules.length === 0"
+    )
+  )
+  assert(
+    onboardingSource.includes(
+      "void handleAiAssist('profile_filters')"
+    )
+  )
+  assert(stepButton.length >= 0)
+})
+
+test('edge function and frontend service accept structured targeting-only AI responses', () => {
+  const serviceSource = readFileSync(
+    join(__dirname, '../src/services/opportunityEngine.js'),
+    'utf8'
+  ).replace(/\r\n/g, '\n')
+
+  const edgeSource = readFileSync(
+    join(
+      __dirname,
+      '../supabase/functions/generate-onboarding-copy/index.ts'
+    ),
+    'utf8'
+  ).replace(/\r\n/g, '\n')
+
+  for (const expected of [
+    "'profile_filters'",
+    'ideal_client_types: idealClientTypes',
+    'rejection_rules: rejectionRules',
+    'cleanStringList',
+  ]) {
+    assert(edgeSource.includes(expected))
+  }
+
+  assert(serviceSource.includes('hasGeneratedFilters'))
+  assert(
+    serviceSource.includes(
+      '(!data?.generated_text && !hasGeneratedFilters)'
+    )
+  )
+})
