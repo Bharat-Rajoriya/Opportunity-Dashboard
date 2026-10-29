@@ -8,6 +8,11 @@ const appSource = readFileSync(
   'utf8'
 ).replace(/\r\n/g, '\n')
 
+const proofConfigSource = readFileSync(
+  join(__dirname, '../src/config/proofProfiles.js'),
+  'utf8'
+).replace(/\r\n/g, '\n')
+
 const migrationSource = readFileSync(
   join(
     __dirname,
@@ -22,20 +27,27 @@ test('settings present portfolio data as profession-agnostic Proof & Profiles', 
     'Proof &amp; Profiles',
     '+ Add Proof / Profile',
     'Proof Type',
-    'Platform',
+    'Use this as AI evidence',
+    'isProofFieldVisible',
+    'getProofFieldMeta',
+    'changeProofType',
+  ]) {
+    assert(appSource.includes(expected))
+  }
+
+  for (const expected of [
     'Profile / Portfolio Link',
     'Project / Work Sample',
     'Case Study',
     'Publication / Article',
     'Testimonial / Review',
     'Certification / Credential',
-    'Services Represented',
-    'Skills / Topics / Tools',
-    'Link / Profile URL',
-    'Evidence / Proof Points',
-    'Use this as AI evidence',
+    'Services / Expertise Represented',
+    'Skills / Specialties',
+    'Profile / Portfolio URL',
+    'Key Evidence (optional)',
   ]) {
-    assert(appSource.includes(expected))
+    assert(proofConfigSource.includes(expected))
   }
 
   for (const legacy of [

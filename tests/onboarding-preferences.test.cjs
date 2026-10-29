@@ -11,6 +11,18 @@ const helpers = new Function(
     'return { idealListFields, normalizeIdealItems, createIdealForm, emptyPortfolioForm, parseCommaList, parseLines }'
 )()
 
+const proofConfigSource = readFileSync(
+  join(__dirname, '../src/config/proofProfiles.js'),
+  'utf8'
+)
+  .replace(/\r\n/g, '\n')
+  .replaceAll('export ', '')
+
+const proofHelpers = new Function(
+  proofConfigSource +
+    '\nreturn { sanitizeProofFormForType, changeProofType, getProofFieldMeta, isProofFieldVisible }'
+)()
+
 function handler(name, env) {
   const start = source.indexOf('  const ' + name + ' =')
   const end = name === 'loadBusinessProfile'
@@ -30,6 +42,7 @@ function setup(options = {}) {
   const calls = []
   const env = {
     ...helpers,
+    ...proofHelpers,
     useCallback: (callback) => callback,
     workspaceId: 'workspace-1',
     loading: false,
@@ -722,7 +735,7 @@ test('cancel portfolio form resets the draft and id but cannot cancel an in-flig
   assert.deepEqual(h.state.PortfolioForm, helpers.emptyPortfolioForm)
 })
 
-test('portfolio create inserts an active workspace project with parsed, trimmed fields', async () => {
+test('proof create inserts an active workspace item and clears fields hidden by its type', async () => {
   const h = setup({ env: { showPortfolioForm: true } })
   await handler('savePortfolioItem', h.env)()
   const payload = h.calls.find(([kind]) => kind === 'insert')[1]
@@ -731,7 +744,7 @@ test('portfolio create inserts an active workspace project with parsed, trimmed 
   assert.equal(payload.proof_type, 'profile')
   assert.equal(payload.platform, 'Dribbble')
   assert.equal(payload.project_name, 'Website rebuild')
-  assert.equal(payload.client_name, 'Client')
+  assert.equal(payload.client_name, null)
   assert.deepEqual(payload.services, ['Website', 'SEO'])
   assert.deepEqual(payload.technologies, ['WordPress', 'Elementor'])
   assert.deepEqual(payload.proof_points, ['Faster website', 'Custom templates'])
@@ -1059,18 +1072,26 @@ test('Proof & Profiles onboarding is profession-agnostic and supports platform m
   for (const expected of [
     'Proof &amp; Profiles',
     '+ Add Proof / Profile',
+    'isProofFieldVisible',
+    'getProofFieldMeta',
+    'changeProofType',
+  ]) {
+    assert(source.includes(expected))
+  }
+
+  for (const expected of [
     'Profile / Portfolio Link',
     'Project / Work Sample',
     'Case Study',
     'Publication / Article',
     'Testimonial / Review',
     'Certification / Credential',
-    'Dribbble, Behance, YouTube, LinkedIn, GitHub',
-    'Services Represented',
-    'Skills / Topics / Tools',
-    'Evidence / Proof Points',
+    'Dribbble, LinkedIn, YouTube, personal website',
+    'Services / Expertise Represented',
+    'Skills / Specialties',
+    'Key Evidence (optional)',
   ]) {
-    assert(source.includes(expected))
+    assert(proofConfigSource.includes(expected))
   }
 
   for (const legacyLabel of [

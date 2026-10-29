@@ -23,6 +23,13 @@ import {
   normalizeSearchList,
   saveActiveSearchProfile,
 } from './services/searchProfiles'
+import {
+  PROOF_TYPE_OPTIONS,
+  changeProofType,
+  getProofFieldMeta,
+  isProofFieldVisible,
+  sanitizeProofFormForType,
+} from './config/proofProfiles'
 import './App.css'
 
 const REJECTION_REASONS = [
@@ -147,7 +154,7 @@ function App() {
   const [portfolioSaveError, setPortfolioSaveError] = useState('')
   const [portfolioSaveMessage, setPortfolioSaveMessage] = useState('')
   const [portfolioForm, setPortfolioForm] = useState({
-    proof_type: 'project',
+    proof_type: 'profile',
     platform: '',
     project_name: '',
     client_name: '',
@@ -858,26 +865,27 @@ function App() {
   const savePortfolio = async () => {
     if (!workspace?.id || portfolioSaving) return
 
-    const proofType = portfolioForm.proof_type || 'other'
-    const platform = portfolioForm.platform.trim()
-    const projectName = portfolioForm.project_name.trim()
-    const clientName = portfolioForm.client_name.trim()
-    const industry = portfolioForm.industry.trim()
-    const services = portfolioForm.services
+    const proofDraft = sanitizeProofFormForType(portfolioForm)
+    const proofType = proofDraft.proof_type || 'other'
+    const platform = proofDraft.platform.trim()
+    const projectName = proofDraft.project_name.trim()
+    const clientName = proofDraft.client_name.trim()
+    const industry = proofDraft.industry.trim()
+    const services = proofDraft.services
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean)
-    const technologies = portfolioForm.technologies
+    const technologies = proofDraft.technologies
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean)
-    const projectUrl = portfolioForm.project_url.trim()
-    const summary = portfolioForm.summary.trim()
-    const proofPoints = portfolioForm.proof_points
+    const projectUrl = proofDraft.project_url.trim()
+    const summary = proofDraft.summary.trim()
+    const proofPoints = proofDraft.proof_points
       .split('\n')
       .map((item) => item.trim())
       .filter(Boolean)
-    const active = portfolioForm.active
+    const active = proofDraft.active
 
     if (!projectName) {
       setPortfolioSaveError('Proof title is required.')
@@ -4751,43 +4759,65 @@ hiring video editor`}
                       Proof Type
                       <select
                         value={portfolioForm.proof_type}
-                        onChange={(event) =>
-                          setPortfolioForm((current) => ({
-                            ...current,
-                            proof_type: event.target.value,
-                          }))
-                        }
+                        onChange={(event) => {
+                          setPortfolioForm((current) =>
+                            changeProofType(current, event.target.value)
+                          )
+                          setPortfolioSaveError('')
+                          setPortfolioSaveMessage('')
+                        }}
                       >
-                        <option value="profile">Profile / Portfolio Link</option>
-                        <option value="project">Project / Work Sample</option>
-                        <option value="case_study">Case Study</option>
-                        <option value="publication">Publication / Article</option>
-                        <option value="testimonial">Testimonial / Review</option>
-                        <option value="certification">Certification / Credential</option>
-                        <option value="other">Other Proof</option>
+                        {PROOF_TYPE_OPTIONS.map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
                       </select>
                     </label>
 
-                    <label>
-                      Platform
-                      <input
-                        type="text"
-                        value={portfolioForm.platform}
-                        placeholder="Dribbble, Behance, YouTube, LinkedIn, GitHub, Website..."
-                        onChange={(event) =>
-                          setPortfolioForm((current) => ({
-                            ...current,
-                            platform: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
+                    {isProofFieldVisible(
+                      portfolioForm.proof_type,
+                      'platform'
+                    ) && (
+                      <label>
+                        {getProofFieldMeta(
+                          portfolioForm.proof_type,
+                          'platform'
+                        ).label}
+                        <input
+                          type="text"
+                          value={portfolioForm.platform}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'platform'
+                            ).placeholder
+                          }
+                          onChange={(event) =>
+                            setPortfolioForm((current) => ({
+                              ...current,
+                              platform: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
 
                     <label>
-                      Title
+                      {getProofFieldMeta(
+                        portfolioForm.proof_type,
+                        'project_name'
+                      ).label}
                       <input
                         type="text"
+                        required
                         value={portfolioForm.project_name}
+                        placeholder={
+                          getProofFieldMeta(
+                            portfolioForm.proof_type,
+                            'project_name'
+                          ).placeholder
+                        }
                         onChange={(event) =>
                           setPortfolioForm((current) => ({
                             ...current,
@@ -4797,104 +4827,199 @@ hiring video editor`}
                       />
                     </label>
 
-                    <label>
-                      Client / Organization (optional)
-                      <input
-                        type="text"
-                        value={portfolioForm.client_name}
-                        onChange={(event) =>
-                          setPortfolioForm((current) => ({
-                            ...current,
-                            client_name: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
+                    {isProofFieldVisible(
+                      portfolioForm.proof_type,
+                      'client_name'
+                    ) && (
+                      <label>
+                        {getProofFieldMeta(
+                          portfolioForm.proof_type,
+                          'client_name'
+                        ).label}
+                        <input
+                          type="text"
+                          value={portfolioForm.client_name}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'client_name'
+                            ).placeholder
+                          }
+                          onChange={(event) =>
+                            setPortfolioForm((current) => ({
+                              ...current,
+                              client_name: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
 
-                    <label>
-                      Industry / Category (optional)
-                      <input
-                        type="text"
-                        value={portfolioForm.industry}
-                        onChange={(event) =>
-                          setPortfolioForm((current) => ({
-                            ...current,
-                            industry: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
+                    {isProofFieldVisible(
+                      portfolioForm.proof_type,
+                      'industry'
+                    ) && (
+                      <label>
+                        {getProofFieldMeta(
+                          portfolioForm.proof_type,
+                          'industry'
+                        ).label}
+                        <input
+                          type="text"
+                          value={portfolioForm.industry}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'industry'
+                            ).placeholder
+                          }
+                          onChange={(event) =>
+                            setPortfolioForm((current) => ({
+                              ...current,
+                              industry: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
 
-                    <label>
-                      Services Represented
-                      <input
-                        type="text"
-                        value={portfolioForm.services}
-                        placeholder="Logo Design, PPC, Legal Advisory, Video Editing..."
-                        onChange={(event) =>
-                          setPortfolioForm((current) => ({
-                            ...current,
-                            services: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
+                    {isProofFieldVisible(
+                      portfolioForm.proof_type,
+                      'services'
+                    ) && (
+                      <label>
+                        {getProofFieldMeta(
+                          portfolioForm.proof_type,
+                          'services'
+                        ).label}
+                        <input
+                          type="text"
+                          value={portfolioForm.services}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'services'
+                            ).placeholder
+                          }
+                          onChange={(event) =>
+                            setPortfolioForm((current) => ({
+                              ...current,
+                              services: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
 
-                    <label>
-                      Skills / Topics / Tools
-                      <input
-                        type="text"
-                        value={portfolioForm.technologies}
-                        placeholder="Brand Identity, Meta Ads, Contract Law, Premiere Pro..."
-                        onChange={(event) =>
-                          setPortfolioForm((current) => ({
-                            ...current,
-                            technologies: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
+                    {isProofFieldVisible(
+                      portfolioForm.proof_type,
+                      'technologies'
+                    ) && (
+                      <label>
+                        {getProofFieldMeta(
+                          portfolioForm.proof_type,
+                          'technologies'
+                        ).label}
+                        <input
+                          type="text"
+                          value={portfolioForm.technologies}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'technologies'
+                            ).placeholder
+                          }
+                          onChange={(event) =>
+                            setPortfolioForm((current) => ({
+                              ...current,
+                              technologies: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
 
-                    <label>
-                      Link / Profile URL
-                      <input
-                        type="url"
-                        value={portfolioForm.project_url}
-                        onChange={(event) =>
-                          setPortfolioForm((current) => ({
-                            ...current,
-                            project_url: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
+                    {isProofFieldVisible(
+                      portfolioForm.proof_type,
+                      'project_url'
+                    ) && (
+                      <label>
+                        {getProofFieldMeta(
+                          portfolioForm.proof_type,
+                          'project_url'
+                        ).label}
+                        <input
+                          type="url"
+                          value={portfolioForm.project_url}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'project_url'
+                            ).placeholder
+                          }
+                          onChange={(event) =>
+                            setPortfolioForm((current) => ({
+                              ...current,
+                              project_url: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
 
-                    <label>
-                      Description
-                      <textarea
-                        value={portfolioForm.summary}
-                        onChange={(event) =>
-                          setPortfolioForm((current) => ({
-                            ...current,
-                            summary: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
+                    {isProofFieldVisible(
+                      portfolioForm.proof_type,
+                      'summary'
+                    ) && (
+                      <label>
+                        {getProofFieldMeta(
+                          portfolioForm.proof_type,
+                          'summary'
+                        ).label}
+                        <textarea
+                          value={portfolioForm.summary}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'summary'
+                            ).placeholder
+                          }
+                          onChange={(event) =>
+                            setPortfolioForm((current) => ({
+                              ...current,
+                              summary: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
 
-                    <label>
-                      Evidence / Proof Points
-                      <textarea
-                        value={portfolioForm.proof_points}
-                        placeholder="One proof point per line"
-                        onChange={(event) =>
-                          setPortfolioForm((current) => ({
-                            ...current,
-                            proof_points: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
+                    {isProofFieldVisible(
+                      portfolioForm.proof_type,
+                      'proof_points'
+                    ) && (
+                      <label>
+                        {getProofFieldMeta(
+                          portfolioForm.proof_type,
+                          'proof_points'
+                        ).label}
+                        <textarea
+                          value={portfolioForm.proof_points}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'proof_points'
+                            ).placeholder
+                          }
+                          onChange={(event) =>
+                            setPortfolioForm((current) => ({
+                              ...current,
+                              proof_points: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
 
                     <label className="service-active-control">
                       <input
@@ -5347,7 +5472,7 @@ hiring video editor`}
                             <input
                               type="text"
                               value={keyword}
-                              placeholder="e.g. WordPress developer"
+                              placeholder="e.g. brand strategist, tax consultant, video editor"
                               onChange={(event) =>
                                 updateServiceListItem(
                                   'keywords',
@@ -5399,7 +5524,7 @@ hiring video editor`}
                             <input
                               type="text"
                               value={problem}
-                              placeholder="e.g. Fix broken WordPress website"
+                              placeholder="e.g. rebranding, contract review, campaign management"
                               onChange={(event) =>
                                 updateServiceListItem(
                                   'problems_solved',
@@ -6680,7 +6805,7 @@ function OpportunityDrawer({
                 value={followUpNote}
                 onChange={(e) => setFollowUpNote(e.target.value)}
                 rows={3}
-                placeholder="Example: Send portfolio and ask whether they have finalized the project scope."
+                placeholder="Example: Follow up with relevant proof and ask whether they are ready to discuss next steps."
                 className="w-full resize-none rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-violet-500"
               />
             </div>
@@ -6732,7 +6857,7 @@ function OpportunityDrawer({
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
                 rows={3}
-                placeholder="Example: Client asked for portfolio and estimated timeline..."
+                placeholder="Example: Prospect asked for more information and suggested following up next week..."
                 className="w-full resize-none rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-violet-500"
               />
 

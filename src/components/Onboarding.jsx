@@ -4,6 +4,13 @@ import {
   generateOnboardingCopy,
   triggerAiQueryGeneration,
 } from '../services/opportunityEngine'
+import {
+  PROOF_TYPE_OPTIONS,
+  changeProofType,
+  getProofFieldMeta,
+  isProofFieldVisible,
+  sanitizeProofFormForType,
+} from '../config/proofProfiles'
 
 const idealListFields = ['target_countries', 'ideal_client_types', 'rejection_rules']
 const emptyPortfolioForm = {
@@ -593,12 +600,14 @@ function Onboarding({ user, workspace, onComplete }) {
       setPortfolioMessage('Workspace not found.')
       return
     }
-    if (!portfolioForm.project_name.trim()) {
+    const proofDraft = sanitizeProofFormForType(portfolioForm)
+
+    if (!proofDraft.project_name.trim()) {
       setPortfolioMessage('Proof title is required.')
       return
     }
 
-    const projectUrl = portfolioForm.project_url.trim()
+    const projectUrl = proofDraft.project_url.trim()
     if (projectUrl) {
       try {
         const url = new URL(projectUrl)
@@ -615,16 +624,16 @@ function Onboarding({ user, workspace, onComplete }) {
 
     try {
       const payload = {
-        proof_type: portfolioForm.proof_type || 'other',
-        platform: portfolioForm.platform.trim() || null,
-        project_name: portfolioForm.project_name.trim(),
-        client_name: portfolioForm.client_name.trim() || null,
-        industry: portfolioForm.industry.trim() || null,
-        services: parseCommaList(portfolioForm.services),
-        technologies: parseCommaList(portfolioForm.technologies),
+        proof_type: proofDraft.proof_type || 'other',
+        platform: proofDraft.platform.trim() || null,
+        project_name: proofDraft.project_name.trim(),
+        client_name: proofDraft.client_name.trim() || null,
+        industry: proofDraft.industry.trim() || null,
+        services: parseCommaList(proofDraft.services),
+        technologies: parseCommaList(proofDraft.technologies),
         project_url: projectUrl || null,
-        summary: portfolioForm.summary.trim() || null,
-        proof_points: parseLines(portfolioForm.proof_points),
+        summary: proofDraft.summary.trim() || null,
+        proof_points: parseLines(proofDraft.proof_points),
         updated_at: new Date().toISOString(),
       }
 
@@ -1284,7 +1293,7 @@ function Onboarding({ user, workspace, onComplete }) {
                   type="text"
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
-                  placeholder="Example: Bharat Digital"
+                  placeholder="Example: your business, firm, studio or professional name"
                   className={inputClass}
                 />
               </Field>
@@ -1339,7 +1348,7 @@ function Onboarding({ user, workspace, onComplete }) {
                     setPrimaryGoal(e.target.value)
                     setAiAssistMessage('')
                   }}
-                  placeholder="Example: Find businesses that currently need WordPress, Shopify or website development services."
+                  placeholder="Example: Find people or organizations with a clear need for my services and intent to hire an external professional or firm."
                   className={`${inputClass} resize-none`}
                 />
               </Field>
@@ -1466,7 +1475,7 @@ function Onboarding({ user, workspace, onComplete }) {
                           name: event.target.value,
                         }))
                       }
-                      placeholder="Example: WordPress Development"
+                      placeholder="Example: Brand Strategy, Legal Advisory, Video Editing, Bookkeeping"
                       className={serviceInputClass}
                     />
                   </Field>
@@ -1500,7 +1509,7 @@ function Onboarding({ user, workspace, onComplete }) {
                           }))
                           setAiAssistMessage('')
                         }}
-                        placeholder="Example: WordPress development, Elementor implementation and WooCommerce development."
+                        placeholder="Example: Describe what you deliver, who it helps, and the business problem or outcome the service addresses."
                         className={`${serviceInputClass} resize-none`}
                       />
                     </Field>
@@ -1525,7 +1534,7 @@ function Onboarding({ user, workspace, onComplete }) {
                         type="text"
                         value={serviceKeywordText}
                         onChange={(event) => setServiceKeywordText(event.target.value)}
-                        placeholder="WordPress, Elementor, WooCommerce, ACF"
+                        placeholder="Brand strategy, contract review, paid ads, video editing"
                         className={serviceInputClass}
                       />
                     </Field>
@@ -1540,7 +1549,7 @@ function Onboarding({ user, workspace, onComplete }) {
                         rows={4}
                         value={serviceProblemText}
                         onChange={(event) => setServiceProblemText(event.target.value)}
-                        placeholder={'New WordPress website\nWebsite redesign\nWooCommerce development\nElementor troubleshooting'}
+                        placeholder={'Needs a new brand identity\nNeeds contract review\nNeeds campaign management\nNeeds recurring bookkeeping support'}
                         className={`${serviceInputClass} resize-none`}
                       />
                     </Field>
@@ -1830,7 +1839,7 @@ function Onboarding({ user, workspace, onComplete }) {
                 label="Ideal Client Types"
                 required
                 description="What types of businesses or clients do you prefer?"
-                placeholder="Example: Digital agencies"
+                placeholder="Example: Growing small businesses"
                 value={clientTypeInput}
                 onChange={setClientTypeInput}
                 items={idealForm.ideal_client_types}
@@ -1861,7 +1870,7 @@ function Onboarding({ user, workspace, onComplete }) {
                       setIdealMessage('')
                       setAiAssistMessage('')
                     }}
-                    placeholder="Example: A business owner, startup or agency actively looking for someone to build, redesign or improve a website and willing to hire an external freelancer or agency."
+                    placeholder="Example: A business or individual with a clear need for one of my services, real commercial intent, and willingness to hire an external professional or firm."
                     className={`${inputClass} resize-none`}
                   />
                 </Field>
@@ -2138,97 +2147,336 @@ function Onboarding({ user, workspace, onComplete }) {
                       <select
                         value={portfolioForm.proof_type}
                         onChange={(event) => {
-                          setPortfolioForm((previous) => ({
-                            ...previous,
-                            proof_type: event.target.value,
-                          }))
+                          setPortfolioForm((previous) =>
+                            changeProofType(previous, event.target.value)
+                          )
                           setPortfolioMessage('')
                         }}
                         className={serviceInputClass}
                       >
-                        <option value="profile">Profile / Portfolio Link</option>
-                        <option value="project">Project / Work Sample</option>
-                        <option value="case_study">Case Study</option>
-                        <option value="publication">Publication / Article</option>
-                        <option value="testimonial">Testimonial / Review</option>
-                        <option value="certification">Certification / Credential</option>
-                        <option value="other">Other Proof</option>
+                        {PROOF_TYPE_OPTIONS.map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
                       </select>
                     </Field>
                   </div>
 
+                  {isProofFieldVisible(
+                    portfolioForm.proof_type,
+                    'platform'
+                  ) && (
+                    <div>
+                      <Field
+                        label={
+                          getProofFieldMeta(
+                            portfolioForm.proof_type,
+                            'platform'
+                          ).label
+                        }
+                      >
+                        <input
+                          value={portfolioForm.platform}
+                          onChange={(event) => {
+                            setPortfolioForm((previous) => ({
+                              ...previous,
+                              platform: event.target.value,
+                            }))
+                            setPortfolioMessage('')
+                          }}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'platform'
+                            ).placeholder
+                          }
+                          className={serviceInputClass}
+                        />
+                      </Field>
+                    </div>
+                  )}
+
                   <div>
-                    <Field label="Platform">
+                    <Field
+                      label={
+                        getProofFieldMeta(
+                          portfolioForm.proof_type,
+                          'project_name'
+                        ).label
+                      }
+                      required
+                    >
                       <input
-                        value={portfolioForm.platform}
+                        required
+                        value={portfolioForm.project_name}
                         onChange={(event) => {
                           setPortfolioForm((previous) => ({
                             ...previous,
-                            platform: event.target.value,
+                            project_name: event.target.value,
                           }))
                           setPortfolioMessage('')
                         }}
-                        placeholder="Dribbble, Behance, YouTube, LinkedIn, GitHub..."
+                        placeholder={
+                          getProofFieldMeta(
+                            portfolioForm.proof_type,
+                            'project_name'
+                          ).placeholder
+                        }
                         className={serviceInputClass}
                       />
                     </Field>
                   </div>
 
-                  {[
-                    { field: 'project_name', label: 'Title', placeholder: 'Example: Brand Identity Portfolio', required: true },
-                    { field: 'client_name', label: 'Client / Organization (optional)', placeholder: 'Example: Acme Studio' },
-                    { field: 'industry', label: 'Industry / Category (optional)', placeholder: 'Branding, Legal, Ecommerce, Healthcare...' },
-                    { field: 'project_url', label: 'Link / Profile URL', placeholder: 'https://dribbble.com/username', type: 'url' },
-                    { field: 'services', label: 'Services Represented', placeholder: 'Logo Design, PPC, Legal Advisory, Video Editing', help: 'Separate services with commas.' },
-                    { field: 'technologies', label: 'Skills / Topics / Tools', placeholder: 'Brand Identity, Meta Ads, Contract Law, Premiere Pro', help: 'Separate items with commas.' },
-                  ].map(({ field, label, placeholder, required, type, help }) => (
-                    <div key={field}>
-                      <Field label={label} required={required}>
+                  {isProofFieldVisible(
+                    portfolioForm.proof_type,
+                    'client_name'
+                  ) && (
+                    <div>
+                      <Field
+                        label={
+                          getProofFieldMeta(
+                            portfolioForm.proof_type,
+                            'client_name'
+                          ).label
+                        }
+                      >
                         <input
-                          type={type || 'text'}
-                          required={required}
-                          value={portfolioForm[field]}
+                          value={portfolioForm.client_name}
                           onChange={(event) => {
-                            setPortfolioForm((previous) => ({ ...previous, [field]: event.target.value }))
+                            setPortfolioForm((previous) => ({
+                              ...previous,
+                              client_name: event.target.value,
+                            }))
                             setPortfolioMessage('')
                           }}
-                          placeholder={placeholder}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'client_name'
+                            ).placeholder
+                          }
                           className={serviceInputClass}
                         />
                       </Field>
-                      {help && <p className="mt-2 text-xs text-slate-500">{help}</p>}
                     </div>
-                  ))}
+                  )}
 
-                  <div className="md:col-span-2">
-                    <Field label="Description">
-                      <textarea
-                        rows={4}
-                        value={portfolioForm.summary}
-                        onChange={(event) => {
-                          setPortfolioForm((previous) => ({ ...previous, summary: event.target.value }))
-                          setPortfolioMessage('')
-                        }}
-                        placeholder="Explain what this proof shows and why it demonstrates your capability."
-                        className={`${serviceInputClass} resize-none`}
-                      />
-                    </Field>
-                  </div>
-                  <div className="md:col-span-2">
-                    <Field label="Evidence / Proof Points">
-                      <textarea
-                        rows={5}
-                        value={portfolioForm.proof_points}
-                        onChange={(event) => {
-                          setPortfolioForm((previous) => ({ ...previous, proof_points: event.target.value }))
-                          setPortfolioMessage('')
-                        }}
-                        placeholder={'Campaign improved qualified leads\nPublished work demonstrates expertise\nProfile contains relevant work samples'}
-                        className={`${serviceInputClass} resize-none`}
-                      />
-                    </Field>
-                    <p className="mt-2 text-xs text-slate-500">Add one proof point per line.</p>
-                  </div>
+                  {isProofFieldVisible(
+                    portfolioForm.proof_type,
+                    'industry'
+                  ) && (
+                    <div>
+                      <Field
+                        label={
+                          getProofFieldMeta(
+                            portfolioForm.proof_type,
+                            'industry'
+                          ).label
+                        }
+                      >
+                        <input
+                          value={portfolioForm.industry}
+                          onChange={(event) => {
+                            setPortfolioForm((previous) => ({
+                              ...previous,
+                              industry: event.target.value,
+                            }))
+                            setPortfolioMessage('')
+                          }}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'industry'
+                            ).placeholder
+                          }
+                          className={serviceInputClass}
+                        />
+                      </Field>
+                    </div>
+                  )}
+
+                  {isProofFieldVisible(
+                    portfolioForm.proof_type,
+                    'services'
+                  ) && (
+                    <div>
+                      <Field
+                        label={
+                          getProofFieldMeta(
+                            portfolioForm.proof_type,
+                            'services'
+                          ).label
+                        }
+                      >
+                        <input
+                          value={portfolioForm.services}
+                          onChange={(event) => {
+                            setPortfolioForm((previous) => ({
+                              ...previous,
+                              services: event.target.value,
+                            }))
+                            setPortfolioMessage('')
+                          }}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'services'
+                            ).placeholder
+                          }
+                          className={serviceInputClass}
+                        />
+                      </Field>
+                      <p className="mt-2 text-xs text-slate-500">
+                        Separate items with commas.
+                      </p>
+                    </div>
+                  )}
+
+                  {isProofFieldVisible(
+                    portfolioForm.proof_type,
+                    'technologies'
+                  ) && (
+                    <div>
+                      <Field
+                        label={
+                          getProofFieldMeta(
+                            portfolioForm.proof_type,
+                            'technologies'
+                          ).label
+                        }
+                      >
+                        <input
+                          value={portfolioForm.technologies}
+                          onChange={(event) => {
+                            setPortfolioForm((previous) => ({
+                              ...previous,
+                              technologies: event.target.value,
+                            }))
+                            setPortfolioMessage('')
+                          }}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'technologies'
+                            ).placeholder
+                          }
+                          className={serviceInputClass}
+                        />
+                      </Field>
+                      <p className="mt-2 text-xs text-slate-500">
+                        Separate items with commas.
+                      </p>
+                    </div>
+                  )}
+
+                  {isProofFieldVisible(
+                    portfolioForm.proof_type,
+                    'project_url'
+                  ) && (
+                    <div className="md:col-span-2">
+                      <Field
+                        label={
+                          getProofFieldMeta(
+                            portfolioForm.proof_type,
+                            'project_url'
+                          ).label
+                        }
+                      >
+                        <input
+                          type="url"
+                          value={portfolioForm.project_url}
+                          onChange={(event) => {
+                            setPortfolioForm((previous) => ({
+                              ...previous,
+                              project_url: event.target.value,
+                            }))
+                            setPortfolioMessage('')
+                          }}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'project_url'
+                            ).placeholder
+                          }
+                          className={serviceInputClass}
+                        />
+                      </Field>
+                    </div>
+                  )}
+
+                  {isProofFieldVisible(
+                    portfolioForm.proof_type,
+                    'summary'
+                  ) && (
+                    <div className="md:col-span-2">
+                      <Field
+                        label={
+                          getProofFieldMeta(
+                            portfolioForm.proof_type,
+                            'summary'
+                          ).label
+                        }
+                      >
+                        <textarea
+                          rows={4}
+                          value={portfolioForm.summary}
+                          onChange={(event) => {
+                            setPortfolioForm((previous) => ({
+                              ...previous,
+                              summary: event.target.value,
+                            }))
+                            setPortfolioMessage('')
+                          }}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'summary'
+                            ).placeholder
+                          }
+                          className={`${serviceInputClass} resize-none`}
+                        />
+                      </Field>
+                    </div>
+                  )}
+
+                  {isProofFieldVisible(
+                    portfolioForm.proof_type,
+                    'proof_points'
+                  ) && (
+                    <div className="md:col-span-2">
+                      <Field
+                        label={
+                          getProofFieldMeta(
+                            portfolioForm.proof_type,
+                            'proof_points'
+                          ).label
+                        }
+                      >
+                        <textarea
+                          rows={5}
+                          value={portfolioForm.proof_points}
+                          onChange={(event) => {
+                            setPortfolioForm((previous) => ({
+                              ...previous,
+                              proof_points: event.target.value,
+                            }))
+                            setPortfolioMessage('')
+                          }}
+                          placeholder={
+                            getProofFieldMeta(
+                              portfolioForm.proof_type,
+                              'proof_points'
+                            ).placeholder
+                          }
+                          className={`${serviceInputClass} resize-none`}
+                        />
+                      </Field>
+                      <p className="mt-2 text-xs text-slate-500">
+                        Add one factual proof point per line.
+                      </p>
+                    </div>
+                  )}
                 </fieldset>
 
                 {portfolioMessage && (
