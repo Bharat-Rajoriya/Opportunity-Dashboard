@@ -2019,6 +2019,24 @@ function App() {
       if (!active) return
 
       authRevision += 1
+
+      if (event === 'PASSWORD_RECOVERY') {
+        authenticatedUserId = session?.user?.id ?? null
+        clearTimeout(workspaceTimer)
+        setAuthLoading(false)
+        setUser(session?.user ?? null)
+        setWorkspace(null)
+        setWorkspaceLoading(false)
+        setAuthMode('reset-password')
+        setPassword('')
+        setConfirmPassword('')
+        setShowPassword(false)
+        setShowConfirmPassword(false)
+        setAuthMessageType('success')
+        setMessage('Choose a new password for your account.')
+        return
+      }
+
       applyAuthenticatedUser(session?.user ?? null, event)
     })
 
@@ -2136,6 +2154,18 @@ function App() {
     setMessage('')
   }
 
+  const showForgotPassword = () => {
+    if (authActionLoading) return
+
+    setAuthMode('forgot-password')
+    setPassword('')
+    setConfirmPassword('')
+    setShowPassword(false)
+    setShowConfirmPassword(false)
+    setAuthMessageType('error')
+    setMessage('')
+  }
+
   const handleSignUp = async (event) => {
     event.preventDefault()
 
@@ -2195,6 +2225,94 @@ function App() {
       if (error) throw error
     } catch (error) {
       setMessage(error?.message || 'Unable to sign in. Please try again.')
+    } finally {
+      setAuthActionLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async (event) => {
+    event.preventDefault()
+
+    if (!email.trim()) {
+      setAuthMessageType('error')
+      setMessage('Email is required.')
+      return
+    }
+
+    setAuthActionLoading(true)
+    setAuthMessageType('error')
+    setMessage('')
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo: window.location.origin,
+        }
+      )
+
+      if (error) throw error
+
+      setAuthMessageType('success')
+      setMessage(
+        'Password reset email sent. Open the link in that email to choose a new password.'
+      )
+    } catch (error) {
+      setAuthMessageType('error')
+      setMessage(
+        error?.message ||
+          'Unable to send the password reset email. Please try again.'
+      )
+    } finally {
+      setAuthActionLoading(false)
+    }
+  }
+
+  const handleUpdatePassword = async (event) => {
+    event.preventDefault()
+
+    if (password.length < 6) {
+      setAuthMessageType('error')
+      setMessage('Password must be at least 6 characters.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setAuthMessageType('error')
+      setMessage('Passwords do not match.')
+      return
+    }
+
+    setAuthActionLoading(true)
+    setAuthMessageType('error')
+    setMessage('')
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password,
+      })
+
+      if (error) throw error
+
+      await supabase.auth.signOut()
+
+      workspaceLoadRequest.current += 1
+      setUser(null)
+      setWorkspace(null)
+      setWorkspaceLoading(false)
+      setAuthMode('sign-in')
+      setPassword('')
+      setConfirmPassword('')
+      setShowPassword(false)
+      setShowConfirmPassword(false)
+      setAuthMessageType('success')
+      setMessage('Password updated successfully. Sign in with your new password.')
+    } catch (error) {
+      setAuthMessageType('error')
+      setMessage(
+        error?.message ||
+          'Unable to update your password. Please request a new reset link and try again.'
+      )
     } finally {
       setAuthActionLoading(false)
     }
@@ -2628,84 +2746,127 @@ function App() {
   // -----------------------------------------------------
   // LOGIN SCREEN
   // -----------------------------------------------------
-  if (!user) {
+  if (!user || authMode === 'reset-password') {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
         <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8">
           <p className="text-violet-400 text-sm mb-2">Opportunity Engine</p>
 
           <h1 className="text-3xl font-bold mb-2">
-            {authMode === 'sign-up' ? 'Create your account' : 'Welcome back'}
+            {authMode === 'sign-up'
+              ? 'Create your account'
+              : authMode === 'forgot-password'
+                ? 'Reset your password'
+                : authMode === 'reset-password'
+                  ? 'Choose a new password'
+                  : 'Welcome back'}
           </h1>
 
           <p className="text-slate-400 mb-8">
             {authMode === 'sign-up'
               ? 'Create your login to start setting up your opportunity workspace.'
-              : 'Sign in to manage opportunities and AI-generated outreach.'}
+              : authMode === 'forgot-password'
+                ? 'Enter your email and we’ll send you a secure password reset link.'
+                : authMode === 'reset-password'
+                  ? 'Enter and confirm a new password for your Opportunity Engine account.'
+                  : 'Sign in to manage opportunities and AI-generated outreach.'}
           </p>
 
           <form
             className="space-y-4"
-            onSubmit={authMode === 'sign-up' ? handleSignUp : handleSignIn}
+            onSubmit={
+              authMode === 'sign-up'
+                ? handleSignUp
+                : authMode === 'forgot-password'
+                  ? handleForgotPassword
+                  : authMode === 'reset-password'
+                    ? handleUpdatePassword
+                    : handleSignIn
+            }
           >
-            <div>
-              <label htmlFor="auth-email" className="block text-sm text-slate-300 mb-2">
-                Email
-              </label>
-
-              <input
-                id="auth-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                required
-                className="w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-violet-500"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="auth-password" className="block text-sm text-slate-300 mb-2">
-                Password
-              </label>
-
-              <div className="relative">
-                <input
-                  id="auth-password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={authMode === 'sign-up' ? 'new-password' : 'current-password'}
-                  required
-                  minLength={authMode === 'sign-up' ? 6 : undefined}
-                  className="w-full rounded-lg bg-slate-950 border border-slate-700 pl-4 pr-12 py-3 outline-none focus:border-violet-500"
-                  placeholder="••••••••"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((isVisible) => !isVisible)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  aria-pressed={showPassword}
-                  className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-lg text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500"
+            {authMode !== 'reset-password' && (
+              <div>
+                <label
+                  htmlFor="auth-email"
+                  className="block text-sm text-slate-300 mb-2"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" aria-hidden="true" />
-                  ) : (
-                    <Eye className="h-5 w-5" aria-hidden="true" />
-                  )}
-                </button>
+                  Email
+                </label>
+
+                <input
+                  id="auth-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                  className="w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-violet-500"
+                  placeholder="you@example.com"
+                />
               </div>
+            )}
 
-              {authMode === 'sign-up' && (
-                <p className="mt-2 text-xs text-slate-500">
-                  Use at least 6 characters.
-                </p>
-              )}
-            </div>
+            {authMode !== 'forgot-password' && (
+              <div>
+                <label
+                  htmlFor="auth-password"
+                  className="block text-sm text-slate-300 mb-2"
+                >
+                  Password
+                </label>
 
-            {authMode === 'sign-up' && (
+                <div className="relative">
+                  <input
+                    id="auth-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    autoComplete={
+                      authMode === 'sign-up' ||
+                      authMode === 'reset-password'
+                        ? 'new-password'
+                        : 'current-password'
+                    }
+                    required
+                    minLength={
+                      authMode === 'sign-up' ||
+                      authMode === 'reset-password'
+                        ? 6
+                        : undefined
+                    }
+                    className="w-full rounded-lg bg-slate-950 border border-slate-700 pl-4 pr-12 py-3 outline-none focus:border-violet-500"
+                    placeholder="••••••••"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword((isVisible) => !isVisible)
+                    }
+                    aria-label={
+                      showPassword ? 'Hide password' : 'Show password'
+                    }
+                    aria-pressed={showPassword}
+                    className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-lg text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-5 w-5" aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
+
+                {(authMode === 'sign-up' ||
+                  authMode === 'reset-password') && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Use at least 6 characters.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {(authMode === 'sign-up' || authMode === 'reset-password') && (
               <div>
                 <label htmlFor="confirm-password" className="block text-sm text-slate-300 mb-2">
                   Confirm Password
@@ -2760,17 +2921,46 @@ function App() {
               className="w-full bg-violet-600 hover:bg-violet-500 transition rounded-lg py-3 font-medium disabled:opacity-50"
             >
               {authActionLoading
-                ? authMode === 'sign-up' ? 'Creating account...' : 'Signing in...'
-                : authMode === 'sign-up' ? 'Create Account' : 'Sign In'}
+                ? authMode === 'sign-up'
+                  ? 'Creating account...'
+                  : authMode === 'forgot-password'
+                    ? 'Sending reset link...'
+                    : authMode === 'reset-password'
+                      ? 'Updating password...'
+                      : 'Signing in...'
+                : authMode === 'sign-up'
+                  ? 'Create Account'
+                  : authMode === 'forgot-password'
+                    ? 'Send Reset Link'
+                    : authMode === 'reset-password'
+                      ? 'Update Password'
+                      : 'Sign In'}
             </button>
+
+            {authMode === 'sign-in' && (
+              <button
+                type="button"
+                onClick={showForgotPassword}
+                disabled={authActionLoading}
+                className="w-full text-sm font-medium text-violet-300 transition hover:text-violet-200 disabled:opacity-50"
+              >
+                Forgot password?
+              </button>
+            )}
 
             <button
               type="button"
-              onClick={authMode === 'sign-up' ? showSignIn : showCreateAccount}
+              onClick={
+                authMode === 'sign-in'
+                  ? showCreateAccount
+                  : showSignIn
+              }
               disabled={authActionLoading}
               className="w-full border border-slate-700 hover:bg-slate-800 transition rounded-lg py-3 font-medium disabled:opacity-50"
             >
-              {authMode === 'sign-up' ? 'Back to Sign In' : 'Create Account'}
+              {authMode === 'sign-in'
+                ? 'Create Account'
+                : 'Back to Sign In'}
             </button>
           </form>
         </div>
