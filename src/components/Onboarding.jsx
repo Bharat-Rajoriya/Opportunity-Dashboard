@@ -2279,6 +2279,14 @@ function Onboarding({ user, workspace, onComplete }) {
                     <div className="flex flex-wrap items-start justify-between gap-6">
                       <div className="flex flex-wrap items-center gap-3">
                         <h3 className="text-xl font-semibold">{item.project_name || 'Untitled proof'}</h3>
+                        <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs capitalize text-slate-300">
+                          {(item.proof_type || 'project').replaceAll('_', ' ')}
+                        </span>
+                        {item.platform && (
+                          <span className="rounded-full border border-violet-700 bg-violet-950 px-3 py-1 text-xs text-violet-200">
+                            {item.platform}
+                          </span>
+                        )}
                         <span className={`rounded-full px-3 py-1 text-xs font-medium ${
                           item.active ? 'bg-emerald-950 text-emerald-300' : 'bg-slate-800 text-slate-400'
                         }`}>
