@@ -127,8 +127,8 @@ function Onboarding({ user, workspace, onComplete }) {
   const handleAiAssist = async (fieldType) => {
     if (!workspace?.id || aiAssistField) return
 
-    let roughText = ''
-    let context = {}
+    let roughText
+    let context
 
     if (fieldType === 'main_goal') {
       roughText = primaryGoal
