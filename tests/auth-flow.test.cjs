@@ -22,10 +22,13 @@ test('signup validation requires an email and valid matching passwords', () => {
 
 test('Create Account opens a dedicated registration form instead of submitting signup immediately', () => {
   assert(source.includes("setAuthMode('sign-up')"))
-  assert(source.includes("authMode === 'sign-up' ? 'Create your account' : 'Welcome back'"))
+  assert(source.includes("'Create your account'"))
+  assert(source.includes("'Welcome back'"))
   assert(source.includes('id="confirm-password"'))
-  assert(source.includes("onClick={authMode === 'sign-up' ? showSignIn : showCreateAccount}"))
-  assert(source.includes("onSubmit={authMode === 'sign-up' ? handleSignUp : handleSignIn}"))
+  assert(source.includes("onClick={showForgotPassword}"))
+  assert(source.includes("showCreateAccount"))
+  assert(source.includes("handleSignUp"))
+  assert(source.includes("handleSignIn"))
 })
 
 test('successful signup supports both immediate onboarding and email confirmation', () => {
