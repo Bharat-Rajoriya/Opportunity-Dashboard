@@ -80,7 +80,13 @@ export async function generateOnboardingCopy({
 
   if (error) throw error
 
-  if (!data?.success || !data?.generated_text) {
+  const hasGeneratedFilters =
+    Array.isArray(data?.ideal_client_types) &&
+      data.ideal_client_types.length > 0 ||
+    Array.isArray(data?.rejection_rules) &&
+      data.rejection_rules.length > 0
+
+  if (!data?.success || (!data?.generated_text && !hasGeneratedFilters)) {
     throw new Error(
       data?.message ||
         data?.error ||

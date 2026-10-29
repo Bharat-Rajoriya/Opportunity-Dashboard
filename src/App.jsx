@@ -435,7 +435,10 @@ function App() {
     const roughText =
       fieldType === 'main_goal'
         ? businessProfileForm.primary_goal
-        : businessProfileForm.good_opportunity_definition
+        : fieldType === 'profile_filters'
+          ? businessProfileForm.primary_goal ||
+            businessProfileForm.good_opportunity_definition
+          : businessProfileForm.good_opportunity_definition
 
     const context = {
       business_name: businessProfileForm.business_name.trim(),
@@ -479,17 +482,102 @@ function App() {
         context,
       })
 
-      setBusinessProfileForm((current) => ({
-        ...current,
-        [fieldType === 'main_goal'
-          ? 'primary_goal'
-          : 'good_opportunity_definition']:
-          result.generated_text,
-      }))
+      if (fieldType === 'profile_filters') {
+        const mergeUnique = (currentItems, suggestedItems) => {
+          const seen = new Set()
 
-      setBusinessProfileAiMessage(
-        'AI draft generated. Review and edit it before saving.'
-      )
+          return [...currentItems, ...(suggestedItems || [])]
+            .filter((item) => typeof item === 'string')
+            .map((item) => item.trim())
+            .filter((item) => {
+              const key = item.toLowerCase()
+
+              if (!item || seen.has(key)) return false
+
+              seen.add(key)
+              return true
+            })
+        }
+
+        setBusinessProfileForm((current) => ({
+          ...current,
+          ideal_client_types: mergeUnique(
+            current.ideal_client_types,
+            result.ideal_client_types
+          ),
+          rejection_rules: mergeUnique(
+            current.rejection_rules,
+            result.rejection_rules
+          ),
+        }))
+
+        setBusinessProfileAiMessage(
+          'AI targeting filters added. Review them before saving.'
+        )
+      } else {
+        setBusinessProfileForm((current) => ({
+          ...current,
+          [fieldType === 'main_goal'
+            ? 'primary_goal'
+            : 'good_opportunity_definition']:
+            result.generated_text,
+        }))
+
+        setBusinessProfileAiMessage(
+          'AI draft generated. Review and edit it before saving.'
+        )
+
+        if (fieldType === 'main_goal') {
+          try {
+            const filterResult = await generateOnboardingCopy({
+              workspaceId: workspace.id,
+              fieldType: 'profile_filters',
+              roughText: result.generated_text,
+              context: {
+                ...context,
+                primary_goal: result.generated_text,
+              },
+            })
+
+            const mergeUnique = (currentItems, suggestedItems) => {
+              const seen = new Set()
+
+              return [...currentItems, ...(suggestedItems || [])]
+                .filter((item) => typeof item === 'string')
+                .map((item) => item.trim())
+                .filter((item) => {
+                  const key = item.toLowerCase()
+
+                  if (!item || seen.has(key)) return false
+
+                  seen.add(key)
+                  return true
+                })
+            }
+
+            setBusinessProfileForm((current) => ({
+              ...current,
+              ideal_client_types: mergeUnique(
+                current.ideal_client_types,
+                filterResult.ideal_client_types
+              ),
+              rejection_rules: mergeUnique(
+                current.rejection_rules,
+                filterResult.rejection_rules
+              ),
+            }))
+
+            setBusinessProfileAiMessage(
+              'AI goal and targeting filters generated. Review them before saving.'
+            )
+          } catch (filterError) {
+            console.warn(
+              'Primary goal generated, but targeting filters could not be refreshed:',
+              filterError
+            )
+          }
+        }
+      }
     } catch (error) {
       console.error(
         'Failed to generate business profile copy:',
@@ -4769,6 +4857,29 @@ hiring React developer`}
                             : '✨ Generate with AI'}
                         </button>
                       </div>
+                    </div>
+
+                    <div className="settings-ai-field-actions settings-ai-targeting-actions">
+                      <span>
+                        Let AI infer useful client types and rejection rules from your current goal and services.
+                      </span>
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        disabled={
+                          businessProfileSaving ||
+                          Boolean(businessProfileAiField)
+                        }
+                        onClick={() =>
+                          void generateBusinessProfileCopy(
+                            'profile_filters'
+                          )
+                        }
+                      >
+                        {businessProfileAiField === 'profile_filters'
+                          ? 'Generating targeting...'
+                          : '✨ Auto-fill Targeting with AI'}
+                      </button>
                     </div>
 
                     <div className="service-list-editor">

@@ -167,9 +167,20 @@ function Onboarding({ user, workspace, onComplete }) {
           .map((item) => item.trim())
           .filter(Boolean),
       }
-    } else if (fieldType === 'good_opportunity') {
-      roughText = idealForm.good_opportunity_definition
+    } else if (
+      fieldType === 'good_opportunity' ||
+      fieldType === 'profile_filters'
+    ) {
+      roughText =
+        fieldType === 'profile_filters'
+          ? primaryGoal.trim() ||
+            idealForm.good_opportunity_definition.trim()
+          : idealForm.good_opportunity_definition
+
       context = {
+        business_name: businessName.trim(),
+        business_type: businessType,
+        preferred_language: preferredLanguage,
         primary_goal: primaryGoal.trim(),
         target_countries: idealForm.target_countries,
         ideal_client_types: idealForm.ideal_client_types,
@@ -224,10 +235,25 @@ function Onboarding({ user, workspace, onComplete }) {
           good_opportunity_definition: result.generated_text,
         }))
         setIdealMessage('')
+      } else if (fieldType === 'profile_filters') {
+        setIdealForm((previous) => ({
+          ...previous,
+          ideal_client_types: normalizeIdealItems([
+            ...previous.ideal_client_types,
+            ...(result.ideal_client_types || []),
+          ]),
+          rejection_rules: normalizeIdealItems([
+            ...previous.rejection_rules,
+            ...(result.rejection_rules || []),
+          ]),
+        }))
+        setIdealMessage('')
       }
 
       setAiAssistMessage(
-        'AI draft generated. Review and edit it before continuing.'
+        fieldType === 'profile_filters'
+          ? 'AI targeting filters added. Review them before continuing.'
+          : 'AI draft generated. Review and edit it before continuing.'
       )
     } catch (error) {
       console.error('Unable to generate onboarding copy:', error)
@@ -1717,7 +1743,16 @@ function Onboarding({ user, workspace, onComplete }) {
 
               <button
                 type="button"
-                onClick={() => setCurrentStep(3)}
+                onClick={() => {
+                  setCurrentStep(3)
+
+                  if (
+                    idealForm.ideal_client_types.length === 0 ||
+                    idealForm.rejection_rules.length === 0
+                  ) {
+                    void handleAiAssist('profile_filters')
+                  }
+                }}
                 disabled={
                   servicesLoading ||
                   serviceMutationPending ||
@@ -1748,6 +1783,27 @@ function Onboarding({ user, workspace, onComplete }) {
               <p className="mt-2 text-slate-400">
                 Tell us what kinds of clients and opportunities you want the engine to prioritize.
               </p>
+            </div>
+
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-violet-900/50 bg-violet-950/20 p-4">
+              <div>
+                <p className="font-medium text-violet-100">
+                  AI Targeting Assistant
+                </p>
+                <p className="mt-1 text-sm text-slate-400">
+                  Automatically infer ideal client types and rejection rules from your goal and services.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleAiAssist('profile_filters')}
+                disabled={idealSaving || Boolean(aiAssistField)}
+                className="rounded-lg border border-violet-700 bg-violet-950/40 px-4 py-2 text-sm font-semibold text-violet-200 transition hover:bg-violet-900/50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {aiAssistField === 'profile_filters'
+                  ? 'Generating targeting...'
+                  : '✨ Auto-fill Targeting with AI'}
+              </button>
             </div>
 
             <fieldset disabled={idealSaving} className="space-y-8">
