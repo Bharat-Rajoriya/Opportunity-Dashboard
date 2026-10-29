@@ -7,12 +7,32 @@ const ALLOWED_FIELD_TYPES = new Set([
   'main_goal',
   'service_description',
   'good_opportunity',
+  'profile_filters',
 ])
 
 function cleanString(value: unknown, maxLength = 8000) {
   return typeof value === 'string'
     ? value.trim().slice(0, maxLength)
     : ''
+}
+
+function cleanStringList(value: unknown, maxItems = 12) {
+  if (!Array.isArray(value)) return []
+
+  const seen = new Set<string>()
+
+  return value
+    .filter((item) => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => {
+      const key = item.toLowerCase()
+
+      if (!item || seen.has(key)) return false
+
+      seen.add(key)
+      return true
+    })
+    .slice(0, maxItems)
 }
 
 export default {
@@ -229,7 +249,19 @@ export default {
           8000,
         )
 
-        if (!generatedText) {
+        const idealClientTypes = cleanStringList(
+          result.ideal_client_types,
+        )
+
+        const rejectionRules = cleanStringList(
+          result.rejection_rules,
+        )
+
+        if (
+          !generatedText &&
+          idealClientTypes.length === 0 &&
+          rejectionRules.length === 0
+        ) {
           return Response.json(
             {
               success: false,
@@ -243,6 +275,8 @@ export default {
           success: true,
           field_type: fieldType,
           generated_text: generatedText,
+          ideal_client_types: idealClientTypes,
+          rejection_rules: rejectionRules,
           confidence:
             typeof result.confidence === 'number'
               ? result.confidence
