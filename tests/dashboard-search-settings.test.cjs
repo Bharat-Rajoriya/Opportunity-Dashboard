@@ -95,11 +95,15 @@ test('settings render AI controls, advanced query editor and constrained selecto
   )
 
   for (const expected of [
-    'AI Query Generation',
-    'Regenerate AI Queries',
-    'Queries per search run',
-    'Advanced Search Queries',
+    'Search Query Sources',
+    'AI-generated queries',
+    'Include AI queries',
+    'Regenerate',
+    'Custom search queries',
+    'Edit queries',
     'id="advanced-search-queries"',
+    'Search Run Size',
+    'Queries used per run',
     'Target Markets',
     'Minimum Intent Level',
     'Opportunity Freshness',
@@ -109,4 +113,45 @@ test('settings render AI controls, advanced query editor and constrained selecto
   }
 
   assert(!dashboard.includes('JSON'))
+})
+
+
+test('query-source UX separates source selection from run size and keeps AI feedback local', () => {
+  const dashboard = appSource.slice(
+    appSource.indexOf("{activePage === 'settings' && ("),
+    appSource.indexOf('// FILTER BAR')
+  )
+
+  assert(
+    dashboard.indexOf('Search Query Sources') <
+      dashboard.indexOf('Search Run Size')
+  )
+
+  assert(
+    dashboard.includes(
+      'It selects from your enabled AI queries and your custom query list.'
+    )
+  )
+
+  assert(
+    dashboard.includes(
+      "searchSettingsMessage?.startsWith(\n                              'AI queries regenerated'"
+    ) ||
+    dashboard.includes(
+      "searchSettingsMessage?.startsWith(\n                            'AI queries regenerated'"
+    )
+  )
+
+  assert(
+    dashboard.includes(
+      "!searchSettingsMessage.startsWith(\n                          'AI queries regenerated'"
+    ) ||
+    dashboard.includes(
+      "!searchSettingsMessage.startsWith(\n                        'AI queries regenerated'"
+    )
+  )
+
+  assert(!dashboard.includes('Advanced Search Queries'))
+  assert(!dashboard.includes('Enable AI-generated queries'))
+  assert(!dashboard.includes('Queries per search run'))
 })
