@@ -85,7 +85,7 @@ test('edge function verifies workspace access before calling protected n8n webho
     ".eq('id', workspaceId)",
     "'x-opportunity-engine-key'",
     "Deno.env.get('N8N_WEBHOOK_SECRET')",
-    "'opportunity-onboarding-assist'",
+    'opportunity-onboarding-assist',
   ]) {
     assert(edgeSource.includes(expected))
   }
