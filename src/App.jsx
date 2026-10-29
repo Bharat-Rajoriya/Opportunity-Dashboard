@@ -21,6 +21,8 @@ import {
   fetchActiveSearchProfile,
   fetchSearchProfileById,
   normalizeSearchList,
+  normalizeSourceKeys,
+  normalizeSourcePreferences,
   saveActiveSearchProfile,
 } from './services/searchProfiles'
 import {
@@ -42,6 +44,28 @@ const REJECTION_REASONS = [
 ]
 
 const SEARCH_COUNTRIES = ['USA', 'UK', 'UAE', 'Australia', 'India']
+
+const FREELANCER_PRODUCTION_ENABLED =
+  import.meta.env.VITE_FREELANCER_PRODUCTION_ENABLED === 'true'
+
+const SOURCE_CATALOG = [
+  {
+    key: 'google',
+    name: 'Google Web Search',
+    description: 'Broad web discovery through the existing search collector.',
+    status: 'Live',
+    available: true,
+  },
+  {
+    key: 'freelancer',
+    name: 'Freelancer',
+    description: 'Direct marketplace projects through the official Freelancer API.',
+    status: FREELANCER_PRODUCTION_ENABLED
+      ? 'Production connected'
+      : 'Sandbox verified',
+    available: FREELANCER_PRODUCTION_ENABLED,
+  },
+]
 
 function validateSignUp(email, password, confirmPassword) {
   if (!email.trim()) return 'Email is required.'
@@ -117,6 +141,8 @@ function App() {
   const [aiSuggestedQueries, setAiSuggestedQueries] = useState([])
   const [aiQueriesGeneratedAt, setAiQueriesGeneratedAt] = useState(null)
   const [queryBatchSize, setQueryBatchSize] = useState(10)
+  const [enabledSources, setEnabledSources] = useState(['google'])
+  const [freelancerResultLimit, setFreelancerResultLimit] = useState(10)
   const [aiQueriesGenerating, setAiQueriesGenerating] = useState(false)
   const [searchSettingsLoading, setSearchSettingsLoading] = useState(true)
   const [searchSettingsSaving, setSearchSettingsSaving] = useState(false)
@@ -1191,6 +1217,8 @@ function App() {
     setAiSuggestedQueries([])
     setAiQueriesGeneratedAt(null)
     setQueryBatchSize(10)
+    setEnabledSources(['google'])
+    setFreelancerResultLimit(10)
     setSearchSettingsError('')
     setSearchSettingsMessage('')
 
@@ -1210,6 +1238,10 @@ function App() {
       const loadedIntentLevel = Number(data.min_intent_level)
       const loadedMaxAgeHours = Number(data.max_age_hours)
       const loadedBatchSize = Number(data.query_batch_size)
+      const loadedSources = normalizeSourceKeys(data.enabled_sources)
+      const loadedSourcePreferences = normalizeSourcePreferences(
+        data.source_preferences
+      )
 
       setSearchProfile(data)
       setSearchQueries(normalizeSearchList(data.search_queries))
@@ -1237,6 +1269,14 @@ function App() {
         [5, 10, 20].includes(loadedBatchSize)
           ? loadedBatchSize
           : 10
+      )
+      setEnabledSources(
+        FREELANCER_PRODUCTION_ENABLED
+          ? loadedSources
+          : loadedSources.filter((source) => source !== 'freelancer')
+      )
+      setFreelancerResultLimit(
+        loadedSourcePreferences.freelancer.result_limit
       )
     } catch (error) {
       if (requestId === searchSettingsRequest.current) {
@@ -1272,6 +1312,27 @@ function App() {
     const intentLevel = Number(minIntentLevel)
     const freshnessHours = Number(maxAgeHours)
     const batchSize = Number(queryBatchSize)
+    const cleanSources = normalizeSourceKeys(enabledSources)
+    const sourcePreferences = normalizeSourcePreferences({
+      freelancer: {
+        result_limit: freelancerResultLimit,
+      },
+    })
+
+    if (cleanSources.length === 0) {
+      setSearchSettingsError('Enable at least one opportunity source before saving.')
+      return
+    }
+
+    if (
+      cleanSources.includes('freelancer') &&
+      !FREELANCER_PRODUCTION_ENABLED
+    ) {
+      setSearchSettingsError(
+        'Freelancer is verified in sandbox only. Production Freelancer search is not enabled in this deployment.'
+      )
+      return
+    }
 
     if (cleanQueries.length === 0) {
       setSearchSettingsError('Add at least one search query before saving.')
@@ -1313,6 +1374,8 @@ function App() {
         maxAgeHours: freshnessHours,
         aiQueryGenerationEnabled,
         queryBatchSize: batchSize,
+        enabledSources: cleanSources,
+        sourcePreferences,
       })
 
       if (requestId !== searchSettingsRequest.current) return
@@ -1332,6 +1395,11 @@ function App() {
         [5, 10, 20].includes(Number(data.query_batch_size))
           ? Number(data.query_batch_size)
           : batchSize
+      )
+      setEnabledSources(normalizeSourceKeys(data.enabled_sources))
+      setFreelancerResultLimit(
+        normalizeSourcePreferences(data.source_preferences)
+          .freelancer.result_limit
       )
       setSearchSettingsMessage('Search settings saved.')
       console.log('Search settings saved:', data)
@@ -2591,6 +2659,16 @@ function App() {
             [5, 10, 20].includes(Number(updatedProfile.query_batch_size))
               ? Number(updatedProfile.query_batch_size)
               : 10
+          )
+          setEnabledSources(
+            FREELANCER_PRODUCTION_ENABLED
+              ? normalizeSourceKeys(updatedProfile.enabled_sources)
+              : normalizeSourceKeys(updatedProfile.enabled_sources)
+                  .filter((source) => source !== 'freelancer')
+          )
+          setFreelancerResultLimit(
+            normalizeSourcePreferences(updatedProfile.source_preferences)
+              .freelancer.result_limit
           )
 
           setSearchSettingsMessage(
@@ -4489,6 +4567,166 @@ function App() {
                     </div>
                   </section>
 
+
+                  <section className="overflow-hidden rounded-xl border border-slate-800">
+                    <div className="border-b border-slate-800 px-5 py-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h3 className="font-medium text-white">
+                            Opportunity Sources
+                          </h3>
+                          <p className="mt-1 text-sm text-slate-400">
+                            Choose where the engine acquires candidate opportunities before Quality v2 qualification.
+                          </p>
+                        </div>
+
+                        <span className="rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-300">
+                          {enabledSources.length} enabled
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="divide-y divide-slate-800">
+                      {SOURCE_CATALOG.map((sourceOption) => {
+                        const isEnabled = enabledSources.includes(sourceOption.key)
+                        const isFreelancer = sourceOption.key === 'freelancer'
+
+                        return (
+                          <div key={sourceOption.key} className="p-5">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-3">
+                                  <h4 className="font-medium text-white">
+                                    {sourceOption.name}
+                                  </h4>
+
+                                  <span
+                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                      sourceOption.available
+                                        ? 'bg-emerald-500/10 text-emerald-300'
+                                        : 'bg-amber-500/10 text-amber-300'
+                                    }`}
+                                  >
+                                    {sourceOption.status}
+                                  </span>
+
+                                  {isEnabled && (
+                                    <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300">
+                                      Enabled
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                                  {sourceOption.description}
+                                </p>
+
+                                {isFreelancer && !FREELANCER_PRODUCTION_ENABLED && (
+                                  <p className="mt-2 text-xs leading-5 text-amber-300/90">
+                                    Sandbox OAuth and the direct-source adapter are verified. Live activation is intentionally locked until a production Freelancer credential and production API environment are configured.
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                                {isFreelancer && (
+                                  <label className="block text-sm font-medium text-slate-300">
+                                    Results per query
+                                    <select
+                                      value={freelancerResultLimit}
+                                      onChange={(event) => {
+                                        setFreelancerResultLimit(Number(event.target.value))
+                                        setSearchSettingsError('')
+                                        setSearchSettingsMessage('')
+                                      }}
+                                      disabled={
+                                        !FREELANCER_PRODUCTION_ENABLED ||
+                                        !isEnabled ||
+                                        searchSettingsSaving ||
+                                        searchRunning
+                                      }
+                                      className="mt-2 min-w-[150px] rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      <option value={5}>5 results</option>
+                                      <option value={10}>10 results</option>
+                                      <option value={20}>20 results</option>
+                                      <option value={50}>50 results</option>
+                                    </select>
+                                  </label>
+                                )}
+
+                                <label
+                                  className={`flex min-h-11 items-center gap-3 rounded-lg border px-4 py-2.5 text-sm ${
+                                    sourceOption.available
+                                      ? 'cursor-pointer border-slate-700 bg-slate-950 text-slate-200'
+                                      : 'cursor-not-allowed border-slate-800 bg-slate-900/60 text-slate-500'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isEnabled}
+                                    onChange={(event) => {
+                                      const checked = event.target.checked
+
+                                      setEnabledSources((current) =>
+                                        normalizeSourceKeys(
+                                          checked
+                                            ? [...current, sourceOption.key]
+                                            : current.filter(
+                                                (item) => item !== sourceOption.key
+                                              )
+                                        )
+                                      )
+
+                                      setSearchSettingsError('')
+                                      setSearchSettingsMessage('')
+                                    }}
+                                    disabled={
+                                      !sourceOption.available ||
+                                      searchSettingsSaving ||
+                                      searchRunning
+                                    }
+                                    className="h-4 w-4 accent-violet-600"
+                                  />
+
+                                  {sourceOption.available
+                                    ? isEnabled
+                                      ? 'Enabled'
+                                      : 'Enable'
+                                    : 'Production locked'}
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+
+                      <div className="grid gap-3 p-5 sm:grid-cols-2">
+                        {[
+                          ['Upwork', 'API access required'],
+                          ['Reddit', 'Commercial API approval required'],
+                        ].map(([name, status]) => (
+                          <div
+                            key={name}
+                            className="rounded-lg border border-slate-800 bg-slate-950/50 p-4"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-sm font-medium text-slate-300">
+                                {name}
+                              </span>
+                              <span className="rounded-full bg-slate-800 px-2 py-1 text-xs text-slate-500">
+                                Coming soon
+                              </span>
+                            </div>
+                            <p className="mt-2 text-xs text-slate-500">
+                              {status}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+
                   <section className="overflow-hidden rounded-xl border border-slate-800">
                     <div className="border-b border-slate-800 px-5 py-4">
                       <h3 className="font-medium text-white">
@@ -4733,7 +4971,8 @@ hiring video editor`}
                         searchSettingsSaving ||
                         searchRunning ||
                         normalizeSearchList(searchQueries).length === 0 ||
-                        targetCountries.length === 0
+                        targetCountries.length === 0 ||
+                        enabledSources.length === 0
                       }
                       className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
                     >
