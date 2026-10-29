@@ -46,3 +46,64 @@ test('missing new-user workspace is created as incomplete so onboarding opens', 
   assert(source.includes('workspace.onboarding_completed === false'))
   assert(source.includes('<Onboarding'))
 })
+
+
+test('sign-in screen exposes a forgot password flow', () => {
+  assert(source.includes('Forgot password?'))
+  assert(source.includes("setAuthMode('forgot-password')"))
+  assert(source.includes('handleForgotPassword'))
+  assert(source.includes('Send Reset Link'))
+})
+
+test('forgot password sends a Supabase recovery email to the current origin', () => {
+  const start = source.indexOf('const handleForgotPassword = async')
+  const end = source.indexOf('\n\n  const handleUpdatePassword', start)
+
+  assert(start >= 0 && end > start)
+
+  const flow = source.slice(start, end)
+
+  assert(flow.includes('supabase.auth.resetPasswordForEmail'))
+  assert(flow.includes('email.trim()'))
+  assert(flow.includes('redirectTo: window.location.origin'))
+  assert(flow.includes('Password reset email sent.'))
+})
+
+test('password recovery auth event opens the new password form instead of the dashboard', () => {
+  const authStart = source.indexOf(
+    'supabase.auth.onAuthStateChange((event, session) => {'
+  )
+  const authEnd = source.indexOf(
+    '\n\n    return () => {',
+    authStart
+  )
+
+  assert(authStart >= 0 && authEnd > authStart)
+
+  const authSource = source.slice(authStart, authEnd)
+
+  assert(authSource.includes("event === 'PASSWORD_RECOVERY'"))
+  assert(authSource.includes("setAuthMode('reset-password')"))
+  assert(source.includes("if (!user || authMode === 'reset-password')"))
+})
+
+test('new password flow validates confirmation then updates password and signs out', () => {
+  const start = source.indexOf('const handleUpdatePassword = async')
+  const end = source.indexOf('\n\n  const handleSignOut', start)
+
+  assert(start >= 0 && end > start)
+
+  const flow = source.slice(start, end)
+
+  assert(flow.includes("Password must be at least 6 characters."))
+  assert(flow.includes("Passwords do not match."))
+  assert(flow.includes('supabase.auth.updateUser'))
+  assert(flow.includes('password,'))
+  assert(flow.includes('await supabase.auth.signOut()'))
+  assert(flow.includes("setAuthMode('sign-in')"))
+  assert(
+    flow.includes(
+      'Password updated successfully. Sign in with your new password.'
+    )
+  )
+})
