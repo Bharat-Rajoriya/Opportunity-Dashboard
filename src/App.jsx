@@ -2786,55 +2786,66 @@ function App() {
           >
             {authMode !== 'reset-password' && (
               <div>
-                <label htmlFor="auth-email" className="block text-sm text-slate-300 mb-2">
+                <label
+                  htmlFor="auth-email"
+                  className="block text-sm text-slate-300 mb-2"
+                >
                   Email
                 </label>
-  
+
                 <input
                   id="auth-email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(event) => setEmail(event.target.value)}
                   autoComplete="email"
                   required
                   className="w-full rounded-lg bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-violet-500"
                   placeholder="you@example.com"
                 />
-              )}
-
-            </div>
+              </div>
+            )}
 
             {authMode !== 'forgot-password' && (
               <div>
-                <label htmlFor="auth-password" className="block text-sm text-slate-300 mb-2">
+                <label
+                  htmlFor="auth-password"
+                  className="block text-sm text-slate-300 mb-2"
+                >
                   Password
                 </label>
-  
+
                 <div className="relative">
                   <input
                     id="auth-password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(event) => setPassword(event.target.value)}
                     autoComplete={
-                    authMode === 'sign-up' || authMode === 'reset-password'
-                      ? 'new-password'
-                      : 'current-password'
-                  }
+                      authMode === 'sign-up' ||
+                      authMode === 'reset-password'
+                        ? 'new-password'
+                        : 'current-password'
+                    }
                     required
                     minLength={
-                    authMode === 'sign-up' || authMode === 'reset-password'
-                      ? 6
-                      : undefined
-                  }
+                      authMode === 'sign-up' ||
+                      authMode === 'reset-password'
+                        ? 6
+                        : undefined
+                    }
                     className="w-full rounded-lg bg-slate-950 border border-slate-700 pl-4 pr-12 py-3 outline-none focus:border-violet-500"
                     placeholder="••••••••"
                   />
-  
+
                   <button
                     type="button"
-                    onClick={() => setShowPassword((isVisible) => !isVisible)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() =>
+                      setShowPassword((isVisible) => !isVisible)
+                    }
+                    aria-label={
+                      showPassword ? 'Hide password' : 'Show password'
+                    }
                     aria-pressed={showPassword}
                     className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-lg text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500"
                   >
@@ -2845,15 +2856,15 @@ function App() {
                     )}
                   </button>
                 </div>
-  
-                )}
 
-            {authMode === 'sign-up' && (
-                <p className="mt-2 text-xs text-slate-500">
-                  Use at least 6 characters.
-                </p>
-              )}
-            </div>
+                {(authMode === 'sign-up' ||
+                  authMode === 'reset-password') && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Use at least 6 characters.
+                  </p>
+                )}
+              </div>
+            )}
 
             {(authMode === 'sign-up' || authMode === 'reset-password') && (
               <div>
