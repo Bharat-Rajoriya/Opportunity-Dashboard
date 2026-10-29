@@ -4461,47 +4461,203 @@ function App() {
                     </div>
                   </section>
 
+                  <section className="overflow-hidden rounded-xl border border-slate-800">
+                    <div className="border-b border-slate-800 px-5 py-4">
+                      <h3 className="font-medium text-white">
+                        Search Query Sources
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-400">
+                        Choose which query sources the engine can use when looking for opportunities.
+                      </p>
+                    </div>
+
+                    <div className="divide-y divide-slate-800">
+                      <div className="p-5">
+                        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <h4 className="font-medium text-white">
+                                AI-generated queries
+                              </h4>
+
+                              <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300">
+                                {aiSuggestedQueries.length} queries
+                              </span>
+
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                  aiQueryGenerationEnabled
+                                    ? 'bg-emerald-500/10 text-emerald-300'
+                                    : 'bg-slate-800 text-slate-400'
+                                }`}
+                              >
+                                {aiQueryGenerationEnabled
+                                  ? 'Included'
+                                  : 'Not included'}
+                              </span>
+                            </div>
+
+                            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                              AI creates buyer-intent search phrases from your services,
+                              business profile and targeting preferences. Regenerate them
+                              whenever your offer or ideal client changes.
+                            </p>
+
+                            <p className="mt-2 text-xs text-slate-500">
+                              {aiQueriesGeneratedAt
+                                ? `Last generated ${new Date(aiQueriesGeneratedAt).toLocaleString()}`
+                                : 'No AI query set has been generated yet.'}
+                            </p>
+
+                            {searchSettingsMessage?.startsWith(
+                              'AI queries regenerated'
+                            ) && (
+                              <p
+                                role="status"
+                                className="mt-3 text-sm text-emerald-300"
+                              >
+                                {searchSettingsMessage}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-slate-200">
+                              <input
+                                type="checkbox"
+                                checked={aiQueryGenerationEnabled}
+                                onChange={(event) => {
+                                  setAiQueryGenerationEnabled(event.target.checked)
+                                  setSearchSettingsError('')
+                                  setSearchSettingsMessage('')
+                                }}
+                                disabled={
+                                  searchSettingsSaving ||
+                                  searchRunning ||
+                                  aiQueriesGenerating
+                                }
+                                className="h-4 w-4 accent-violet-600"
+                              />
+
+                              Include AI queries
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={() => void handleRegenerateAiQueries()}
+                              disabled={
+                                aiQueriesGenerating ||
+                                !aiQueryGenerationEnabled ||
+                                searchSettingsSaving ||
+                                searchRunning ||
+                                !searchProfile?.id
+                              }
+                              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-violet-500/40 bg-violet-500/10 px-5 py-2.5 text-sm font-medium text-violet-200 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {aiQueriesGenerating
+                                ? 'Regenerating...'
+                                : 'Regenerate'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowAdvancedQueries((current) => !current)
+                          }
+                          className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition hover:bg-slate-800/40"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <h4 className="font-medium text-white">
+                                Custom search queries
+                              </h4>
+
+                              <span className="rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-300">
+                                {normalizeSearchList(searchQueries).length} queries
+                              </span>
+                            </div>
+
+                            <p className="mt-2 text-sm text-slate-400">
+                              Your own exact search phrases. Use these when you want
+                              direct control over what the engine searches for.
+                            </p>
+                          </div>
+
+                          <span className="shrink-0 text-sm font-medium text-violet-400">
+                            {showAdvancedQueries ? 'Close editor' : 'Edit queries'}
+                          </span>
+                        </button>
+
+                        {showAdvancedQueries && (
+                          <div className="border-t border-slate-800 p-5">
+                            <div className="rounded-lg border border-slate-700 bg-slate-950 px-4 py-3">
+                              <p className="text-sm text-slate-300">
+                                Add one search phrase per line.
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                Blank lines and duplicate queries are removed automatically
+                                when you save.
+                              </p>
+                            </div>
+
+                            <label
+                              htmlFor="advanced-search-queries"
+                              className="mt-5 block text-sm font-medium text-slate-200"
+                            >
+                              Custom Queries
+                            </label>
+
+                            <textarea
+                              id="advanced-search-queries"
+                              value={searchQueries.join('\n')}
+                              onChange={(event) => {
+                                setSearchQueries(event.target.value.split('\n'))
+                                setSearchSettingsError('')
+                                setSearchSettingsMessage('')
+                              }}
+                              disabled={searchSettingsSaving || searchRunning}
+                              rows={14}
+                              spellCheck="false"
+                              className="mt-2 w-full resize-y rounded-xl border border-slate-700 bg-slate-950 p-4 font-mono text-sm leading-6 text-slate-200 outline-none placeholder:text-slate-600 focus:border-violet-500 disabled:opacity-50"
+                              placeholder={`looking for logo designer
+need PPC consultant
+seeking contract lawyer
+hiring video editor`}
+                            />
+
+                            <p className="mt-3 text-xs text-slate-500">
+                              {normalizeSearchList(searchQueries).length} valid custom queries
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
                   <section className="rounded-xl border border-slate-800 p-5">
-                    <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                      <div className="max-w-2xl">
+                    <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                      <div className="max-w-3xl">
                         <div className="flex flex-wrap items-center gap-3">
-                          <h3 className="font-medium text-white">AI Query Generation</h3>
-                          <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300">
-                            {aiSuggestedQueries.length} generated
+                          <h3 className="font-medium text-white">
+                            Search Run Size
+                          </h3>
+                          <span className="rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-300">
+                            {queryBatchSize} per run
                           </span>
                         </div>
 
                         <p className="mt-1 text-sm leading-6 text-slate-400">
-                          Generate fresh buyer-intent queries from your active services and business profile.
-                          Regeneration resets the search rotation so the next run starts with the new AI query set.
-                        </p>
-
-                        <p className="mt-3 text-xs text-slate-500">
-                          {aiQueriesGeneratedAt
-                            ? `Last generated ${new Date(aiQueriesGeneratedAt).toLocaleString()}`
-                            : 'No AI query set has been generated yet.'}
+                          Choose how many search phrases the engine tries in one run.
+                          It selects from your enabled AI queries and your custom query list.
                         </p>
                       </div>
 
-                      <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-200">
-                        <input
-                          type="checkbox"
-                          checked={aiQueryGenerationEnabled}
-                          onChange={(event) => {
-                            setAiQueryGenerationEnabled(event.target.checked)
-                            setSearchSettingsError('')
-                            setSearchSettingsMessage('')
-                          }}
-                          disabled={searchSettingsSaving || searchRunning || aiQueriesGenerating}
-                          className="h-4 w-4 accent-violet-600"
-                        />
-                        Enable AI-generated queries
-                      </label>
-                    </div>
-
-                    <div className="mt-5 grid gap-4 md:grid-cols-[220px_1fr]">
-                      <label className="block text-sm font-medium text-slate-200">
-                        Queries per search run
+                      <label className="block min-w-[220px] text-sm font-medium text-slate-200">
+                        Queries used per run
                         <select
                           value={queryBatchSize}
                           onChange={(event) => {
@@ -4509,7 +4665,11 @@ function App() {
                             setSearchSettingsError('')
                             setSearchSettingsMessage('')
                           }}
-                          disabled={searchSettingsSaving || searchRunning || aiQueriesGenerating}
+                          disabled={
+                            searchSettingsSaving ||
+                            searchRunning ||
+                            aiQueriesGenerating
+                          }
                           className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-violet-500 disabled:opacity-50"
                         >
                           <option value={5}>5 queries</option>
@@ -4517,93 +4677,7 @@ function App() {
                           <option value={20}>20 queries</option>
                         </select>
                       </label>
-
-                      <div className="flex items-end">
-                        <button
-                          type="button"
-                          onClick={() => void handleRegenerateAiQueries()}
-                          disabled={
-                            aiQueriesGenerating ||
-                            !aiQueryGenerationEnabled ||
-                            searchSettingsSaving ||
-                            searchRunning ||
-                            !searchProfile?.id
-                          }
-                          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-violet-500/40 bg-violet-500/10 px-5 py-2.5 text-sm font-medium text-violet-200 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {aiQueriesGenerating
-                            ? 'Regenerating AI Queries...'
-                            : 'Regenerate AI Queries'}
-                        </button>
-                      </div>
                     </div>
-                  </section>
-
-                  <section className="overflow-hidden rounded-xl border border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => setShowAdvancedQueries((current) => !current)}
-                      className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition hover:bg-slate-800/40"
-                    >
-                      <div>
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-medium text-white">
-                            Advanced Search Queries
-                          </h3>
-                          <span className="rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-300">
-                            {normalizeSearchList(searchQueries).length} queries
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm text-slate-400">
-                          Manage the exact phrases used when searching for opportunities.
-                        </p>
-                      </div>
-
-                      <span className="shrink-0 text-sm font-medium text-violet-400">
-                        {showAdvancedQueries ? 'Hide' : 'Show'}
-                      </span>
-                    </button>
-
-                    {showAdvancedQueries && (
-                      <div className="border-t border-slate-800 p-5">
-                        <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-                          <p className="text-sm text-amber-200">
-                            One search query per line.
-                          </p>
-                          <p className="mt-1 text-xs text-slate-400">
-                            Empty lines and duplicate queries are automatically removed when you save.
-                          </p>
-                        </div>
-
-                        <label
-                          htmlFor="advanced-search-queries"
-                          className="mt-5 block text-sm font-medium text-slate-200"
-                        >
-                          Search Queries
-                        </label>
-
-                        <textarea
-                          id="advanced-search-queries"
-                          value={searchQueries.join('\n')}
-                          onChange={(event) => {
-                            setSearchQueries(event.target.value.split('\n'))
-                            setSearchSettingsError('')
-                            setSearchSettingsMessage('')
-                          }}
-                          disabled={searchSettingsSaving || searchRunning}
-                          rows={18}
-                          spellCheck="false"
-                          className="mt-2 w-full resize-y rounded-xl border border-slate-700 bg-slate-950 p-4 font-mono text-sm leading-6 text-slate-200 outline-none placeholder:text-slate-600 focus:border-violet-500 disabled:opacity-50"
-                          placeholder={`looking for WordPress developer
-need Shopify developer
-hiring React developer`}
-                        />
-
-                        <p className="mt-3 text-xs text-slate-500">
-                          {normalizeSearchList(searchQueries).length} valid queries
-                        </p>
-                      </div>
-                    )}
                   </section>
 
                   <div className="flex flex-col gap-4 border-t border-slate-800 pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -4614,11 +4688,14 @@ hiring React developer`}
                         </p>
                       )}
 
-                      {searchSettingsMessage && (
-                        <p role="status" className="text-sm text-emerald-300">
-                          {searchSettingsMessage}
-                        </p>
-                      )}
+                      {searchSettingsMessage &&
+                        !searchSettingsMessage.startsWith(
+                          'AI queries regenerated'
+                        ) && (
+                          <p role="status" className="text-sm text-emerald-300">
+                            {searchSettingsMessage}
+                          </p>
+                        )}
                     </div>
 
                     <button
@@ -4650,7 +4727,7 @@ hiring React developer`}
                     <div>
                       <span className="settings-eyebrow">PROOF &amp; PROFILES</span>
                       <h2>
-                        {editingPortfolio ? 'Edit Project' : 'Add Project'}
+                        {editingPortfolio ? 'Edit Proof / Profile' : 'Add Proof / Profile'}
                       </h2>
                     </div>
 
