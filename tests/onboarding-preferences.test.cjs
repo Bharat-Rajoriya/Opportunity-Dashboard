@@ -702,7 +702,10 @@ test('edit portfolio prefills all fields and safely converts arrays into text', 
   assert.equal(h.state.ShowPortfolioForm, true)
   const empty = setup()
   handler('editPortfolioItem', empty.env)({ id: 'project-2', services: null, technologies: 'bad', proof_points: null })
-  assert.deepEqual(empty.state.PortfolioForm, helpers.emptyPortfolioForm)
+  assert.deepEqual(empty.state.PortfolioForm, {
+    ...helpers.emptyPortfolioForm,
+    proof_type: 'project',
+  })
 })
 
 test('cancel portfolio form resets the draft and id but cannot cancel an in-flight write', () => {
