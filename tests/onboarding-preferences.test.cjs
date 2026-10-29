@@ -11,6 +11,18 @@ const helpers = new Function(
     'return { idealListFields, normalizeIdealItems, createIdealForm, emptyPortfolioForm, parseCommaList, parseLines }'
 )()
 
+const proofConfigSource = readFileSync(
+  join(__dirname, '../src/config/proofProfiles.js'),
+  'utf8'
+)
+  .replace(/\r\n/g, '\n')
+  .replaceAll('export ', '')
+
+const proofHelpers = new Function(
+  proofConfigSource +
+    '\nreturn { sanitizeProofFormForType, changeProofType, getProofFieldMeta, isProofFieldVisible }'
+)()
+
 function handler(name, env) {
   const start = source.indexOf('  const ' + name + ' =')
   const end = name === 'loadBusinessProfile'
@@ -30,6 +42,7 @@ function setup(options = {}) {
   const calls = []
   const env = {
     ...helpers,
+    ...proofHelpers,
     useCallback: (callback) => callback,
     workspaceId: 'workspace-1',
     loading: false,
