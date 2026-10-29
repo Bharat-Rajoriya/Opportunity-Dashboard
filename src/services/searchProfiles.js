@@ -81,3 +81,19 @@ export async function saveActiveSearchProfile({
   if (error) throw error
   return data
 }
+
+
+export async function fetchSearchProfileById({
+  profileId,
+  workspaceId,
+}) {
+  const { data, error } = await supabase
+    .from('search_profiles')
+    .select(SEARCH_PROFILE_FIELDS)
+    .eq('id', profileId)
+    .eq('workspace_id', workspaceId)
+    .single()
+
+  if (error) throw error
+  return data
+}
