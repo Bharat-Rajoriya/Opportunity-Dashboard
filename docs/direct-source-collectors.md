@@ -97,7 +97,7 @@ n8n workflow:
 
 Status: sandbox verified / production locked.
 
-The sandbox adapter is connected to a server-side OAuth2 credential in n8n and has passed both API smoke testing and an end-to-end Quality v2 run.
+The sandbox adapter is connected to a server-side Freelancer OAuth2 credential in n8n and has passed both API smoke testing and an end-to-end Quality v2 run.
 
 The adapter currently uses Freelancer sandbox endpoints only. Normalized sandbox records must set `source_environment = sandbox` and must generate `freelancer-sandbox.com` project URLs. Production project URLs must never be generated for sandbox records.
 
