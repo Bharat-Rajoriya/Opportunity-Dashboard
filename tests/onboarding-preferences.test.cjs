@@ -988,3 +988,25 @@ test('App completion callback merges the confirmed workspace to open its dashboa
     }
   }
 })
+
+test('successful onboarding starts AI query generation without blocking dashboard entry', () => {
+  const source = readFileSync(
+    join(__dirname, '../src/components/Onboarding.jsx'),
+    'utf8'
+  ).replace(/\r\n/g, '\n')
+
+  const start = source.indexOf('const completeOnboarding = async () => {')
+  const end = source.indexOf('\n  const handleSave = async', start)
+
+  assert(start >= 0 && end > start)
+
+  const completionSource = source.slice(start, end)
+
+  assert(completionSource.includes('await triggerAiQueryGeneration(workspace.id)'))
+  assert(completionSource.includes('catch (queryGenerationError)'))
+  assert(completionSource.includes("if (typeof onComplete === 'function')"))
+  assert(
+    completionSource.indexOf('await triggerAiQueryGeneration(workspace.id)') <
+      completionSource.indexOf("if (typeof onComplete === 'function')")
+  )
+})
