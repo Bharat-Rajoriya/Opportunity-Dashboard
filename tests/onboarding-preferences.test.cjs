@@ -1059,18 +1059,26 @@ test('Proof & Profiles onboarding is profession-agnostic and supports platform m
   for (const expected of [
     'Proof &amp; Profiles',
     '+ Add Proof / Profile',
+    'isProofFieldVisible',
+    'getProofFieldMeta',
+    'changeProofType',
+  ]) {
+    assert(source.includes(expected))
+  }
+
+  for (const expected of [
     'Profile / Portfolio Link',
     'Project / Work Sample',
     'Case Study',
     'Publication / Article',
     'Testimonial / Review',
     'Certification / Credential',
-    'Dribbble, Behance, YouTube, LinkedIn, GitHub',
-    'Services Represented',
-    'Skills / Topics / Tools',
-    'Evidence / Proof Points',
+    'Dribbble, LinkedIn, YouTube, personal website',
+    'Services / Expertise Represented',
+    'Skills / Specialties',
+    'Key Evidence (optional)',
   ]) {
-    assert(source.includes(expected))
+    assert(proofConfigSource.includes(expected))
   }
 
   for (const legacyLabel of [
