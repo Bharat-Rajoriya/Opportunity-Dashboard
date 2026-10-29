@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { triggerAiQueryGeneration } from '../services/opportunityEngine'
 
 const idealListFields = ['target_countries', 'ideal_client_types', 'rejection_rules']
 const emptyPortfolioForm = {
@@ -903,6 +904,15 @@ function Onboarding({ user, workspace, onComplete }) {
         data.id !== workspace.id || data.owner_user_id !== user.id
       ) {
         throw new Error('The workspace was not marked as onboarded.')
+      }
+
+      try {
+        await triggerAiQueryGeneration(workspace.id)
+      } catch (queryGenerationError) {
+        console.warn(
+          'Onboarding completed, but AI query generation could not be started:',
+          queryGenerationError
+        )
       }
 
       if (typeof onComplete === 'function') {
