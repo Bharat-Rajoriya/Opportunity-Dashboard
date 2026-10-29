@@ -15,8 +15,28 @@ export const SEARCH_PROFILE_FIELDS = `
   ai_queries_generated_at,
   query_cursor,
   query_batch_size,
+  enabled_sources,
+  source_preferences,
   updated_at
 `
+
+export function normalizeSourceKeys(items) {
+  const allowed = new Set([
+    'google',
+    'freelancer',
+    'upwork',
+    'reddit',
+    'peopleperhour',
+  ])
+
+  const normalized = normalizeSearchList(items)
+    .map((item) => item.toLowerCase())
+    .filter((item) => allowed.has(item))
+
+  return normalized.length > 0
+    ? normalized
+    : ['google']
+}
 
 export function normalizeSearchList(items) {
   if (!Array.isArray(items)) return []
