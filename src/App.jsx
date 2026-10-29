@@ -328,6 +328,10 @@ function App() {
           source,
           source_url,
           country,
+          source_result_type,
+          source_quality_score,
+          source_quality_reason,
+          buyer_likelihood,
           requirement,
           person_name,
           company_name,
@@ -6525,6 +6529,34 @@ function OpportunityDrawer({
           .join(' – ')
       : ''
 
+  const sourceQualityScore = Number(
+    opportunity.source_quality_score ?? 0
+  )
+
+  const hasSourceQualityAssessment =
+    Boolean(opportunity.source_result_type) ||
+    Boolean(opportunity.source_quality_reason)
+
+  const sourceQualityLabel =
+    !hasSourceQualityAssessment
+      ? ''
+      : sourceQualityScore >= 8
+        ? 'Strong source evidence'
+        : sourceQualityScore >= 6
+          ? 'Good source evidence'
+          : sourceQualityScore >= 4
+            ? 'Limited source evidence'
+            : 'Weak source evidence'
+
+  const sourceQualityClass =
+    sourceQualityScore >= 8
+      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+      : sourceQualityScore >= 6
+        ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300'
+        : sourceQualityScore >= 4
+          ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+          : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+
   const opportunityFacts = [
     opportunity.budget_text && {
       label: 'Posted Budget / Rate',
@@ -6625,6 +6657,40 @@ function OpportunityDrawer({
               )}
 
             </div>
+
+            {hasSourceQualityAssessment && (
+              <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-xs font-medium ${sourceQualityClass}`}
+                  >
+                    Source quality {sourceQualityScore}/10
+                  </span>
+
+                  <span className="text-sm font-medium text-slate-200">
+                    {sourceQualityLabel}
+                  </span>
+
+                  {opportunity.buyer_likelihood && (
+                    <span className="rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs capitalize text-slate-300">
+                      {opportunity.buyer_likelihood} buyer likelihood
+                    </span>
+                  )}
+
+                  {opportunity.source_result_type && (
+                    <span className="rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs capitalize text-slate-300">
+                      {opportunity.source_result_type.replaceAll('_', ' ')}
+                    </span>
+                  )}
+                </div>
+
+                {opportunity.source_quality_reason && (
+                  <p className="mt-3 text-sm leading-6 text-slate-400">
+                    {opportunity.source_quality_reason}
+                  </p>
+                )}
+              </div>
+            )}
 
           </DrawerSection>
 
