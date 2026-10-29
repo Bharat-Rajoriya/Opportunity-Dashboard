@@ -6805,7 +6805,7 @@ function OpportunityDrawer({
                 value={followUpNote}
                 onChange={(e) => setFollowUpNote(e.target.value)}
                 rows={3}
-                placeholder="Example: Send portfolio and ask whether they have finalized the project scope."
+                placeholder="Example: Follow up with relevant proof and ask whether they are ready to discuss next steps."
                 className="w-full resize-none rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-violet-500"
               />
             </div>
@@ -6857,7 +6857,7 @@ function OpportunityDrawer({
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
                 rows={3}
-                placeholder="Example: Client asked for portfolio and estimated timeline..."
+                placeholder="Example: Prospect asked for more information and suggested following up next week..."
                 className="w-full resize-none rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-violet-500"
               />
 
