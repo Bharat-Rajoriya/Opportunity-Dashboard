@@ -2706,17 +2706,6 @@ function App() {
       return
     }
 
-    if (
-      enabledSources.includes('freelancer') &&
-      !FREELANCER_PRODUCTION_ENABLED
-    ) {
-      setSearchMessage('')
-      setSearchError(
-        'Freelancer is currently connected to sandbox only. Production Freelancer search must be enabled before it can be used for live opportunity discovery.'
-      )
-      return
-    }
-
     const requestId = ++searchRunRequest.current
     const pendingSearch = {
       workspaceId: workspace.id,
