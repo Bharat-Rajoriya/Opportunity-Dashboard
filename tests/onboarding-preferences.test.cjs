@@ -735,7 +735,7 @@ test('cancel portfolio form resets the draft and id but cannot cancel an in-flig
   assert.deepEqual(h.state.PortfolioForm, helpers.emptyPortfolioForm)
 })
 
-test('portfolio create inserts an active workspace project with parsed, trimmed fields', async () => {
+test('proof create inserts an active workspace item and clears fields hidden by its type', async () => {
   const h = setup({ env: { showPortfolioForm: true } })
   await handler('savePortfolioItem', h.env)()
   const payload = h.calls.find(([kind]) => kind === 'insert')[1]
@@ -744,7 +744,7 @@ test('portfolio create inserts an active workspace project with parsed, trimmed 
   assert.equal(payload.proof_type, 'profile')
   assert.equal(payload.platform, 'Dribbble')
   assert.equal(payload.project_name, 'Website rebuild')
-  assert.equal(payload.client_name, 'Client')
+  assert.equal(payload.client_name, null)
   assert.deepEqual(payload.services, ['Website', 'SEO'])
   assert.deepEqual(payload.technologies, ['WordPress', 'Elementor'])
   assert.deepEqual(payload.proof_points, ['Faster website', 'Custom templates'])
