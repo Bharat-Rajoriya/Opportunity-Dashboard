@@ -52,6 +52,8 @@ function setup(options = {}) {
     showPortfolioForm: false,
     editingPortfolioId: null,
     portfolioForm: {
+      proof_type: 'profile',
+      platform: ' Dribbble ',
       project_name: ' Website rebuild ', client_name: ' Client ', industry: ' Technology ',
       services: ' Website, SEO, website, , ', technologies: ' WordPress, Elementor, ',
       project_url: ' https://example.com ', summary: ' Redesigned website ',
@@ -723,6 +725,8 @@ test('portfolio create inserts an active workspace project with parsed, trimmed 
   const payload = h.calls.find(([kind]) => kind === 'insert')[1]
   assert.equal(payload.workspace_id, 'workspace-1')
   assert.equal(payload.active, true)
+  assert.equal(payload.proof_type, 'profile')
+  assert.equal(payload.platform, 'Dribbble')
   assert.equal(payload.project_name, 'Website rebuild')
   assert.equal(payload.client_name, 'Client')
   assert.deepEqual(payload.services, ['Website', 'SEO'])
@@ -751,7 +755,8 @@ test('optional portfolio fields become null or empty arrays', async () => {
   const h = setup({ env: { portfolioForm: { ...helpers.emptyPortfolioForm, project_name: 'New project' } } })
   await handler('savePortfolioItem', h.env)()
   const payload = h.calls.find(([kind]) => kind === 'insert')[1]
-  for (const field of ['client_name', 'industry', 'project_url', 'summary']) assert.equal(payload[field], null)
+  assert.equal(payload.proof_type, 'profile')
+  for (const field of ['platform', 'client_name', 'industry', 'project_url', 'summary']) assert.equal(payload[field], null)
   for (const field of ['services', 'technologies', 'proof_points']) assert.deepEqual(payload[field], [])
 })
 
@@ -786,7 +791,7 @@ test('saved portfolio with failed refresh closes the form and reports partial su
   const h = setup({ refreshed: false, env: { showPortfolioForm: true } })
   await handler('savePortfolioItem', h.env)()
   assert.equal(h.state.ShowPortfolioForm, false)
-  assert(h.state.PortfolioMessage.includes('Project saved'))
+  assert(h.state.PortfolioMessage.includes('Proof saved'))
   assert(h.state.PortfolioMessage.includes('could not be refreshed'))
 })
 
@@ -819,7 +824,7 @@ test('portfolio toggle failures release locks and never refresh a failed update'
 test('portfolio toggle refresh failure reports that status was already saved', async () => {
   const h = setup({ refreshed: false })
   await handler('togglePortfolioActive', h.env)({ id: 'project-1', active: true })
-  assert(h.state.PortfolioMessage.includes('Project status updated'))
+  assert(h.state.PortfolioMessage.includes('Proof status updated'))
 })
 
 test('portfolio writes are immediately locked against double submits and concurrent toggles', async () => {
@@ -1044,4 +1049,50 @@ test('successful onboarding starts AI query generation without blocking dashboar
     completionSource.indexOf('await triggerAiQueryGeneration(workspace.id)') <
       completionSource.indexOf("if (typeof onComplete === 'function')")
   )
+})
+
+
+test('Proof & Profiles onboarding is profession-agnostic and supports platform metadata', () => {
+  for (const expected of [
+    'Proof &amp; Profiles',
+    '+ Add Proof / Profile',
+    'Profile / Portfolio Link',
+    'Project / Work Sample',
+    'Case Study',
+    'Publication / Article',
+    'Testimonial / Review',
+    'Certification / Credential',
+    'Dribbble, Behance, YouTube, LinkedIn, GitHub',
+    'Services Represented',
+    'Skills / Topics / Tools',
+    'Evidence / Proof Points',
+  ]) {
+    assert(source.includes(expected))
+  }
+
+  for (const legacyLabel of [
+    '>Portfolio</h2>',
+    '>Project Name<',
+    '>Technologies<',
+    '>Project URL<',
+  ]) {
+    assert(!source.includes(legacyLabel))
+  }
+})
+
+test('proof/profile editor restores proof type and platform from saved evidence', () => {
+  const h = setup()
+  handler('editPortfolioItem', h.env)({
+    id: 'proof-1',
+    proof_type: 'publication',
+    platform: 'LinkedIn',
+    project_name: 'Published legal analysis',
+    services: ['Legal Advisory'],
+    technologies: ['Contract Law'],
+    proof_points: ['Published article'],
+  })
+
+  assert.equal(h.state.PortfolioForm.proof_type, 'publication')
+  assert.equal(h.state.PortfolioForm.platform, 'LinkedIn')
+  assert.equal(h.state.PortfolioForm.project_name, 'Published legal analysis')
 })
