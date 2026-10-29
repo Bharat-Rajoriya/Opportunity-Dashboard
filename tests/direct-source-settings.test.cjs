@@ -33,16 +33,8 @@ test('Freelancer live activation is environment-gated', () => {
       "import.meta.env.VITE_FREELANCER_PRODUCTION_ENABLED === 'true'"
     )
   )
-  assert(
-    appSource.includes(
-      'Freelancer is currently connected to sandbox only.'
-    )
-  )
-  assert(
-    appSource.includes(
-      'Production Freelancer search is not enabled in this deployment.'
-    )
-  )
+  assert(appSource.includes('Production locked'))
+  assert(appSource.includes('Live activation is intentionally locked'))
 })
 
 test('search profile save persists normalized sources and provider preferences', () => {
