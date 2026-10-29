@@ -11,6 +11,7 @@ import {
 import { supabase } from './lib/supabase'
 import Onboarding from './components/Onboarding'
 import {
+  generateOnboardingCopy,
   getLatestEngineRun,
   triggerAiQueryGeneration,
   triggerOpportunityEngine,
@@ -120,6 +121,8 @@ function App() {
   const [businessProfileSaving, setBusinessProfileSaving] = useState(false)
   const [businessProfileError, setBusinessProfileError] = useState('')
   const [businessProfileMessage, setBusinessProfileMessage] = useState('')
+  const [businessProfileAiField, setBusinessProfileAiField] = useState('')
+  const [businessProfileAiMessage, setBusinessProfileAiMessage] = useState('')
   const [businessProfileEditorOpen, setBusinessProfileEditorOpen] = useState(false)
   const [businessProfileForm, setBusinessProfileForm] = useState({
     business_name: '',
@@ -404,6 +407,7 @@ function App() {
 
     setBusinessProfileError('')
     setBusinessProfileMessage('')
+    setBusinessProfileAiMessage('')
     setBusinessProfileEditorOpen(true)
   }
 
@@ -413,6 +417,91 @@ function App() {
     setBusinessProfileEditorOpen(false)
     setBusinessProfileError('')
     setBusinessProfileMessage('')
+    setBusinessProfileAiMessage('')
+  }
+
+  const generateBusinessProfileCopy = async (fieldType) => {
+    if (!workspace?.id || businessProfileAiField) return
+
+    const activeServices = services
+      .filter((service) => service.active !== false)
+      .map((service) => ({
+        name: service.name,
+        description: service.description,
+        keywords: service.keywords,
+        problems_solved: service.problems_solved,
+      }))
+
+    const roughText =
+      fieldType === 'main_goal'
+        ? businessProfileForm.primary_goal
+        : businessProfileForm.good_opportunity_definition
+
+    const context = {
+      business_name: businessProfileForm.business_name.trim(),
+      business_type: businessProfileForm.business_type,
+      website: businessProfileForm.website_url.trim(),
+      preferred_language:
+        businessProfileForm.preferred_language,
+      primary_goal: businessProfileForm.primary_goal.trim(),
+      ideal_client_types:
+        businessProfileForm.ideal_client_types
+          .map((item) => item.trim())
+          .filter(Boolean),
+      rejection_rules:
+        businessProfileForm.rejection_rules
+          .map((item) => item.trim())
+          .filter(Boolean),
+      services: activeServices,
+    }
+
+    if (
+      !roughText.trim() &&
+      !context.primary_goal &&
+      activeServices.length === 0 &&
+      context.ideal_client_types.length === 0
+    ) {
+      setBusinessProfileAiMessage(
+        'Add a few business or service details first so AI has accurate context.'
+      )
+      return
+    }
+
+    setBusinessProfileAiField(fieldType)
+    setBusinessProfileAiMessage('')
+    setBusinessProfileError('')
+
+    try {
+      const result = await generateOnboardingCopy({
+        workspaceId: workspace.id,
+        fieldType,
+        roughText,
+        context,
+      })
+
+      setBusinessProfileForm((current) => ({
+        ...current,
+        [fieldType === 'main_goal'
+          ? 'primary_goal'
+          : 'good_opportunity_definition']:
+          result.generated_text,
+      }))
+
+      setBusinessProfileAiMessage(
+        'AI draft generated. Review and edit it before saving.'
+      )
+    } catch (error) {
+      console.error(
+        'Failed to generate business profile copy:',
+        error
+      )
+      setBusinessProfileAiMessage(
+        error?.message ||
+          'Unable to generate AI-assisted copy right now.'
+      )
+    } finally {
+      setBusinessProfileAiField('')
+    }
   }
 
   const updateBusinessProfileArrayItem = (field, index, value) => {
@@ -500,7 +589,22 @@ function App() {
       if (error) throw error
 
       setBusinessProfile(data)
-      setBusinessProfileMessage('Business profile saved.')
+
+      try {
+        await triggerAiQueryGeneration(workspace.id)
+        setBusinessProfileMessage(
+          'Business profile saved. AI search queries are being refreshed.'
+        )
+      } catch (queryError) {
+        console.warn(
+          'Business profile saved, but AI search queries could not be refreshed:',
+          queryError
+        )
+        setBusinessProfileMessage(
+          'Business profile saved. Search queries can be regenerated from Settings if needed.'
+        )
+      }
+
       setBusinessProfileEditorOpen(false)
     } catch (error) {
       console.error('Failed to save business profile:', error)
@@ -4395,6 +4499,7 @@ hiring React developer`}
                       >
                         <option value="">Select business type</option>
                         <option value="freelancer">Freelancer</option>
+                        <option value="small_agency">Small Agency</option>
                         <option value="agency">Agency</option>
                         <option value="company">Company</option>
                         <option value="consultant">Consultant</option>
@@ -4435,18 +4540,46 @@ hiring React developer`}
                       </select>
                     </label>
 
-                    <label>
-                      Primary Goal
-                      <textarea
-                        value={businessProfileForm.primary_goal}
-                        onChange={(event) =>
-                          setBusinessProfileForm((current) => ({
-                            ...current,
-                            primary_goal: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
+                    <div className="settings-ai-field">
+                      <label>
+                        Primary Goal
+                        <textarea
+                          value={businessProfileForm.primary_goal}
+                          disabled={
+                            businessProfileSaving ||
+                            businessProfileAiField === 'main_goal'
+                          }
+                          onChange={(event) => {
+                            setBusinessProfileForm((current) => ({
+                              ...current,
+                              primary_goal: event.target.value,
+                            }))
+                            setBusinessProfileAiMessage('')
+                          }}
+                        />
+                      </label>
+
+                      <div className="settings-ai-field-actions">
+                        <span>
+                          Add a short goal, then let AI make it more buyer-focused.
+                        </span>
+                        <button
+                          type="button"
+                          className="secondary-btn"
+                          disabled={
+                            businessProfileSaving ||
+                            Boolean(businessProfileAiField)
+                          }
+                          onClick={() =>
+                            void generateBusinessProfileCopy('main_goal')
+                          }
+                        >
+                          {businessProfileAiField === 'main_goal'
+                            ? 'Generating...'
+                            : '✨ Generate with AI'}
+                        </button>
+                      </div>
+                    </div>
 
                     <div className="service-list-editor">
                       <div className="service-list-header">
@@ -4499,18 +4632,49 @@ hiring React developer`}
                       </div>
                     </div>
 
-                    <label>
-                      What Makes a Good Opportunity?
-                      <textarea
-                        value={businessProfileForm.good_opportunity_definition}
-                        onChange={(event) =>
-                          setBusinessProfileForm((current) => ({
-                            ...current,
-                            good_opportunity_definition: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
+                    <div className="settings-ai-field">
+                      <label>
+                        What Makes a Good Opportunity?
+                        <textarea
+                          value={businessProfileForm.good_opportunity_definition}
+                          disabled={
+                            businessProfileSaving ||
+                            businessProfileAiField === 'good_opportunity'
+                          }
+                          onChange={(event) => {
+                            setBusinessProfileForm((current) => ({
+                              ...current,
+                              good_opportunity_definition:
+                                event.target.value,
+                            }))
+                            setBusinessProfileAiMessage('')
+                          }}
+                        />
+                      </label>
+
+                      <div className="settings-ai-field-actions">
+                        <span>
+                          AI can combine your goal, client types, services and rejection rules.
+                        </span>
+                        <button
+                          type="button"
+                          className="secondary-btn"
+                          disabled={
+                            businessProfileSaving ||
+                            Boolean(businessProfileAiField)
+                          }
+                          onClick={() =>
+                            void generateBusinessProfileCopy(
+                              'good_opportunity'
+                            )
+                          }
+                        >
+                          {businessProfileAiField === 'good_opportunity'
+                            ? 'Generating...'
+                            : '✨ Generate with AI'}
+                        </button>
+                      </div>
+                    </div>
 
                     <div className="service-list-editor">
                       <div className="service-list-header">
@@ -4562,6 +4726,12 @@ hiring React developer`}
                         ))}
                       </div>
                     </div>
+
+                    {businessProfileAiMessage && (
+                      <div role="status" className="settings-info-message">
+                        {businessProfileAiMessage}
+                      </div>
+                    )}
 
                     {businessProfileError && (
                       <div role="alert" className="settings-error-message">

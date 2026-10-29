@@ -92,3 +92,56 @@ test('edge function verifies workspace access before calling protected n8n webho
 
   assert(!edgeSource.includes('service_role'))
 })
+
+
+test('saved business profile editor exposes AI assist after onboarding', () => {
+  const appSource = readFileSync(
+    join(__dirname, '../src/App.jsx'),
+    'utf8'
+  ).replace(/\r\n/g, '\n')
+
+  for (const expected of [
+    "generateBusinessProfileCopy('main_goal')",
+    "generateBusinessProfileCopy(",
+    "'good_opportunity'",
+    'AI draft generated. Review and edit it before saving.',
+    '<option value="small_agency">Small Agency</option>',
+  ]) {
+    assert(appSource.includes(expected))
+  }
+
+  const generateCount =
+    appSource.match(/Generate with AI/g)?.length || 0
+
+  assert.equal(generateCount, 2)
+})
+
+test('saving a changed business profile refreshes AI search queries best-effort', () => {
+  const appSource = readFileSync(
+    join(__dirname, '../src/App.jsx'),
+    'utf8'
+  ).replace(/\r\n/g, '\n')
+
+  const start = appSource.indexOf(
+    'const saveBusinessProfile = async () => {'
+  )
+  const end = appSource.indexOf(
+    '\n  const loadServices = useCallback',
+    start
+  )
+
+  assert(start >= 0 && end > start)
+
+  const saveSource = appSource.slice(start, end)
+
+  assert(
+    saveSource.includes(
+      'await triggerAiQueryGeneration(workspace.id)'
+    )
+  )
+  assert(
+    saveSource.includes(
+      'Search queries can be regenerated from Settings if needed.'
+    )
+  )
+})
