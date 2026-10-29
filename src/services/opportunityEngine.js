@@ -58,3 +58,35 @@ export async function triggerAiQueryGeneration(workspaceId) {
 
   return data
 }
+
+
+export async function generateOnboardingCopy({
+  workspaceId,
+  fieldType,
+  roughText,
+  context,
+}) {
+  const { data, error } = await supabase.functions.invoke(
+    'generate-onboarding-copy',
+    {
+      body: {
+        workspace_id: workspaceId,
+        field_type: fieldType,
+        rough_text: roughText,
+        context,
+      },
+    }
+  )
+
+  if (error) throw error
+
+  if (!data?.success || !data?.generated_text) {
+    throw new Error(
+      data?.message ||
+        data?.error ||
+        'Unable to generate AI-assisted onboarding copy.'
+    )
+  }
+
+  return data
+}
