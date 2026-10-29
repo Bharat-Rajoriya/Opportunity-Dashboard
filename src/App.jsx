@@ -329,6 +329,22 @@ function App() {
           source_url,
           country,
           requirement,
+          person_name,
+          company_name,
+          company_website,
+          budget_text,
+          estimated_value_min,
+          estimated_value_max,
+          estimated_currency,
+          contact_email,
+          contact_phone,
+          project_type,
+          duration_text,
+          workload_text,
+          experience_level,
+          location_text,
+          remote_status,
+          skills,
           total_score,
           preliminary_score,
           score_stage,
@@ -6486,6 +6502,74 @@ function OpportunityDrawer({
       ?.replaceAll('_', ' ')
       || 'Not assigned'
 
+  const estimatedValue =
+    Number(opportunity.estimated_value_min || 0) > 0 ||
+    Number(opportunity.estimated_value_max || 0) > 0
+      ? [
+          Number(opportunity.estimated_value_min || 0) > 0
+            ? new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency: opportunity.estimated_currency || 'USD',
+                maximumFractionDigits: 0,
+              }).format(Number(opportunity.estimated_value_min))
+            : null,
+          Number(opportunity.estimated_value_max || 0) > 0
+            ? new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency: opportunity.estimated_currency || 'USD',
+                maximumFractionDigits: 0,
+              }).format(Number(opportunity.estimated_value_max))
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' – ')
+      : ''
+
+  const opportunityFacts = [
+    opportunity.budget_text && {
+      label: 'Posted Budget / Rate',
+      value: opportunity.budget_text,
+    },
+    !opportunity.budget_text &&
+      estimatedValue && {
+        label: 'Estimated Value',
+        value: estimatedValue,
+        note: 'Estimate',
+      },
+    opportunity.project_type && {
+      label: 'Project Type',
+      value: opportunity.project_type,
+    },
+    opportunity.duration_text && {
+      label: 'Duration',
+      value: opportunity.duration_text,
+    },
+    opportunity.workload_text && {
+      label: 'Workload',
+      value: opportunity.workload_text,
+    },
+    opportunity.experience_level && {
+      label: 'Experience Level',
+      value: opportunity.experience_level,
+    },
+    (opportunity.location_text || opportunity.remote_status) && {
+      label: 'Location',
+      value: [opportunity.location_text, opportunity.remote_status]
+        .filter(Boolean)
+        .join(' · '),
+    },
+    opportunity.contact_email && {
+      label: 'Public Email',
+      value: opportunity.contact_email,
+      href: `mailto:${opportunity.contact_email}`,
+    },
+    opportunity.contact_phone && {
+      label: 'Public Phone',
+      value: opportunity.contact_phone,
+      href: `tel:${opportunity.contact_phone.replace(/[^+\d]/g, '')}`,
+    },
+  ].filter(Boolean)
+
   return (
     <div className="fixed inset-0 z-50">
 
@@ -6543,6 +6627,66 @@ function OpportunityDrawer({
             </div>
 
           </DrawerSection>
+
+          {(opportunityFacts.length > 0 ||
+            (Array.isArray(opportunity.skills) &&
+              opportunity.skills.length > 0)) && (
+            <DrawerSection title="Opportunity Facts">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {opportunityFacts.map((fact) => (
+                  <div
+                    key={fact.label}
+                    className="rounded-xl border border-slate-800 bg-slate-950/60 p-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">
+                        {fact.label}
+                      </p>
+
+                      {fact.note && (
+                        <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-300">
+                          {fact.note}
+                        </span>
+                      )}
+                    </div>
+
+                    {fact.href ? (
+                      <a
+                        href={fact.href}
+                        className="mt-1 block break-all text-sm font-medium text-violet-300 hover:text-violet-200"
+                      >
+                        {fact.value}
+                      </a>
+                    ) : (
+                      <p className="mt-1 text-sm font-medium text-slate-200">
+                        {fact.value}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {Array.isArray(opportunity.skills) &&
+                opportunity.skills.length > 0 && (
+                  <div className="mt-4">
+                    <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">
+                      Skills / Expertise
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      {opportunity.skills.map((skill) => (
+                        <span
+                          key={skill}
+                          className="rounded-full border border-slate-700 bg-slate-800 px-3 py-1 text-xs text-slate-300"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+            </DrawerSection>
+          )}
 
           {/* Requirement */}
           <DrawerSection title="Requirement">
