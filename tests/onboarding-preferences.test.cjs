@@ -78,7 +78,16 @@ function setup(options = {}) {
     websiteUrl: '',
     primaryGoal: ' Find clients ',
     preferredLanguage: 'English',
-    console: { error() {} },
+    console: { error() {}, warn() {} },
+    triggerAiQueryGeneration: async (workspaceId) => {
+      calls.push(['triggerAiQueryGeneration', workspaceId])
+
+      if (options.queryGenerationThrow) {
+        throw options.queryGenerationThrow
+      }
+
+      return { success: true }
+    },
     ...options.env,
   }
   for (const key of [
@@ -868,7 +877,15 @@ test('completion updates only the owned workspace and hands confirmed data to th
   assert(h.calls.some(([kind, table]) => kind === 'from' && table === 'workspaces'))
   assert(h.calls.some(([kind, key, value]) => kind === 'eq' && key === 'id' && value === 'workspace-1'))
   assert(h.calls.some(([kind, key, value]) => kind === 'eq' && key === 'owner_user_id' && value === 'user-1'))
+  assert.deepEqual(
+    h.calls.find(([kind]) => kind === 'triggerAiQueryGeneration'),
+    ['triggerAiQueryGeneration', 'workspace-1']
+  )
   assert.deepEqual(h.calls.find(([kind]) => kind === 'onComplete')[1], completedWorkspace)
+  assert(
+    h.calls.findIndex(([kind]) => kind === 'triggerAiQueryGeneration') <
+      h.calls.findIndex(([kind]) => kind === 'onComplete')
+  )
   assert(!h.calls.some(([kind]) => kind === 'reloadPage'))
   assert.equal(h.state.CompletingSetup, false)
   assert.equal(h.env.completionPendingRef.current, false)
@@ -878,6 +895,24 @@ test('completion with no parent callback falls back to reload after confirmed pe
   const h = setup({ saved: completedWorkspace, env: { onComplete: undefined } })
   await handler('completeOnboarding', h.env)()
   assert(h.calls.some(([kind]) => kind === 'reloadPage'))
+})
+
+
+test('AI query generation failure does not block completed onboarding', async () => {
+  const h = setup({
+    saved: completedWorkspace,
+    queryGenerationThrow: new Error('Query generator unavailable'),
+  })
+
+  await handler('completeOnboarding', h.env)()
+
+  assert.deepEqual(
+    h.calls.find(([kind]) => kind === 'triggerAiQueryGeneration'),
+    ['triggerAiQueryGeneration', 'workspace-1']
+  )
+  assert(h.calls.some(([kind]) => kind === 'onComplete'))
+  assert.equal(h.state.CompletingSetup, false)
+  assert.equal(h.env.completionPendingRef.current, false)
 })
 
 test('completion requires both workspace and authenticated user', async () => {
@@ -987,4 +1022,26 @@ test('App completion callback merges the confirmed workspace to open its dashboa
       assert.equal(workspace, initial)
     }
   }
+})
+
+test('successful onboarding starts AI query generation without blocking dashboard entry', () => {
+  const source = readFileSync(
+    join(__dirname, '../src/components/Onboarding.jsx'),
+    'utf8'
+  ).replace(/\r\n/g, '\n')
+
+  const start = source.indexOf('const completeOnboarding = async () => {')
+  const end = source.indexOf('\n  const handleSave = async', start)
+
+  assert(start >= 0 && end > start)
+
+  const completionSource = source.slice(start, end)
+
+  assert(completionSource.includes('await triggerAiQueryGeneration(workspace.id)'))
+  assert(completionSource.includes('catch (queryGenerationError)'))
+  assert(completionSource.includes("if (typeof onComplete === 'function')"))
+  assert(
+    completionSource.indexOf('await triggerAiQueryGeneration(workspace.id)') <
+      completionSource.indexOf("if (typeof onComplete === 'function')")
+  )
 })

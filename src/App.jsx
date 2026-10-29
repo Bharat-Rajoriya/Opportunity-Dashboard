@@ -10,6 +10,17 @@ import {
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import Onboarding from './components/Onboarding'
+import {
+  getLatestEngineRun,
+  triggerAiQueryGeneration,
+  triggerOpportunityEngine,
+} from './services/opportunityEngine'
+import {
+  fetchActiveSearchProfile,
+  fetchSearchProfileById,
+  normalizeSearchList,
+  saveActiveSearchProfile,
+} from './services/searchProfiles'
 import './App.css'
 
 const REJECTION_REASONS = [
@@ -22,40 +33,6 @@ const REJECTION_REASONS = [
 ]
 
 const SEARCH_COUNTRIES = ['USA', 'UK', 'UAE', 'Australia', 'India']
-
-const SEARCH_PROFILE_FIELDS = `
-  id,
-  workspace_id,
-  name,
-  source,
-  search_queries,
-  target_countries,
-  min_intent_level,
-  max_age_hours,
-  active,
-  ai_suggested_queries,
-  ai_query_generation_enabled,
-  ai_queries_generated_at,
-  query_cursor,
-  query_batch_size,
-  updated_at
-`
-
-function normalizeSearchList(items) {
-  if (!Array.isArray(items)) return []
-
-  const seen = new Set()
-
-  return items
-    .filter((item) => typeof item === 'string')
-    .map((item) => item.trim())
-    .filter((item) => {
-      const key = item.toLowerCase()
-      if (!item || seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-}
 
 function validateSignUp(email, password, confirmPassword) {
   if (!email.trim()) return 'Email is required.'
@@ -984,18 +961,9 @@ function App() {
     setSearchSettingsLoading(true)
 
     try {
-      const { data, error } = await supabase
-        .from('search_profiles')
-        .select(SEARCH_PROFILE_FIELDS)
-        .eq('workspace_id', workspaceId)
-        .eq('active', true)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle()
+      const data = await fetchActiveSearchProfile(workspaceId)
 
       if (requestId !== searchSettingsRequest.current) return
-      if (error) throw error
-
       if (!data) return
 
       const loadedIntentLevel = Number(data.min_intent_level)
@@ -1095,23 +1063,18 @@ function App() {
     setSearchSettingsSaving(true)
 
     try {
-      const { data, error } = await supabase
-        .from('search_profiles')
-        .update({
-          search_queries: cleanQueries,
-          target_countries: cleanCountries,
-          min_intent_level: intentLevel,
-          max_age_hours: freshnessHours,
-          ai_query_generation_enabled: aiQueryGenerationEnabled,
-          query_batch_size: batchSize,
-        })
-        .eq('id', profileId)
-        .eq('workspace_id', workspace.id)
-        .select(SEARCH_PROFILE_FIELDS)
-        .single()
+      const data = await saveActiveSearchProfile({
+        profileId,
+        workspaceId: workspace.id,
+        searchQueries: cleanQueries,
+        targetCountries: cleanCountries,
+        minIntentLevel: intentLevel,
+        maxAgeHours: freshnessHours,
+        aiQueryGenerationEnabled,
+        queryBatchSize: batchSize,
+      })
 
       if (requestId !== searchSettingsRequest.current) return
-      if (error) throw error
       if (!data?.id || data.id !== profileId || data.workspace_id !== workspace.id) {
         throw new Error('Search settings could not be confirmed.')
       }
@@ -2149,22 +2112,6 @@ function App() {
   const getEngineRunStatus = (run) =>
     String(run?.run_status || run?.status || '').toLowerCase()
 
-  const getLatestEngineRun = async (workspaceId) => {
-    const { data, error } = await supabase
-      .from('engine_runs')
-      .select('*')
-      .eq('workspace_id', workspaceId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    if (error) {
-      throw error
-    }
-
-    return data ?? null
-  }
-
   const waitForEngineRun = async ({
     workspaceId,
     previousRunId,
@@ -2242,24 +2189,7 @@ function App() {
       null
 
     try {
-      const { data, error } = await supabase.functions.invoke(
-        'generate-search-queries',
-        {
-          body: {
-            workspace_id: workspace.id,
-          },
-        }
-      )
-
-      if (error) throw error
-
-      if (!data?.success) {
-        throw new Error(
-          data?.message ||
-            data?.error ||
-            'Unable to regenerate AI search queries.'
-        )
-      }
+      await triggerAiQueryGeneration(workspace.id)
 
       setSearchSettingsMessage(
         'AI query generation started. Waiting for the new query set...'
@@ -2271,14 +2201,10 @@ function App() {
       while (Date.now() - startedAt < timeoutMs) {
         await sleep(1500)
 
-        const { data: updatedProfile, error: profileError } = await supabase
-          .from('search_profiles')
-          .select(SEARCH_PROFILE_FIELDS)
-          .eq('id', searchProfile.id)
-          .eq('workspace_id', workspace.id)
-          .single()
-
-        if (profileError) throw profileError
+        const updatedProfile = await fetchSearchProfileById({
+          profileId: searchProfile.id,
+          workspaceId: workspace.id,
+        })
 
         const generatedAt = updatedProfile?.ai_queries_generated_at || null
 
@@ -2379,28 +2305,11 @@ function App() {
 
       setSearchMessage('Starting Opportunity Engine...')
 
-      const { data, error } = await supabase.functions.invoke(
-        'run-opportunity-engine',
-        {
-          body: {
-            workspace_id: workspace.id,
-          },
-        }
-      )
+      const engineResponse = await triggerOpportunityEngine(workspace.id)
 
       if (requestId !== searchRunRequest.current) return
 
-      if (error) {
-        throw error
-      }
-
-      if (!data?.success) {
-        throw new Error(
-          data?.message || data?.error || 'Unable to start opportunity search.'
-        )
-      }
-
-      console.log('Opportunity Engine accepted:', data)
+      console.log('Opportunity Engine accepted:', engineResponse)
 
       setSearchMessage(
         'Opportunity search accepted. Waiting for the workflow to start...'

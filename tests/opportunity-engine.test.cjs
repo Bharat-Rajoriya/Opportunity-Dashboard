@@ -67,17 +67,27 @@ function setup(options = {}) {
           })
         },
       },
-      functions: {
-        invoke(name, settings) {
-          calls.push(['invoke', name, settings])
-          if (options.invokePromise) return options.invokePromise()
-          if (options.invokeThrow) throw options.invokeThrow
-          return Promise.resolve({
-            data: options.data === undefined ? { success: true, message: 'Engine queued.' } : options.data,
-            error: options.invokeError,
-          })
-        },
-      },
+    },
+    triggerOpportunityEngine(workspaceId) {
+      calls.push(['triggerOpportunityEngine', workspaceId])
+      if (options.invokePromise) return options.invokePromise()
+      if (options.invokeThrow) throw options.invokeThrow
+      if (options.invokeError) throw options.invokeError
+
+      const data =
+        options.data === undefined
+          ? { success: true, message: 'Engine queued.' }
+          : options.data
+
+      if (!data?.success) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            'Unable to start opportunity search.'
+        )
+      }
+
+      return Promise.resolve(data)
     },
   }
   const handler = new Function(...Object.keys(env), source.slice(start, end) + 'return handleFindOpportunities')(
@@ -89,10 +99,14 @@ function setup(options = {}) {
 test('starts the opportunity engine for the current workspace through the authenticated client', async () => {
   const h = setup()
   await h.handler()
-  assert.deepEqual(h.calls.find(([kind]) => kind === 'invoke'), [
-    'invoke', 'run-opportunity-engine', { body: { workspace_id: 'workspace-1' } },
-  ])
-  assert(h.calls.findIndex(([kind]) => kind === 'getSession') < h.calls.findIndex(([kind]) => kind === 'invoke'))
+  assert.deepEqual(
+    h.calls.find(([kind]) => kind === 'triggerOpportunityEngine'),
+    ['triggerOpportunityEngine', 'workspace-1']
+  )
+  assert(
+    h.calls.findIndex(([kind]) => kind === 'getSession') <
+      h.calls.findIndex(([kind]) => kind === 'triggerOpportunityEngine')
+  )
   assert.equal(h.state.message, 'Search complete. 2 opportunities processed and 1 outreach draft generated.')
   assert.equal(h.state.error, '')
   assert.equal(h.state.running, false)
@@ -136,7 +150,7 @@ test('session errors and expired sessions never invoke the edge function', async
   ]) {
     const h = setup(options)
     await h.handler()
-    assert(!h.calls.some(([kind]) => kind === 'invoke'))
+    assert(!h.calls.some(([kind]) => kind === 'triggerOpportunityEngine'))
     assert(h.state.error)
     assert.equal(h.state.message, '')
     assert.equal(h.state.running, false)
@@ -169,7 +183,7 @@ test('duplicate clicks are locked immediately while the function is running', as
   const second = h.handler()
   await second
   assert.equal(h.calls.filter(([kind]) => kind === 'getSession').length, 1)
-  assert.equal(h.calls.filter(([kind]) => kind === 'invoke').length, 1)
+  assert.equal(h.calls.filter(([kind]) => kind === 'triggerOpportunityEngine').length, 1)
   assert.equal(h.state.running, true)
   resolveInvoke({ data: { success: true } })
   await first
@@ -186,7 +200,7 @@ test('workspace change after session lookup prevents invoking for the stale work
   h.state.message = 'new workspace state'
   resolveSession({ data: { session: { access_token: 'token' } } })
   await run
-  assert(!h.calls.some(([kind]) => kind === 'invoke'))
+  assert(!h.calls.some(([kind]) => kind === 'triggerOpportunityEngine'))
   assert.equal(h.state.message, 'new workspace state')
   assert.equal(h.state.running, false)
 })
