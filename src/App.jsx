@@ -2391,6 +2391,12 @@ function App() {
     setSearchError('')
   }, [workspace?.id])
 
+  useEffect(() => {
+    if (!engineRun?.id || !workspace?.id) return
+
+    void loadSourceAnalytics(workspace.id)
+  }, [engineRun?.id, workspace?.id, loadSourceAnalytics])
+
   // -----------------------------------------------------
   // AUTH ACTIONS
   // -----------------------------------------------------
@@ -2826,8 +2832,6 @@ function App() {
         loadReviewQueue(workspace.id),
         loadApprovedOutreach(workspace.id),
       ])
-
-      void loadSourceAnalytics(workspace.id)
 
       if (requestId !== searchRunRequest.current) return
 
