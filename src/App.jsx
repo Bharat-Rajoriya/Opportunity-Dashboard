@@ -25,6 +25,7 @@ import {
   normalizeSourcePreferences,
   saveActiveSearchProfile,
 } from './services/searchProfiles'
+import { fetchSourceAnalytics } from './services/sourceAnalytics'
 import {
   PROOF_TYPE_OPTIONS,
   changeProofType,
@@ -143,6 +144,10 @@ function App() {
   const [queryBatchSize, setQueryBatchSize] = useState(10)
   const [enabledSources, setEnabledSources] = useState(['google'])
   const [freelancerResultLimit, setFreelancerResultLimit] = useState(10)
+  const [sourceAnalytics, setSourceAnalytics] = useState({})
+  const [sourceAnalyticsLoading, setSourceAnalyticsLoading] = useState(false)
+  const [sourceAnalyticsError, setSourceAnalyticsError] = useState('')
+  const sourceAnalyticsRequest = useRef(0)
   const [aiQueriesGenerating, setAiQueriesGenerating] = useState(false)
   const [searchSettingsLoading, setSearchSettingsLoading] = useState(true)
   const [searchSettingsSaving, setSearchSettingsSaving] = useState(false)
@@ -1204,6 +1209,41 @@ function App() {
       setServiceSaving(false)
     }
   }
+
+  const loadSourceAnalytics = useCallback(async (workspaceId) => {
+    const requestId = ++sourceAnalyticsRequest.current
+
+    setSourceAnalytics({})
+    setSourceAnalyticsError('')
+
+    if (!workspaceId) {
+      setSourceAnalyticsLoading(false)
+      return
+    }
+
+    setSourceAnalyticsLoading(true)
+
+    try {
+      const data = await fetchSourceAnalytics(workspaceId, {
+        days: 30,
+      })
+
+      if (requestId !== sourceAnalyticsRequest.current) return
+
+      setSourceAnalytics(data)
+    } catch (error) {
+      if (requestId === sourceAnalyticsRequest.current) {
+        console.error('Source analytics error:', error)
+        setSourceAnalyticsError(
+          error?.message || 'Unable to load source analytics.'
+        )
+      }
+    } finally {
+      if (requestId === sourceAnalyticsRequest.current) {
+        setSourceAnalyticsLoading(false)
+      }
+    }
+  }, [])
 
   const loadSearchProfile = useCallback(async (workspaceId) => {
     const requestId = ++searchSettingsRequest.current
@@ -2288,6 +2328,23 @@ function App() {
     loadSearchProfile,
     loadServices,
     loadPortfolioItems,
+    loadSourceAnalytics,
+  ])
+
+  useEffect(() => {
+    if (workspace?.onboarding_completed) {
+      void loadSourceAnalytics(workspace.id)
+    } else {
+      void loadSourceAnalytics(null)
+    }
+
+    return () => {
+      sourceAnalyticsRequest.current += 1
+    }
+  }, [
+    workspace?.id,
+    workspace?.onboarding_completed,
+    loadSourceAnalytics,
   ])
 
   useEffect(() => {
@@ -2333,6 +2390,12 @@ function App() {
     setSearchMessage('')
     setSearchError('')
   }, [workspace?.id])
+
+  useEffect(() => {
+    if (!engineRun?.id || !workspace?.id) return
+
+    void loadSourceAnalytics(workspace.id)
+  }, [engineRun?.id, workspace?.id, loadSourceAnalytics])
 
   // -----------------------------------------------------
   // AUTH ACTIONS
@@ -2885,6 +2948,7 @@ function App() {
     void loadSearchProfile(workspace.id)
     void loadReviewQueue(workspace.id)
     void loadApprovedOutreach(workspace.id)
+    void loadSourceAnalytics(workspace.id)
   }
 
   // -----------------------------------------------------
@@ -4586,6 +4650,12 @@ function App() {
                       </div>
                     </div>
 
+                    {sourceAnalyticsError && (
+                      <div className="border-b border-rose-500/20 bg-rose-500/5 px-5 py-3 text-sm text-rose-300">
+                        {sourceAnalyticsError}
+                      </div>
+                    )}
+
                     <div className="divide-y divide-slate-800">
                       {SOURCE_CATALOG.map((sourceOption) => {
                         const isEnabled = enabledSources.includes(sourceOption.key)
@@ -4626,6 +4696,62 @@ function App() {
                                     Sandbox OAuth and the direct-source adapter are verified. Live activation is intentionally locked until a production Freelancer credential and production API environment are configured.
                                   </p>
                                 )}
+
+                                {(() => {
+                                  const metrics = sourceAnalytics[sourceOption.key]
+
+                                  if (sourceAnalyticsLoading && !metrics) {
+                                    return (
+                                      <p className="mt-3 text-xs text-slate-500">
+                                        Loading 30-day source performance…
+                                      </p>
+                                    )
+                                  }
+
+                                  if (!metrics) {
+                                    return (
+                                      <p className="mt-3 text-xs text-slate-500">
+                                        No source performance data recorded in the last 30 days.
+                                      </p>
+                                    )
+                                  }
+
+                                  return (
+                                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+                                      {[
+                                        ['Evaluated', metrics.evaluated],
+                                        [
+                                          'Qualified',
+                                          `${metrics.qualified} (${Math.round(metrics.qualificationRate)}%)`,
+                                        ],
+                                        ['Created', metrics.created],
+                                        [
+                                          'Duplicates',
+                                          `${metrics.duplicates} (${Math.round(metrics.duplicateRate)}%)`,
+                                        ],
+                                        [
+                                          'Avg score',
+                                          metrics.averagePreliminaryScore == null
+                                            ? '—'
+                                            : Math.round(metrics.averagePreliminaryScore),
+                                        ],
+                                      ].map(([label, value]) => (
+                                        <div
+                                          key={label}
+                                          className="rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2"
+                                        >
+                                          <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                                            {label}
+                                          </div>
+                                          <div className="mt-1 text-sm font-semibold text-slate-200">
+                                            {value}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )
+                                })()}
+
                               </div>
 
                               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
