@@ -93,6 +93,8 @@ function setup(options = {}) {
     websiteUrl: '',
     primaryGoal: ' Find clients ',
     preferredLanguage: 'English',
+    providerCountry: 'India',
+    workingLanguagesText: 'English, Hindi',
     console: { error() {}, warn() {} },
     triggerAiQueryGeneration: async (workspaceId) => {
       calls.push(['triggerAiQueryGeneration', workspaceId])
@@ -108,7 +110,8 @@ function setup(options = {}) {
   for (const key of [
     'IdealForm', 'IdealMessage', 'IdealSaving', 'CountryInput', 'ClientTypeInput',
     'RejectionRuleInput', 'CurrentStep', 'BusinessName', 'BusinessType',
-    'WebsiteUrl', 'PrimaryGoal', 'PreferredLanguage', 'Loading', 'Saving',
+    'WebsiteUrl', 'PrimaryGoal', 'PreferredLanguage', 'ProviderCountry',
+    'WorkingLanguagesText', 'Loading', 'Saving',
     'ProfileLoadError', 'Message', 'SearchForm', 'SearchMessage',
     'SearchLoading', 'SearchLoadError', 'SearchSaving',
     'PortfolioItems', 'PortfolioLoading', 'PortfolioMessage',
