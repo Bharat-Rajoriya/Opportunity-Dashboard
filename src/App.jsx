@@ -2825,8 +2825,9 @@ function App() {
         fetchOpportunities(workspace.id),
         loadReviewQueue(workspace.id),
         loadApprovedOutreach(workspace.id),
-        loadSourceAnalytics(workspace.id),
       ])
+
+      void loadSourceAnalytics(workspace.id)
 
       if (requestId !== searchRunRequest.current) return
 
