@@ -31,6 +31,11 @@ import {
   getAdaptiveSourceStrategy,
 } from './services/sourceAnalytics'
 import {
+  fetchDiscoveryRunDiagnostics,
+  discoveryRunExplanation,
+  DISCOVERY_EVENT_LABELS,
+} from './services/discoveryDiagnostics'
+import {
   PROOF_TYPE_OPTIONS,
   changeProofType,
   getProofFieldMeta,
@@ -145,6 +150,8 @@ function App() {
   const searchRunRequest = useRef(0)
   const searchRunPendingRef = useRef(null)
   const [engineRun, setEngineRun] = useState(null)
+  const [discoveryDiagnostics, setDiscoveryDiagnostics] = useState(null)
+  const [discoveryDiagnosticsError, setDiscoveryDiagnosticsError] = useState('')
   const [searchProfile, setSearchProfile] = useState(null)
   const [searchQueries, setSearchQueries] = useState([])
   const [targetCountries, setTargetCountries] = useState([])
@@ -2902,6 +2909,8 @@ function App() {
     setSearchMessage('Preparing opportunity search...')
     setSearchError('')
     setEngineRun(null)
+    setDiscoveryDiagnostics(null)
+    setDiscoveryDiagnosticsError('')
 
     try {
       const {
@@ -2948,6 +2957,22 @@ function App() {
       }
 
       setEngineRun(completedRun)
+
+      // Diagnostics should never turn a successfully completed search into an error.
+      if (completedRun.master_execution_id) {
+        try {
+          const diagnostics = await fetchDiscoveryRunDiagnostics(
+            workspace.id,
+            completedRun.master_execution_id
+          )
+          if (requestId === searchRunRequest.current) setDiscoveryDiagnostics(diagnostics)
+        } catch (diagnosticsError) {
+          console.warn('Unable to load discovery diagnostics:', diagnosticsError)
+          if (requestId === searchRunRequest.current) {
+            setDiscoveryDiagnosticsError('Run breakdown is unavailable for this search.')
+          }
+        }
+      }
 
       await Promise.all([
         fetchOpportunities(workspace.id),
@@ -3688,6 +3713,39 @@ function App() {
             </div>
           )}
 
+          {engineRun && !searchRunning && !searchError && (
+            <div className="mt-4 rounded-xl border border-slate-700 bg-slate-900/60 p-4" aria-label="Search run breakdown">
+              <h3 className="text-sm font-semibold text-white">Latest search breakdown</h3>
+              {discoveryDiagnostics ? (
+                <>
+                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                    {Object.entries(DISCOVERY_EVENT_LABELS).map(([key, label]) => (
+                      <div key={key}>
+                        <p className="text-xs text-slate-400">{label}</p>
+                        <p className="text-lg font-semibold text-white">{discoveryDiagnostics.counts[key]}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-sm text-slate-300">
+                    {discoveryRunExplanation(discoveryDiagnostics, enabledSources)}
+                  </p>
+                  {Object.keys(discoveryDiagnostics.sourceCounts).length > 0 && (
+                    <p className="mt-2 text-xs text-slate-400">
+                      Sources checked: {Object.keys(discoveryDiagnostics.sourceCounts).join(', ')}
+                    </p>
+                  )}
+                  {discoveryDiagnostics.truncated && (
+                    <p className="mt-2 text-xs text-amber-300">This breakdown covers the first 2,000 events only.</p>
+                  )}
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-slate-400">
+                  {discoveryDiagnosticsError || 'Detailed candidate events were not recorded for this run.'}
+                </p>
+              )}
+            </div>
+          )}
+
           {searchError && (
             <div role="alert" className="engine-error-message">
               {searchError}
@@ -4272,10 +4330,12 @@ function App() {
           ) : filteredOpportunities.length === 0 ? (
             <div className="p-10 text-center">
               <p className="text-slate-300 font-medium">
-                No opportunities match the current filters.
+                {opportunities.length === 0 ? 'No opportunities saved yet.' : 'No opportunities match the current filters.'}
               </p>
               <p className="text-slate-500 text-sm mt-2">
-                Try changing the search text or filters.
+                {opportunities.length === 0
+                  ? 'Run Find Opportunities, then check the latest search breakdown above. You can adjust sources and service keywords in Settings.'
+                  : 'Try changing the search text or filters.'}
               </p>
             </div>
           ) : (
