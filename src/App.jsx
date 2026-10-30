@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import Onboarding from './components/Onboarding'
+import TurnstileCaptcha from './components/TurnstileCaptcha'
 import {
   generateOnboardingCopy,
   generateOpportunityPitch,
@@ -51,6 +52,12 @@ const SEARCH_COUNTRIES = ['USA', 'UK', 'UAE', 'Australia', 'India']
 
 const FREELANCER_PRODUCTION_ENABLED =
   import.meta.env.VITE_FREELANCER_PRODUCTION_ENABLED === 'true'
+
+const TURNSTILE_SITE_KEY =
+  String(import.meta.env.VITE_TURNSTILE_SITE_KEY || '').trim()
+
+const GOOGLE_AUTH_ENABLED =
+  import.meta.env.VITE_GOOGLE_AUTH_ENABLED === 'true'
 
 const SOURCE_CATALOG = [
   {
@@ -128,6 +135,8 @@ function App() {
 
   const [authLoading, setAuthLoading] = useState(true)
   const [authActionLoading, setAuthActionLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
+  const [captchaResetKey, setCaptchaResetKey] = useState(0)
   const [message, setMessage] = useState('')
   const [authMessageType, setAuthMessageType] = useState('error')
   const [searchRunning, setSearchRunning] = useState(false)
@@ -2449,6 +2458,21 @@ function App() {
   // -----------------------------------------------------
   // AUTH ACTIONS
   // -----------------------------------------------------
+  const captchaEnabled = Boolean(TURNSTILE_SITE_KEY)
+
+  const resetCaptcha = () => {
+    setCaptchaToken('')
+    setCaptchaResetKey((current) => current + 1)
+  }
+
+  const requireCaptcha = () => {
+    if (!captchaEnabled || captchaToken) return true
+
+    setAuthMessageType('error')
+    setMessage('Complete the security check before continuing.')
+    return false
+  }
+
   const showCreateAccount = () => {
     if (authActionLoading) return
 
@@ -2457,6 +2481,7 @@ function App() {
     setConfirmPassword('')
     setShowPassword(false)
     setShowConfirmPassword(false)
+    resetCaptcha()
     setMessage('')
   }
 
@@ -2468,6 +2493,7 @@ function App() {
     setConfirmPassword('')
     setShowPassword(false)
     setShowConfirmPassword(false)
+    resetCaptcha()
     setMessage('')
   }
 
@@ -2479,8 +2505,37 @@ function App() {
     setConfirmPassword('')
     setShowPassword(false)
     setShowConfirmPassword(false)
+    resetCaptcha()
     setAuthMessageType('error')
     setMessage('')
+  }
+
+  const handleGoogleSignIn = async () => {
+    if (!GOOGLE_AUTH_ENABLED || authActionLoading) return
+
+    setAuthActionLoading(true)
+    setAuthMessageType('error')
+    setMessage('')
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: {
+            prompt: 'select_account',
+          },
+        },
+      })
+
+      if (error) throw error
+    } catch (error) {
+      setAuthActionLoading(false)
+      setMessage(
+        error?.message ||
+          'Unable to start Google sign-in. Please try again.'
+      )
+    }
   }
 
   const handleSignUp = async (event) => {
@@ -2493,6 +2548,8 @@ function App() {
       return
     }
 
+    if (!requireCaptcha()) return
+
     setAuthActionLoading(true)
     setAuthMessageType('error')
     setMessage('')
@@ -2501,6 +2558,10 @@ function App() {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        options: {
+          captchaToken: captchaToken || undefined,
+          emailRedirectTo: window.location.origin,
+        },
       })
 
       if (error) throw error
@@ -2523,12 +2584,16 @@ function App() {
       setAuthMessageType('error')
       setMessage(error?.message || 'Unable to create your account. Please try again.')
     } finally {
+      resetCaptcha()
       setAuthActionLoading(false)
     }
   }
 
   const handleSignIn = async (event) => {
     event.preventDefault()
+
+    if (!requireCaptcha()) return
+
     setAuthActionLoading(true)
     setAuthMessageType('error')
     setMessage('')
@@ -2537,12 +2602,16 @@ function App() {
       const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
+        options: {
+          captchaToken: captchaToken || undefined,
+        },
       })
 
       if (error) throw error
     } catch (error) {
       setMessage(error?.message || 'Unable to sign in. Please try again.')
     } finally {
+      resetCaptcha()
       setAuthActionLoading(false)
     }
   }
@@ -2556,6 +2625,8 @@ function App() {
       return
     }
 
+    if (!requireCaptcha()) return
+
     setAuthActionLoading(true)
     setAuthMessageType('error')
     setMessage('')
@@ -2565,6 +2636,7 @@ function App() {
         email.trim(),
         {
           redirectTo: window.location.origin,
+          captchaToken: captchaToken || undefined,
         }
       )
 
@@ -2581,6 +2653,7 @@ function App() {
           'Unable to send the password reset email. Please try again.'
       )
     } finally {
+      resetCaptcha()
       setAuthActionLoading(false)
     }
   }
@@ -3160,6 +3233,50 @@ function App() {
                   : 'Sign in to manage opportunities and AI-generated outreach.'}
           </p>
 
+          {GOOGLE_AUTH_ENABLED &&
+            ['sign-in', 'sign-up'].includes(authMode) && (
+              <div className="mb-6 space-y-4">
+                <button
+                  type="button"
+                  onClick={() => void handleGoogleSignIn()}
+                  disabled={authActionLoading}
+                  className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-700 bg-white px-4 py-3 font-medium text-slate-900 transition hover:bg-slate-100 disabled:opacity-50"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="#4285F4"
+                      d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.52h3.24c1.9-1.75 2.98-4.33 2.98-7.37Z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 22c2.7 0 4.97-.9 6.62-2.4l-3.24-2.52c-.9.6-2.05.96-3.38.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.6A10 10 0 0 0 12 22Z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M6.39 13.91A6.02 6.02 0 0 1 6.08 12c0-.66.11-1.3.31-1.91v-2.6H3.04A10 10 0 0 0 2 12c0 1.61.38 3.14 1.04 4.51l3.35-2.6Z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.96c1.47 0 2.79.51 3.83 1.5l2.87-2.87A9.62 9.62 0 0 0 12 2a10 10 0 0 0-8.96 5.49l3.35 2.6C7.18 7.72 9.39 5.96 12 5.96Z"
+                    />
+                  </svg>
+                  Continue with Google
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-slate-800" />
+                  <span className="text-xs uppercase tracking-wider text-slate-500">
+                    or use email
+                  </span>
+                  <div className="h-px flex-1 bg-slate-800" />
+                </div>
+              </div>
+            )}
+
           <form
             className="space-y-4"
             onSubmit={
@@ -3219,7 +3336,7 @@ function App() {
                     minLength={
                       authMode === 'sign-up' ||
                       authMode === 'reset-password'
-                        ? 6
+                        ? 8
                         : undefined
                     }
                     className="w-full rounded-lg bg-slate-950 border border-slate-700 pl-4 pr-12 py-3 outline-none focus:border-violet-500"
@@ -3248,7 +3365,7 @@ function App() {
                 {(authMode === 'sign-up' ||
                   authMode === 'reset-password') && (
                   <p className="mt-2 text-xs text-slate-500">
-                    Use at least 6 characters.
+                    Use at least 8 characters.
                   </p>
                 )}
               </div>
@@ -3268,7 +3385,7 @@ function App() {
                     onChange={(event) => setConfirmPassword(event.target.value)}
                     autoComplete="new-password"
                     required
-                    minLength={6}
+                    minLength={8}
                     className="w-full rounded-lg bg-slate-950 border border-slate-700 pl-4 pr-12 py-3 outline-none focus:border-violet-500"
                     placeholder="••••••••"
                   />
@@ -3289,6 +3406,15 @@ function App() {
                 </div>
               </div>
             )}
+
+            {captchaEnabled &&
+              authMode !== 'reset-password' && (
+                <TurnstileCaptcha
+                  siteKey={TURNSTILE_SITE_KEY}
+                  resetKey={captchaResetKey}
+                  onTokenChange={setCaptchaToken}
+                />
+              )}
 
             {message && (
               <div
