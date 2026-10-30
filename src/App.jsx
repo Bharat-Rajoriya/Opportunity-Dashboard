@@ -172,6 +172,8 @@ function App() {
     website_url: '',
     primary_goal: '',
     preferred_language: '',
+    provider_country: '',
+    working_languages: [],
     ideal_client_types: [],
     rejection_rules: [],
     good_opportunity_definition: '',
@@ -389,6 +391,12 @@ function App() {
           location_text,
           remote_status,
           skills,
+          project_language,
+          eligibility_match,
+          eligibility_restriction_type,
+          required_country,
+          required_language,
+          eligibility_reason,
           total_score,
           preliminary_score,
           score_stage,
@@ -439,6 +447,8 @@ function App() {
           website_url,
           primary_goal,
           preferred_language,
+          provider_country,
+          working_languages,
           ideal_client_types,
           rejection_rules,
           good_opportunity_definition,
@@ -469,6 +479,12 @@ function App() {
       website_url: businessProfile.website_url || '',
       primary_goal: businessProfile.primary_goal || '',
       preferred_language: businessProfile.preferred_language || '',
+      provider_country: businessProfile.provider_country || '',
+      working_languages: Array.isArray(businessProfile.working_languages)
+        ? [...businessProfile.working_languages]
+        : businessProfile.preferred_language
+          ? [businessProfile.preferred_language]
+          : [],
       ideal_client_types: Array.isArray(businessProfile.ideal_client_types)
         ? [...businessProfile.ideal_client_types]
         : [],
@@ -520,6 +536,12 @@ function App() {
       website: businessProfileForm.website_url.trim(),
       preferred_language:
         businessProfileForm.preferred_language,
+      provider_country:
+        businessProfileForm.provider_country.trim(),
+      working_languages:
+        businessProfileForm.working_languages
+          .map((item) => item.trim())
+          .filter(Boolean),
       primary_goal: businessProfileForm.primary_goal.trim(),
       ideal_client_types:
         businessProfileForm.ideal_client_types
@@ -720,12 +742,23 @@ function App() {
         ),
       ]
 
+      const workingLanguages = [
+        ...new Set(
+          businessProfileForm.working_languages
+            .map((item) => item.trim())
+            .filter(Boolean)
+        ),
+      ]
+
       const payload = {
         business_name: businessProfileForm.business_name.trim(),
         business_type: businessProfileForm.business_type,
         website_url: businessProfileForm.website_url.trim() || null,
         primary_goal: businessProfileForm.primary_goal.trim(),
         preferred_language: businessProfileForm.preferred_language.trim(),
+        provider_country:
+          businessProfileForm.provider_country.trim() || null,
+        working_languages: workingLanguages,
         ideal_client_types: idealClientTypes,
         rejection_rules: rejectionRules,
         good_opportunity_definition:
@@ -5577,6 +5610,45 @@ hiring video editor`}
                         <option value="French">French</option>
                         <option value="German">German</option>
                       </select>
+                    </label>
+
+                    <label>
+                      Base Country
+                      <input
+                        type="text"
+                        value={businessProfileForm.provider_country}
+                        placeholder="e.g. India"
+                        onChange={(event) =>
+                          setBusinessProfileForm((current) => ({
+                            ...current,
+                            provider_country: event.target.value,
+                          }))
+                        }
+                      />
+                      <span className="field-hint">
+                        Used only when an opportunity explicitly requires the provider to be based in a specific country.
+                      </span>
+                    </label>
+
+                    <label>
+                      Working Languages
+                      <input
+                        type="text"
+                        value={businessProfileForm.working_languages.join(', ')}
+                        placeholder="e.g. English, Hindi"
+                        onChange={(event) =>
+                          setBusinessProfileForm((current) => ({
+                            ...current,
+                            working_languages: event.target.value
+                              .split(',')
+                              .map((item) => item.trim())
+                              .filter(Boolean),
+                          }))
+                        }
+                      />
+                      <span className="field-hint">
+                        Add only languages you can genuinely use for client communication and project delivery.
+                      </span>
                     </label>
 
                     <div className="settings-ai-field">
