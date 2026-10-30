@@ -14,10 +14,10 @@ const validateSignUp = new Function(
 )()
 
 test('signup validation requires an email and valid matching passwords', () => {
-  assert.equal(validateSignUp('', 'secret1', 'secret1'), 'Email is required.')
-  assert.equal(validateSignUp('user@example.com', 'short', 'short'), 'Password must be at least 6 characters.')
-  assert.equal(validateSignUp('user@example.com', 'secret1', 'secret2'), 'Passwords do not match.')
-  assert.equal(validateSignUp(' user@example.com ', 'secret1', 'secret1'), '')
+  assert.equal(validateSignUp('', 'secret123', 'secret123'), 'Email is required.')
+  assert.equal(validateSignUp('user@example.com', 'short', 'short'), 'Password must be at least 8 characters.')
+  assert.equal(validateSignUp('user@example.com', 'secret123', 'secret124'), 'Passwords do not match.')
+  assert.equal(validateSignUp(' user@example.com ', 'secret123', 'secret123'), '')
 })
 
 test('Create Account opens a dedicated registration form instead of submitting signup immediately', () => {
@@ -98,7 +98,7 @@ test('new password flow validates confirmation then updates password and signs o
 
   const flow = source.slice(start, end)
 
-  assert(flow.includes("Password must be at least 6 characters."))
+  assert(flow.includes("Password must be at least 8 characters."))
   assert(flow.includes("Passwords do not match."))
   assert(flow.includes('supabase.auth.updateUser'))
   assert(flow.includes('password,'))
