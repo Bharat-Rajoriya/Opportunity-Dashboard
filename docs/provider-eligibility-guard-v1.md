@@ -23,7 +23,7 @@ Do not reject a remote opportunity merely because the buyer is in a different co
 
 Country eligibility fails only when the opportunity explicitly requires the provider to be in a particular country/region, or when platform metadata marks the project local-only and identifies the required country.
 
-If provider base country is missing, a country-restricted opportunity is marked `unknown` rather than rejecting it by guessing.
+If provider base country is missing, the engine keeps eligibility unknown rather than rejecting the opportunity by guessing.
 
 ### Language eligibility
 
