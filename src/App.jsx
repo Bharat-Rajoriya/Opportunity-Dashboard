@@ -172,6 +172,8 @@ function App() {
     website_url: '',
     primary_goal: '',
     preferred_language: '',
+    provider_country: '',
+    working_languages: [],
     ideal_client_types: [],
     rejection_rules: [],
     good_opportunity_definition: '',
@@ -389,6 +391,12 @@ function App() {
           location_text,
           remote_status,
           skills,
+          project_language,
+          eligibility_match,
+          eligibility_restriction_type,
+          required_country,
+          required_language,
+          eligibility_reason,
           total_score,
           preliminary_score,
           score_stage,
@@ -439,6 +447,8 @@ function App() {
           website_url,
           primary_goal,
           preferred_language,
+          provider_country,
+          working_languages,
           ideal_client_types,
           rejection_rules,
           good_opportunity_definition,
@@ -469,6 +479,12 @@ function App() {
       website_url: businessProfile.website_url || '',
       primary_goal: businessProfile.primary_goal || '',
       preferred_language: businessProfile.preferred_language || '',
+      provider_country: businessProfile.provider_country || '',
+      working_languages: Array.isArray(businessProfile.working_languages)
+        ? [...businessProfile.working_languages]
+        : businessProfile.preferred_language
+          ? [businessProfile.preferred_language]
+          : [],
       ideal_client_types: Array.isArray(businessProfile.ideal_client_types)
         ? [...businessProfile.ideal_client_types]
         : [],
@@ -520,6 +536,12 @@ function App() {
       website: businessProfileForm.website_url.trim(),
       preferred_language:
         businessProfileForm.preferred_language,
+      provider_country:
+        businessProfileForm.provider_country.trim(),
+      working_languages:
+        businessProfileForm.working_languages
+          .map((item) => item.trim())
+          .filter(Boolean),
       primary_goal: businessProfileForm.primary_goal.trim(),
       ideal_client_types:
         businessProfileForm.ideal_client_types
@@ -720,12 +742,23 @@ function App() {
         ),
       ]
 
+      const workingLanguages = [
+        ...new Set(
+          businessProfileForm.working_languages
+            .map((item) => item.trim())
+            .filter(Boolean)
+        ),
+      ]
+
       const payload = {
         business_name: businessProfileForm.business_name.trim(),
         business_type: businessProfileForm.business_type,
         website_url: businessProfileForm.website_url.trim() || null,
         primary_goal: businessProfileForm.primary_goal.trim(),
         preferred_language: businessProfileForm.preferred_language.trim(),
+        provider_country:
+          businessProfileForm.provider_country.trim() || null,
+        working_languages: workingLanguages,
         ideal_client_types: idealClientTypes,
         rejection_rules: rejectionRules,
         good_opportunity_definition:
@@ -5579,6 +5612,45 @@ hiring video editor`}
                       </select>
                     </label>
 
+                    <label>
+                      Base Country
+                      <input
+                        type="text"
+                        value={businessProfileForm.provider_country}
+                        placeholder="e.g. India"
+                        onChange={(event) =>
+                          setBusinessProfileForm((current) => ({
+                            ...current,
+                            provider_country: event.target.value,
+                          }))
+                        }
+                      />
+                      <span className="field-hint">
+                        Used only when an opportunity explicitly requires the provider to be based in a specific country.
+                      </span>
+                    </label>
+
+                    <label>
+                      Working Languages
+                      <input
+                        type="text"
+                        value={businessProfileForm.working_languages.join(', ')}
+                        placeholder="e.g. English, Hindi"
+                        onChange={(event) =>
+                          setBusinessProfileForm((current) => ({
+                            ...current,
+                            working_languages: event.target.value
+                              .split(',')
+                              .map((item) => item.trim())
+                              .filter(Boolean),
+                          }))
+                        }
+                      />
+                      <span className="field-hint">
+                        Add only languages you can genuinely use for client communication and project delivery.
+                      </span>
+                    </label>
+
                     <div className="settings-ai-field">
                       <label>
                         Primary Goal
@@ -6954,6 +7026,24 @@ function OpportunityDrawer({
           ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
           : 'border-slate-700 bg-slate-800 text-slate-300'
 
+  const eligibilityMatch = String(
+    opportunity.eligibility_match || 'unknown'
+  ).trim().toLowerCase()
+
+  const eligibilityLabel =
+    eligibilityMatch === 'match'
+      ? 'Provider eligible'
+      : eligibilityMatch === 'mismatch'
+        ? 'Provider not eligible'
+        : 'Eligibility not fully verified'
+
+  const eligibilityClass =
+    eligibilityMatch === 'match'
+      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+      : eligibilityMatch === 'mismatch'
+        ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+        : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+
   const hasSourceQualityAssessment =
     Boolean(opportunity.source_result_type) ||
     Boolean(opportunity.source_quality_reason)
@@ -7001,6 +7091,27 @@ function OpportunityDrawer({
         value: estimatedValue,
         note: 'Estimate',
       },
+    opportunity.project_language && {
+      label: 'Project Language',
+      value: opportunity.project_language.toUpperCase(),
+    },
+    opportunity.eligibility_match && {
+      label: 'Provider Eligibility',
+      value: eligibilityLabel,
+      note:
+        opportunity.eligibility_restriction_type &&
+        opportunity.eligibility_restriction_type !== 'none'
+          ? opportunity.eligibility_restriction_type.replaceAll('_', ' ')
+          : 'No explicit restriction',
+    },
+    opportunity.required_language && {
+      label: 'Required Language',
+      value: opportunity.required_language,
+    },
+    opportunity.required_country && {
+      label: 'Required Provider Country',
+      value: opportunity.required_country,
+    },
     opportunity.project_type && {
       label: 'Project Type',
       value: opportunity.project_type,
@@ -7090,6 +7201,29 @@ function OpportunityDrawer({
               )}
 
             </div>
+
+            {opportunity.eligibility_match && (
+              <div className={`mt-4 rounded-xl border p-4 ${eligibilityClass}`}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium">
+                    {eligibilityLabel}
+                  </span>
+
+                  {opportunity.eligibility_restriction_type &&
+                    opportunity.eligibility_restriction_type !== 'none' && (
+                      <span className="rounded-full border border-current/20 px-2 py-0.5 text-xs capitalize">
+                        {opportunity.eligibility_restriction_type.replaceAll('_', ' ')}
+                      </span>
+                    )}
+                </div>
+
+                {opportunity.eligibility_reason && (
+                  <p className="mt-2 text-xs leading-5 opacity-80">
+                    {opportunity.eligibility_reason}
+                  </p>
+                )}
+              </div>
+            )}
 
             {opportunity.commercial_fit && (
               <div className={`mt-4 rounded-xl border p-4 ${commercialFitClass}`}>
