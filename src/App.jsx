@@ -382,6 +382,13 @@ function App() {
           matched_service_currency,
           normalized_budget_max,
           commercial_value_reason,
+          scope_complexity,
+          scope_reason,
+          scope_multiplier,
+          scope_adjusted_min_value,
+          scope_budget_fit_ratio,
+          scope_budget_fit,
+          scope_budget_fit_reason,
           contact_email,
           contact_phone,
           project_type,
@@ -7044,6 +7051,30 @@ function OpportunityDrawer({
         ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
         : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
 
+  const scopeBudgetFit = String(
+    opportunity.scope_budget_fit || 'unknown'
+  ).trim().toLowerCase()
+
+  const scopeBudgetFitLabel =
+    scopeBudgetFit === 'meets_scope'
+      ? 'Budget fits scope'
+      : scopeBudgetFit === 'below_scope'
+        ? 'Slightly below scope-adjusted minimum'
+        : scopeBudgetFit === 'significantly_below_scope'
+          ? 'Budget materially below scope'
+          : scopeBudgetFit === 'far_below_scope'
+            ? 'Budget far below scope'
+            : 'Scope budget fit unknown'
+
+  const scopeBudgetFitClass =
+    scopeBudgetFit === 'meets_scope'
+      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+      : scopeBudgetFit === 'below_scope'
+        ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+        : ['significantly_below_scope', 'far_below_scope'].includes(scopeBudgetFit)
+          ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+          : 'border-slate-700 bg-slate-800 text-slate-300'
+
   const hasSourceQualityAssessment =
     Boolean(opportunity.source_result_type) ||
     Boolean(opportunity.source_quality_reason)
@@ -7111,6 +7142,22 @@ function OpportunityDrawer({
     opportunity.required_country && {
       label: 'Required Provider Country',
       value: opportunity.required_country,
+    },
+    opportunity.scope_complexity && {
+      label: 'Scope Complexity',
+      value: opportunity.scope_complexity.replaceAll('_', ' '),
+      note:
+        Number(opportunity.scope_multiplier || 0) > 0
+          ? `${Number(opportunity.scope_multiplier)}× service minimum`
+          : null,
+    },
+    opportunity.scope_budget_fit && {
+      label: 'Scope Budget Fit',
+      value: scopeBudgetFitLabel,
+      note:
+        Number(opportunity.scope_budget_fit_ratio || 0) > 0
+          ? `${Math.round(Number(opportunity.scope_budget_fit_ratio) * 100)}% of adjusted minimum`
+          : null,
     },
     opportunity.project_type && {
       label: 'Project Type',
@@ -7220,6 +7267,34 @@ function OpportunityDrawer({
                 {opportunity.eligibility_reason && (
                   <p className="mt-2 text-xs leading-5 opacity-80">
                     {opportunity.eligibility_reason}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {opportunity.scope_budget_fit && (
+              <div className={`mt-4 rounded-xl border p-4 ${scopeBudgetFitClass}`}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-sm font-medium">
+                    {scopeBudgetFitLabel}
+                  </span>
+
+                  {Number(opportunity.scope_budget_fit_ratio || 0) > 0 && (
+                    <span className="text-xs opacity-80">
+                      {Math.round(Number(opportunity.scope_budget_fit_ratio) * 100)}% of scope-adjusted minimum
+                    </span>
+                  )}
+                </div>
+
+                {opportunity.scope_reason && (
+                  <p className="mt-2 text-xs leading-5 opacity-80">
+                    Scope: {opportunity.scope_reason}
+                  </p>
+                )}
+
+                {opportunity.scope_budget_fit_reason && (
+                  <p className="mt-1 text-xs leading-5 opacity-80">
+                    {opportunity.scope_budget_fit_reason}
                   </p>
                 )}
               </div>
