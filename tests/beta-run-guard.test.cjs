@@ -24,7 +24,7 @@ test('manual opportunity search has a server-side ten minute cooldown', () => {
   assert(edge.includes("error: 'run_cooldown_active'"))
   assert(edge.includes('retry_after_seconds'))
   assert(edge.includes("'Retry-After'"))
-  assert(edge.includes('{ status: 429'))
+  assert(edge.includes('status: 429'))
 })
 
 test('cooldown uses recent server run timestamps and is workspace scoped', () => {
