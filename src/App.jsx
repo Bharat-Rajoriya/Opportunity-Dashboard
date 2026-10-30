@@ -371,6 +371,12 @@ function App() {
           estimated_value_min,
           estimated_value_max,
           estimated_currency,
+          commercial_fit,
+          budget_fit_ratio,
+          matched_service_min_value,
+          matched_service_currency,
+          normalized_budget_max,
+          commercial_value_reason,
           contact_email,
           contact_phone,
           project_type,
@@ -6898,6 +6904,28 @@ function OpportunityDrawer({
     opportunity.source_quality_score ?? 0
   )
 
+  const commercialFit = String(
+    opportunity.commercial_fit || 'unknown'
+  ).trim().toLowerCase()
+
+  const commercialFitLabel =
+    commercialFit === 'meets_minimum'
+      ? 'Meets service minimum'
+      : commercialFit === 'below_minimum'
+        ? 'Below service minimum'
+        : commercialFit === 'far_below_minimum'
+          ? 'Far below service minimum'
+          : 'Budget fit unknown'
+
+  const commercialFitClass =
+    commercialFit === 'meets_minimum'
+      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+      : commercialFit === 'below_minimum'
+        ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+        : commercialFit === 'far_below_minimum'
+          ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+          : 'border-slate-700 bg-slate-800 text-slate-300'
+
   const hasSourceQualityAssessment =
     Boolean(opportunity.source_result_type) ||
     Boolean(opportunity.source_quality_reason)
@@ -6926,6 +6954,18 @@ function OpportunityDrawer({
     opportunity.budget_text && {
       label: 'Posted Budget / Rate',
       value: opportunity.budget_text,
+    },
+    opportunity.commercial_fit && {
+      label: 'Budget Fit',
+      value: commercialFitLabel,
+      note:
+        commercialFit === 'below_minimum'
+          ? 'Near service minimum'
+          : commercialFit === 'meets_minimum'
+            ? 'Commercially aligned'
+            : commercialFit === 'far_below_minimum'
+              ? 'Below commercial threshold'
+              : 'No reliable comparison',
     },
     !opportunity.budget_text &&
       estimatedValue && {
@@ -7022,6 +7062,28 @@ function OpportunityDrawer({
               )}
 
             </div>
+
+            {opportunity.commercial_fit && (
+              <div className={`mt-4 rounded-xl border p-4 ${commercialFitClass}`}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-sm font-medium">
+                    {commercialFitLabel}
+                  </span>
+
+                  {Number(opportunity.budget_fit_ratio || 0) > 0 && (
+                    <span className="text-xs opacity-80">
+                      {Math.round(Number(opportunity.budget_fit_ratio) * 100)}% of service minimum
+                    </span>
+                  )}
+                </div>
+
+                {opportunity.commercial_value_reason && (
+                  <p className="mt-2 text-xs leading-5 opacity-80">
+                    {opportunity.commercial_value_reason}
+                  </p>
+                )}
+              </div>
+            )}
 
             {hasSourceQualityAssessment && (
               <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
