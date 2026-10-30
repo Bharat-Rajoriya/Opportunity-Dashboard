@@ -1368,7 +1368,7 @@ function Onboarding({ user, workspace, onComplete }) {
               <Field
                 label="Base Country"
                 required
-                hint="Used only when a project explicitly requires the provider to be based in a specific country."
+                hint="Used for context only. International opportunities are still included; country-specific requirements are shown as warnings so you can decide whether to pursue them."
               >
                 <input
                   type="text"
