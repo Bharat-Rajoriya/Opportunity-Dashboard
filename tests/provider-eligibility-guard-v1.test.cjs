@@ -8,6 +8,11 @@ const appSource = readFileSync(
   'utf8'
 ).replace(/\r\n/g, '\n')
 
+const onboardingSource = readFileSync(
+  join(__dirname, '../src/components/Onboarding.jsx'),
+  'utf8'
+).replace(/\r\n/g, '\n')
+
 const migrationSource = readFileSync(
   join(__dirname, '../supabase/migrations/20261030_provider_eligibility_guard_v1.sql'),
   'utf8'
@@ -27,6 +32,17 @@ test('business profile captures provider eligibility inputs', () => {
     'Used only when an opportunity explicitly requires the provider',
   ]) {
     assert(appSource.includes(expected))
+  }
+
+  for (const expected of [
+    'providerCountry',
+    'workingLanguagesText',
+    'Base Country',
+    'Working Languages',
+    'Please enter your base country',
+    'Please add at least one working language',
+  ]) {
+    assert(onboardingSource.includes(expected))
   }
 })
 
