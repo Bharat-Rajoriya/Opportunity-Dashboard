@@ -10,7 +10,7 @@ Unknown budgets are never rejected. If a candidate does not expose a reliable ma
 
 When an explicit maximum budget can be compared with the matched service minimum:
 
-- **Below 50% of the service minimum** → `far_below_minimum` → reject before opportunity creation.
+- **Explicit maximum is less than 50% of the service minimum** → `far_below_minimum` → reject before opportunity creation.
 - **50% to below 100% of the service minimum** → `below_minimum` → keep for review with a 15-point preliminary-score penalty.
 - **100% or more of the service minimum** → `meets_minimum` → no commercial-value penalty.
 
