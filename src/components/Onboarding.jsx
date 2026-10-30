@@ -68,6 +68,8 @@ function Onboarding({ user, workspace, onComplete }) {
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [primaryGoal, setPrimaryGoal] = useState('')
   const [preferredLanguage, setPreferredLanguage] = useState('English')
+  const [providerCountry, setProviderCountry] = useState('')
+  const [workingLanguagesText, setWorkingLanguagesText] = useState('English')
   const [idealForm, setIdealForm] = useState(() => createIdealForm())
   const [countryInput, setCountryInput] = useState('')
   const [clientTypeInput, setClientTypeInput] = useState('')
@@ -146,6 +148,8 @@ function Onboarding({ user, workspace, onComplete }) {
         business_type: businessType,
         website: websiteUrl.trim(),
         preferred_language: preferredLanguage,
+        provider_country: providerCountry.trim(),
+        working_languages: parseCommaList(workingLanguagesText),
         services: services
           .filter((service) => service.active !== false)
           .map((service) => ({
@@ -190,6 +194,8 @@ function Onboarding({ user, workspace, onComplete }) {
         business_name: businessName.trim(),
         business_type: businessType,
         preferred_language: preferredLanguage,
+        provider_country: providerCountry.trim(),
+        working_languages: parseCommaList(workingLanguagesText),
         primary_goal: primaryGoal.trim(),
         target_countries: idealForm.target_countries,
         ideal_client_types: idealForm.ideal_client_types,
@@ -481,6 +487,8 @@ function Onboarding({ user, workspace, onComplete }) {
           website_url,
           primary_goal,
           preferred_language,
+          provider_country,
+          working_languages,
           target_countries,
           ideal_client_types,
           rejection_rules,
@@ -497,6 +505,13 @@ function Onboarding({ user, workspace, onComplete }) {
       setWebsiteUrl(data?.website_url || '')
       setPrimaryGoal(data?.primary_goal || '')
       setPreferredLanguage(data?.preferred_language || 'English')
+      setProviderCountry(data?.provider_country || '')
+      setWorkingLanguagesText(
+        Array.isArray(data?.working_languages) &&
+        data.working_languages.length > 0
+          ? data.working_languages.join(', ')
+          : data?.preferred_language || 'English'
+      )
       setIdealForm(createIdealForm(data))
       setCountryInput('')
       setClientTypeInput('')
@@ -1114,6 +1129,18 @@ function Onboarding({ user, workspace, onComplete }) {
       return
     }
 
+    if (!providerCountry.trim()) {
+      setMessage('Please enter your base country so location-restricted opportunities can be filtered.')
+      return
+    }
+
+    const workingLanguages = parseCommaList(workingLanguagesText)
+
+    if (workingLanguages.length === 0) {
+      setMessage('Please add at least one working language.')
+      return
+    }
+
     if (!primaryGoal.trim()) {
       setMessage('Please enter your primary goal.')
       return
@@ -1130,6 +1157,8 @@ function Onboarding({ user, workspace, onComplete }) {
       website_url: websiteUrl.trim() || null,
       primary_goal: primaryGoal.trim(),
       preferred_language: preferredLanguage,
+      provider_country: providerCountry.trim(),
+      working_languages: workingLanguages,
       updated_at: new Date().toISOString(),
     }
 
@@ -1334,6 +1363,34 @@ function Onboarding({ user, workspace, onComplete }) {
                   <option value="French">French</option>
                   <option value="German">German</option>
                 </select>
+              </Field>
+
+              <Field
+                label="Base Country"
+                required
+                hint="Used only when a project explicitly requires the provider to be based in a specific country."
+              >
+                <input
+                  type="text"
+                  value={providerCountry}
+                  onChange={(e) => setProviderCountry(e.target.value)}
+                  placeholder="Example: India"
+                  className={inputClass}
+                />
+              </Field>
+
+              <Field
+                label="Working Languages"
+                required
+                hint="Comma-separated languages you can genuinely use with clients."
+              >
+                <input
+                  type="text"
+                  value={workingLanguagesText}
+                  onChange={(e) => setWorkingLanguagesText(e.target.value)}
+                  placeholder="Example: English, Hindi"
+                  className={inputClass}
+                />
               </Field>
 
             </fieldset>
