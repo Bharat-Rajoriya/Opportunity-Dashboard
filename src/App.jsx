@@ -7026,6 +7026,24 @@ function OpportunityDrawer({
           ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
           : 'border-slate-700 bg-slate-800 text-slate-300'
 
+  const eligibilityMatch = String(
+    opportunity.eligibility_match || 'unknown'
+  ).trim().toLowerCase()
+
+  const eligibilityLabel =
+    eligibilityMatch === 'match'
+      ? 'Provider eligible'
+      : eligibilityMatch === 'mismatch'
+        ? 'Provider not eligible'
+        : 'Eligibility not fully verified'
+
+  const eligibilityClass =
+    eligibilityMatch === 'match'
+      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+      : eligibilityMatch === 'mismatch'
+        ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+        : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+
   const hasSourceQualityAssessment =
     Boolean(opportunity.source_result_type) ||
     Boolean(opportunity.source_quality_reason)
@@ -7073,6 +7091,27 @@ function OpportunityDrawer({
         value: estimatedValue,
         note: 'Estimate',
       },
+    opportunity.project_language && {
+      label: 'Project Language',
+      value: opportunity.project_language.toUpperCase(),
+    },
+    opportunity.eligibility_match && {
+      label: 'Provider Eligibility',
+      value: eligibilityLabel,
+      note:
+        opportunity.eligibility_restriction_type &&
+        opportunity.eligibility_restriction_type !== 'none'
+          ? opportunity.eligibility_restriction_type.replaceAll('_', ' ')
+          : 'No explicit restriction',
+    },
+    opportunity.required_language && {
+      label: 'Required Language',
+      value: opportunity.required_language,
+    },
+    opportunity.required_country && {
+      label: 'Required Provider Country',
+      value: opportunity.required_country,
+    },
     opportunity.project_type && {
       label: 'Project Type',
       value: opportunity.project_type,
@@ -7162,6 +7201,29 @@ function OpportunityDrawer({
               )}
 
             </div>
+
+            {opportunity.eligibility_match && (
+              <div className={`mt-4 rounded-xl border p-4 ${eligibilityClass}`}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium">
+                    {eligibilityLabel}
+                  </span>
+
+                  {opportunity.eligibility_restriction_type &&
+                    opportunity.eligibility_restriction_type !== 'none' && (
+                      <span className="rounded-full border border-current/20 px-2 py-0.5 text-xs capitalize">
+                        {opportunity.eligibility_restriction_type.replaceAll('_', ' ')}
+                      </span>
+                    )}
+                </div>
+
+                {opportunity.eligibility_reason && (
+                  <p className="mt-2 text-xs leading-5 opacity-80">
+                    {opportunity.eligibility_reason}
+                  </p>
+                )}
+              </div>
+            )}
 
             {opportunity.commercial_fit && (
               <div className={`mt-4 rounded-xl border p-4 ${commercialFitClass}`}>
