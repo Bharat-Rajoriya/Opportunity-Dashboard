@@ -29,7 +29,7 @@ test('business profile captures provider eligibility inputs', () => {
     'working_languages',
     'Base Country',
     'Working Languages',
-    'Used only when an opportunity explicitly requires the provider',
+    'International opportunities are still included',
   ]) {
     assert(appSource.includes(expected))
   }
@@ -79,7 +79,9 @@ test('eligibility policy is conservative about country and language restrictions
     'Do not reject a remote opportunity',
     'platform project language',
     'description is written in another language',
-    'unknown rather than rejecting',
+    'country eligibility context unknown rather than rejecting',
+    'Provider base country is context only',
+    'opportunity remains visible',
   ]) {
     assert(docsSource.includes(expected))
   }
