@@ -134,7 +134,103 @@ export default {
         }
 
         // --------------------------------------------------
-        // 3. Read private server-side configuration.
+        // 3. Enforce a short manual-run cooldown.
+        //
+        // This is server-side so refreshing the browser, opening
+        // another tab, or calling the function directly cannot
+        // bypass the protection.
+        // --------------------------------------------------
+
+        const manualCooldownMs = 10 * 60 * 1000
+
+        const {
+          data: latestRun,
+          error: latestRunError,
+        } = await ctx.supabaseAdmin
+          .from('engine_runs')
+          .select(
+            `
+              id,
+              workspace_id,
+              master_execution_id,
+              run_started_at,
+              run_finished_at,
+              run_status,
+              created_at
+            `,
+          )
+          .eq('workspace_id', workspaceId)
+          .order('created_at', {
+            ascending: false,
+          })
+          .limit(1)
+          .maybeSingle()
+
+        if (latestRunError) {
+          console.error(
+            'Latest engine run lookup error:',
+            latestRunError,
+          )
+
+          return Response.json(
+            {
+              success: false,
+              error: 'run_cooldown_check_failed',
+            },
+            { status: 500 },
+          )
+        }
+
+        if (latestRun) {
+          const latestRunAtRaw =
+            latestRun.run_finished_at ||
+            latestRun.run_started_at ||
+            latestRun.created_at
+
+          const latestRunAt = latestRunAtRaw
+            ? new Date(latestRunAtRaw).getTime()
+            : Number.NaN
+
+          if (Number.isFinite(latestRunAt)) {
+            const elapsedMs = Date.now() - latestRunAt
+
+            if (
+              elapsedMs >= 0 &&
+              elapsedMs < manualCooldownMs
+            ) {
+              const retryAfterSeconds = Math.max(
+                1,
+                Math.ceil(
+                  (manualCooldownMs - elapsedMs) / 1000,
+                ),
+              )
+
+              return Response.json(
+                {
+                  success: false,
+                  error: 'run_cooldown_active',
+                  message:
+                    'Please wait a few minutes before starting another opportunity search.',
+                  retry_after_seconds:
+                    retryAfterSeconds,
+                  cooldown_seconds:
+                    Math.floor(manualCooldownMs / 1000),
+                  last_run: latestRun,
+                },
+                {
+                  status: 429,
+                  headers: {
+                    'Retry-After':
+                      String(retryAfterSeconds),
+                  },
+                },
+              )
+            }
+          }
+        }
+
+        // --------------------------------------------------
+        // 4. Read private server-side configuration.
         // --------------------------------------------------
 
         const webhookUrl =
@@ -171,7 +267,7 @@ export default {
         }
 
         // --------------------------------------------------
-        // 4. Trigger the protected n8n production workflow.
+        // 5. Trigger the protected n8n production workflow.
         // --------------------------------------------------
 
         const n8nResponse = await fetch(webhookUrl, {
@@ -213,7 +309,7 @@ export default {
         }
 
         // --------------------------------------------------
-        // 5. Return immediately.
+        // 6. Return immediately.
         // n8n continues the actual engine in background.
         // --------------------------------------------------
 
