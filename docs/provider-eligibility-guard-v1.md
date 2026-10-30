@@ -21,9 +21,13 @@ A buyer may be in France, the USA, UAE, Australia, India, or anywhere else while
 
 Do not reject a remote opportunity merely because the buyer is in a different country.
 
-Country eligibility fails only when the opportunity explicitly requires the provider to be in a particular country/region, or when platform metadata marks the project local-only and identifies the required country.
+Provider base country is context only and is not used as a hard filter.
 
-If provider base country is missing, the engine keeps eligibility unknown rather than rejecting the opportunity by guessing.
+If an opportunity explicitly requires the provider to be in a particular country/region, or platform metadata marks the project local-only and identifies the required country, the engine stores that requirement and shows it as an eligibility warning. The opportunity remains visible so the user can decide whether to pursue it.
+
+If provider base country is missing, the engine keeps the country eligibility context unknown rather than rejecting the opportunity by guessing.
+
+Target Countries remains the user's market preference. An empty target-country list means the user is open to opportunities from anywhere.
 
 ### Language eligibility
 

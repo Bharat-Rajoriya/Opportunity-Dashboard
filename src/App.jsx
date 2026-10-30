@@ -5759,7 +5759,7 @@ hiring video editor`}
                         }
                       />
                       <span className="field-hint">
-                        Used only when an opportunity explicitly requires the provider to be based in a specific country.
+                        Used for context only. International opportunities are still included; country-specific requirements are shown as warnings so you can decide whether to pursue them.
                       </span>
                     </label>
 
