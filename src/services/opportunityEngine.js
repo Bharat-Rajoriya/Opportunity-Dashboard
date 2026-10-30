@@ -23,7 +23,42 @@ export async function triggerOpportunityEngine(workspaceId) {
     }
   )
 
-  if (error) throw error
+  if (error) {
+    let functionError = null
+
+    try {
+      if (error?.context?.clone) {
+        functionError = await error.context.clone().json()
+      } else if (error?.context?.json) {
+        functionError = await error.context.json()
+      }
+    } catch {
+      functionError = null
+    }
+
+    if (functionError?.error === 'run_cooldown_active') {
+      const retryAfterSeconds = Number(
+        functionError.retry_after_seconds || 0
+      )
+
+      const retryMinutes = Math.max(
+        1,
+        Math.ceil(retryAfterSeconds / 60)
+      )
+
+      throw new Error(
+        `A search was run recently. Try again in about ${retryMinutes} ${retryMinutes === 1 ? 'minute' : 'minutes'}.`
+      )
+    }
+
+    if (functionError?.error === 'run_already_in_progress') {
+      throw new Error(
+        'An opportunity search is already running for this workspace.'
+      )
+    }
+
+    throw error
+  }
 
   if (!data?.success) {
     throw new Error(
