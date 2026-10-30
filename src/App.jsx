@@ -25,6 +25,7 @@ import {
   normalizeSourceKeys,
   normalizeSourcePreferences,
   saveActiveSearchProfile,
+  enableFreelancerDiscovery,
 } from './services/searchProfiles'
 import {
   fetchSourceAnalytics,
@@ -35,6 +36,7 @@ import {
   discoveryRunExplanation,
   DISCOVERY_EVENT_LABELS,
 } from './services/discoveryDiagnostics'
+import { shouldSuggestFreelancer } from './config/discoverySources'
 import {
   PROOF_TYPE_OPTIONS,
   changeProofType,
@@ -170,6 +172,7 @@ function App() {
   const [aiQueriesGenerating, setAiQueriesGenerating] = useState(false)
   const [searchSettingsLoading, setSearchSettingsLoading] = useState(true)
   const [searchSettingsSaving, setSearchSettingsSaving] = useState(false)
+  const [sourceEnableError, setSourceEnableError] = useState('')
   const [searchSettingsError, setSearchSettingsError] = useState('')
   const [searchSettingsMessage, setSearchSettingsMessage] = useState('')
   const searchSettingsRequest = useRef(0)
@@ -1354,7 +1357,7 @@ function App() {
       setMinIntentLevel(
         Number.isInteger(loadedIntentLevel) &&
           loadedIntentLevel >= 1 &&
-          loadedIntentLevel <= 5
+          loadedIntentLevel <= 4
           ? loadedIntentLevel
           : 3
       )
@@ -1449,7 +1452,7 @@ function App() {
       return
     }
 
-    if (!Number.isInteger(intentLevel) || intentLevel < 1 || intentLevel > 5) {
+    if (!Number.isInteger(intentLevel) || intentLevel < 1 || intentLevel > 4) {
       setSearchSettingsError('Select a valid minimum intent level.')
       return
     }
@@ -2885,6 +2888,42 @@ function App() {
     }
   }
 
+  const handleEnableFreelancerDiscovery = async () => {
+    if (
+      !FREELANCER_PRODUCTION_ENABLED ||
+      !workspace?.id ||
+      !searchProfile?.id ||
+      searchProfile.workspace_id !== workspace.id ||
+      searchSettingsLoading ||
+      searchSettingsSavePendingRef.current ||
+      searchRunning
+    ) return
+
+    const workspaceId = workspace.id
+    const profileId = searchProfile.id
+    const requestId = searchSettingsRequest.current
+
+    searchSettingsSavePendingRef.current = true
+    setSearchSettingsSaving(true)
+    setSourceEnableError('')
+
+    try {
+      const updated = await enableFreelancerDiscovery({ workspaceId, profileId })
+      if (requestId !== searchSettingsRequest.current || workspace?.id !== workspaceId) return
+
+      setSearchProfile(updated)
+      setEnabledSources(normalizeSourceKeys(updated.enabled_sources))
+      setSearchMessage('Freelancer projects enabled. Click Find Opportunities to search direct listings.')
+    } catch (error) {
+      if (requestId === searchSettingsRequest.current && workspace?.id === workspaceId) {
+        setSourceEnableError(error?.message || 'Unable to enable Freelancer. Please try again.')
+      }
+    } finally {
+      searchSettingsSavePendingRef.current = false
+      if (requestId === searchSettingsRequest.current) setSearchSettingsSaving(false)
+    }
+  }
+
   const handleFindOpportunities = async () => {
     if (searchRunPendingRef.current || searchSettingsSavePendingRef.current) {
       return
@@ -3710,6 +3749,42 @@ function App() {
           {searchMessage && (
             <div role="status" className="engine-success-message">
               {searchMessage}
+            </div>
+          )}
+
+          {shouldSuggestFreelancer({
+            freelancerAvailable: FREELANCER_PRODUCTION_ENABLED,
+            enabledSources,
+            opportunityCount: opportunities.length,
+            loading: dataLoading || searchSettingsLoading || !searchProfile?.id,
+          }) && (
+            <div className="mt-4 rounded-xl border border-violet-500/30 bg-slate-950 p-4">
+              <h3 className="font-semibold text-white">Expand your opportunity sources</h3>
+              <p className="mt-1 text-sm text-slate-400">
+                Your workspace currently searches Google only. Freelancer has direct buyer
+                projects with budgets and requirements. Enable it to increase discovery
+                coverage without lowering your relevance filters.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => void handleEnableFreelancerDiscovery()}
+                  disabled={searchRunning || searchSettingsSaving}
+                  className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {searchSettingsSaving ? 'Enabling...' : 'Enable Freelancer Projects'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivePage('settings')}
+                  className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
+                >
+                  Review Sources
+                </button>
+              </div>
+              {sourceEnableError && (
+                <p role="alert" className="mt-3 text-sm text-red-300">{sourceEnableError}</p>
+              )}
             </div>
           )}
 
@@ -4841,7 +4916,6 @@ function App() {
                           <option value={2}>2 — Possible need</option>
                           <option value={3}>3 — Clear commercial intent</option>
                           <option value={4}>4 — Strong buying intent</option>
-                          <option value={5}>5 — Immediate requirement</option>
                         </select>
                       </label>
 
