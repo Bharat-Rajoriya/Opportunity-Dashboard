@@ -9,7 +9,14 @@ const end = source.indexOf('  const refreshDashboard =', start)
 assert(start >= 0 && end > start)
 
 function setup(options = {}) {
-  const state = { running: false, message: 'old success', error: 'old error', engineRun: null }
+  const state = {
+    running: false,
+    message: 'old success',
+    error: 'old error',
+    engineRun: null,
+    discoveryDiagnostics: null,
+    discoveryDiagnosticsError: '',
+  }
   const calls = [] 
   const request = { current: 0 }
   const pending = { current: null }
@@ -23,6 +30,14 @@ function setup(options = {}) {
     setSearchMessage(value) { state.message = value },
     setSearchError(value) { state.error = value },
     setEngineRun(value) { state.engineRun = value },
+    setDiscoveryDiagnostics(value) { state.discoveryDiagnostics = value },
+    setDiscoveryDiagnosticsError(value) { state.discoveryDiagnosticsError = value },
+    fetchDiscoveryRunDiagnostics(workspaceId, masterExecutionId) {
+      calls.push(['fetchDiscoveryRunDiagnostics', workspaceId, masterExecutionId])
+      if (options.diagnosticsPromise) return options.diagnosticsPromise()
+      if (options.diagnosticsThrow) throw options.diagnosticsThrow
+      return Promise.resolve(options.diagnosticsResult ?? { counts: { evaluated: 2, rejected: 2, qualified: 0, duplicate: 0, created: 0 } })
+    },
     getLatestEngineRun(workspaceId) {
       calls.push(['getLatestEngineRun', workspaceId])
       if (options.latestRunThrow) throw options.latestRunThrow
@@ -54,6 +69,7 @@ function setup(options = {}) {
     console: {
       log(...args) { calls.push(['log', ...args]) },
       error(...args) { calls.push(['errorLog', ...args]) },
+      warn(...args) { calls.push(['warnLog', ...args]) },
     },
     supabase: {
       auth: {
@@ -220,6 +236,72 @@ test('late edge-function result cannot update a newer workspace state', async ()
   assert.equal(h.state.message, 'new workspace state')
   assert.equal(h.state.error, '')
   assert.equal(h.state.running, false)
+})
+
+test('successful search loads and stores workspace-scoped run diagnostics', async () => {
+  const diagnostics = {
+    counts: { evaluated: 3, rejected: 2, qualified: 1, duplicate: 0, created: 1 },
+  }
+  const h = setup({
+    completedRun: {
+      id: 'completed-run',
+      master_execution_id: 'exec-123',
+      run_status: 'completed',
+      opportunities_processed: 1,
+    },
+    diagnosticsResult: diagnostics,
+  })
+  await h.handler()
+  assert.deepEqual(
+    h.calls.find(([kind]) => kind === 'fetchDiscoveryRunDiagnostics'),
+    ['fetchDiscoveryRunDiagnostics', 'workspace-1', 'exec-123']
+  )
+  assert.deepEqual(h.state.discoveryDiagnostics, diagnostics)
+  assert.equal(h.state.discoveryDiagnosticsError, '')
+  assert.equal(h.state.error, '')
+  assert.equal(h.state.running, false)
+})
+
+test('failure to load run diagnostics never turns a successful search into an error', async () => {
+  const h = setup({
+    completedRun: {
+      id: 'completed-run',
+      master_execution_id: 'exec-123',
+      opportunities_processed: 0,
+    },
+    diagnosticsThrow: new Error('Event read unavailable'),
+  })
+  await h.handler()
+  assert.equal(h.state.discoveryDiagnostics, null)
+  assert.equal(h.state.discoveryDiagnosticsError, 'Run breakdown is unavailable for this search.')
+  assert.equal(h.state.message, 'Search complete. No new opportunities were processed during this run.')
+  assert.equal(h.state.error, '')
+  assert.equal(h.state.running, false)
+  assert(h.calls.some(([kind]) => kind === 'warnLog'))
+  assert(h.calls.some(([kind]) => kind === 'fetchOpportunities'))
+})
+
+test('stale diagnostics response cannot overwrite a newer workspace run', async () => {
+  let resolveDiagnostics
+  const h = setup({
+    completedRun: {
+      id: 'completed-run',
+      master_execution_id: 'exec-123',
+      opportunities_processed: 0,
+    },
+    diagnosticsPromise: () => new Promise((resolve) => { resolveDiagnostics = resolve }),
+  })
+  const run = h.handler()
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(typeof resolveDiagnostics, 'function')
+  h.request.current += 1
+  h.pending.current = null
+  h.state.discoveryDiagnostics = { newer: true }
+  h.state.message = 'new workspace state'
+  resolveDiagnostics({ counts: { created: 2 } })
+  await run
+  assert.deepEqual(h.state.discoveryDiagnostics, { newer: true })
+  assert.equal(h.state.message, 'new workspace state')
 })
 
 test('dashboard exposes accessible success/error feedback and responsive engine styles', () => {
