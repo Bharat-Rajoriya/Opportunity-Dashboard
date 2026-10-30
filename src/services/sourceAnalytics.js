@@ -102,6 +102,63 @@ export function summarizeSourceEvents(events = []) {
   )
 }
 
+
+export function getAdaptiveSourceStrategy(metrics = {}) {
+  const evaluated = Number(metrics?.evaluated || 0)
+  const qualificationRate = Number(metrics?.qualificationRate || 0)
+  const duplicateRate = Number(metrics?.duplicateRate || 0)
+
+  const minSample = 10
+  const boostSample = 25
+
+  let trafficMultiplier = 1
+  let resultLimitMultiplier = 1
+  let strategyReason = 'insufficient_sample_full_traffic'
+
+  if (evaluated >= minSample) {
+    if (qualificationRate >= 30) {
+      trafficMultiplier = 1
+      strategyReason = 'healthy_source_full_traffic'
+    } else if (qualificationRate >= 10) {
+      trafficMultiplier = 0.5
+      strategyReason = 'weak_source_half_traffic'
+    } else {
+      trafficMultiplier = 0.25
+      strategyReason = 'very_weak_source_floor_traffic'
+    }
+  }
+
+  if (
+    evaluated >= boostSample &&
+    qualificationRate >= 50 &&
+    duplicateRate < 50
+  ) {
+    resultLimitMultiplier = 1.5
+    strategyReason = 'strong_source_boost'
+  }
+
+  const label =
+    strategyReason === 'strong_source_boost'
+      ? 'Strong source · 1.5× result cap'
+      : strategyReason === 'very_weak_source_floor_traffic'
+        ? 'Weak source · 25% floor traffic'
+        : strategyReason === 'weak_source_half_traffic'
+          ? 'Weak source · 50% traffic'
+          : strategyReason === 'healthy_source_full_traffic'
+            ? 'Healthy source · full traffic'
+            : 'Learning · full traffic'
+
+  return {
+    enabled: true,
+    minSample,
+    boostSample,
+    trafficMultiplier,
+    resultLimitMultiplier,
+    strategyReason,
+    label,
+  }
+}
+
 export async function fetchSourceAnalytics(
   workspaceId,
   { days = 30, limit = 5000 } = {}

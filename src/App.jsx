@@ -25,7 +25,10 @@ import {
   normalizeSourcePreferences,
   saveActiveSearchProfile,
 } from './services/searchProfiles'
-import { fetchSourceAnalytics } from './services/sourceAnalytics'
+import {
+  fetchSourceAnalytics,
+  getAdaptiveSourceStrategy,
+} from './services/sourceAnalytics'
 import {
   PROOF_TYPE_OPTIONS,
   changeProofType,
@@ -4722,8 +4725,28 @@ function App() {
                                     )
                                   }
 
+                                  const strategy =
+                                    getAdaptiveSourceStrategy(metrics)
+
                                   return (
-                                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+                                    <>
+                                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                                        <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300">
+                                          Adaptive routing
+                                        </span>
+
+                                        <span className="text-xs text-slate-400">
+                                          {strategy.label}
+                                        </span>
+
+                                        {metrics.evaluated < strategy.minSample && (
+                                          <span className="text-xs text-slate-500">
+                                            {strategy.minSample - metrics.evaluated} more evaluations before throttling can begin
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
                                       {[
                                         ['Evaluated', metrics.evaluated],
                                         [
@@ -4754,7 +4777,12 @@ function App() {
                                           </div>
                                         </div>
                                       ))}
-                                    </div>
+                                      </div>
+
+                                      <p className="mt-3 text-xs leading-5 text-slate-500">
+                                        Adaptive Source Strategy V1 never disables a source automatically. Weak sources keep at least 25% floor traffic, while result-limit boosts require 25+ evaluated candidates.
+                                      </p>
+                                    </>
                                   )
                                 })()}
 
