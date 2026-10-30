@@ -73,7 +73,7 @@ const SOURCE_CATALOG = [
 
 function validateSignUp(email, password, confirmPassword) {
   if (!email.trim()) return 'Email is required.'
-  if (password.length < 6) return 'Password must be at least 6 characters.'
+  if (password.length < 8) return 'Password must be at least 8 characters.'
   if (password !== confirmPassword) return 'Passwords do not match.'
   return ''
 }
@@ -2588,9 +2588,9 @@ function App() {
   const handleUpdatePassword = async (event) => {
     event.preventDefault()
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       setAuthMessageType('error')
-      setMessage('Password must be at least 6 characters.')
+      setMessage('Password must be at least 8 characters.')
       return
     }
 
