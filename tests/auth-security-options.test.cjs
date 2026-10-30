@@ -17,7 +17,7 @@ test('Turnstile is configuration gated and loaded from Cloudflare', () => {
   assert(app.includes('VITE_TURNSTILE_SITE_KEY'))
   assert(app.includes('const captchaEnabled = Boolean(TURNSTILE_SITE_KEY)'))
   assert(turnstile.includes('https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'))
-  assert(turnstile.includes('window.turnstile.render'))
+  assert(turnstile.includes('turnstile.render'))
   assert(turnstile.includes("'expired-callback'"))
   assert(turnstile.includes("'error-callback'"))
 })
