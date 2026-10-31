@@ -466,7 +466,9 @@ function Onboarding({ user, workspace, onComplete }) {
       )
       setSearchForm({
         min_intent_level:
-          Number.isFinite(minIntentLevel) && minIntentLevel >= 1 && minIntentLevel <= 4 ? minIntentLevel : 4,
+          Number.isInteger(minIntentLevel) && minIntentLevel >= 1 && minIntentLevel <= 4
+            ? minIntentLevel
+            : minIntentLevel === 5 ? 4 : 3,
         max_age_hours:
           Number.isFinite(maxAgeHours) && maxAgeHours > 0 ? maxAgeHours : 72,
         active: typeof data.active === 'boolean' ? data.active : true,
