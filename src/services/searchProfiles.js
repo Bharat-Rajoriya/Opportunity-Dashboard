@@ -149,3 +149,47 @@ export async function fetchSearchProfileById({
   if (error) throw error
   return data
 }
+
+/**
+ * Explicit opt-in to production Freelancer search. Only the source list is
+ * changed; unsaved query, budget or geography preferences are not overwritten.
+ */
+export async function enableFreelancerDiscovery({ profileId, workspaceId }) {
+  if (!profileId || !workspaceId) {
+    throw new Error('An active workspace and search profile are required.')
+  }
+
+  const { data: current, error: readError } = await supabase
+    .from('search_profiles')
+    .select('id,workspace_id,enabled_sources')
+    .eq('id', profileId)
+    .eq('workspace_id', workspaceId)
+    .single()
+
+  if (readError) throw readError
+  if (!current?.id || current.workspace_id !== workspaceId) {
+    throw new Error('Search profile could not be verified.')
+  }
+
+  const sources = normalizeSourceKeys(current.enabled_sources)
+  if (sources.includes('freelancer')) {
+    return fetchSearchProfileById({ profileId, workspaceId })
+  }
+
+  const { data, error } = await supabase
+    .from('search_profiles')
+    .update({
+      enabled_sources: [...sources, 'freelancer'],
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', profileId)
+    .eq('workspace_id', workspaceId)
+    .select(SEARCH_PROFILE_FIELDS)
+    .single()
+
+  if (error) throw error
+  if (!data?.id || data.workspace_id !== workspaceId) {
+    throw new Error('Freelancer source update could not be verified.')
+  }
+  return data
+}

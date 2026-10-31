@@ -78,6 +78,9 @@ function setup(options = {}) {
     servicesLoading: false,
     serviceMutationPending: false,
     searchForm: { min_intent_level: 3, max_age_hours: 72, active: true },
+    onboardingSources: ['google', 'freelancer'],
+    FREELANCER_PRODUCTION_ENABLED: true,
+    defaultDiscoverySources: (available) => available ? ['google', 'freelancer'] : ['google'],
     services: [{ name: 'Shopify', keywords: ['Liquid'], active: true }],
     idealForm: {
       target_countries: [' USA ', 'usa'],
@@ -112,7 +115,7 @@ function setup(options = {}) {
     'RejectionRuleInput', 'CurrentStep', 'BusinessName', 'BusinessType',
     'WebsiteUrl', 'PrimaryGoal', 'PreferredLanguage', 'ProviderCountry',
     'WorkingLanguagesText', 'Loading', 'Saving',
-    'ProfileLoadError', 'Message', 'SearchForm', 'SearchMessage',
+    'ProfileLoadError', 'Message', 'SearchForm', 'SearchMessage', 'OnboardingSources',
     'SearchLoading', 'SearchLoadError', 'SearchSaving',
     'PortfolioItems', 'PortfolioLoading', 'PortfolioMessage',
     'PortfolioLoadError', 'PortfolioForm', 'ShowPortfolioForm', 'EditingPortfolioId',
@@ -123,6 +126,7 @@ function setup(options = {}) {
       state[key] = typeof value === 'function' ? value(state[key]) : value
     }
   }
+  state.OnboardingSources = env.onboardingSources
   state.PortfolioForm = env.portfolioForm
   state.ShowPortfolioForm = env.showPortfolioForm
   state.EditingPortfolioId = env.editingPortfolioId
@@ -357,6 +361,36 @@ test('search loader reuses the workspace row, converts numeric strings, and pres
   ])
 })
 
+test('existing source choices are restored without silently enabling Freelancer', async () => {
+  const h = setup({
+    profile: {
+      id: 'search-1',
+      min_intent_level: 3,
+      max_age_hours: 72,
+      active: true,
+      enabled_sources: ['google'],
+    },
+  })
+  await handler('loadSearchProfile', h.env)()
+  assert.deepEqual(h.state.OnboardingSources, ['google'])
+  assert.equal(h.state.SearchLoadError, '')
+})
+
+test('a legacy fifth intent level is converted to strongest supported level', async () => {
+  const h = setup({
+    profile: {
+      id: 'search-1',
+      min_intent_level: 5,
+      max_age_hours: 72,
+      active: true,
+      enabled_sources: ['google', 'freelancer'],
+    },
+  })
+  await handler('loadSearchProfile', h.env)()
+  assert.equal(h.state.SearchForm.min_intent_level, 4)
+  assert.deepEqual(h.state.OnboardingSources, ['google', 'freelancer'])
+})
+
 test('missing search row keeps defaults and never creates a duplicate', async () => {
   const h = setup({ profile: null })
   h.env.searchProfileId.current = 'old-search'
@@ -469,6 +503,7 @@ test('search save updates the loaded row with both boundaries and preserves its 
   assert.equal(payload.min_intent_level, 3)
   assert.equal(payload.max_age_hours, 72)
   assert.equal(payload.active, true)
+  assert.deepEqual(payload.enabled_sources, ['google', 'freelancer'])
   assert.equal(h.calls.filter(([kind, key, value]) => kind === 'eq' && key === 'workspace_id' && value === 'workspace-1').length, 2)
   assert.equal(h.calls.filter(([kind, key, value]) => kind === 'eq' && key === 'id' && value === 'search-existing').length, 2)
   assert(!h.calls.some(([kind]) => kind === 'insert'))
@@ -487,6 +522,7 @@ test('search save creates only if lookup confirms no existing row and records th
   assert.equal(payload.min_intent_level, 4)
   assert.equal(payload.max_age_hours, 48)
   assert.equal(payload.active, false)
+  assert.deepEqual(payload.enabled_sources, ['google', 'freelancer'])
   assert.equal(h.env.searchProfileId.current, 'new-search')
   assert.equal(h.state.CurrentStep, 5)
 })

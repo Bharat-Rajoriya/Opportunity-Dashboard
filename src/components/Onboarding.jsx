@@ -11,6 +11,13 @@ import {
   isProofFieldVisible,
   sanitizeProofFormForType,
 } from '../config/proofProfiles'
+import {
+  defaultDiscoverySources,
+  toggleOnboardingSource,
+} from '../config/discoverySources'
+
+const FREELANCER_PRODUCTION_ENABLED =
+  import.meta.env.VITE_FREELANCER_PRODUCTION_ENABLED === 'true'
 
 const idealListFields = ['target_countries', 'ideal_client_types', 'rejection_rules']
 const emptyPortfolioForm = {
@@ -80,6 +87,9 @@ function Onboarding({ user, workspace, onComplete }) {
   const profileLoadRequest = useRef(0)
   const idealSavePending = useRef(false)
   const profileSavePending = useRef(false)
+  const [onboardingSources, setOnboardingSources] = useState(() =>
+    defaultDiscoverySources(FREELANCER_PRODUCTION_ENABLED)
+  )
   const [searchForm, setSearchForm] = useState({
     min_intent_level: 3,
     max_age_hours: 72,
@@ -430,6 +440,7 @@ function Onboarding({ user, workspace, onComplete }) {
     setSearchSaving(false)
     setSearchMessage('')
     setSearchForm({ min_intent_level: 3, max_age_hours: 72, active: true })
+    setOnboardingSources(defaultDiscoverySources(FREELANCER_PRODUCTION_ENABLED))
 
     try {
       if (!workspaceId) return
@@ -449,9 +460,15 @@ function Onboarding({ user, workspace, onComplete }) {
       const maxAgeHours = Number(data.max_age_hours)
 
       searchProfileId.current = data.id
+      const existingSources = Array.isArray(data.enabled_sources) ? data.enabled_sources : ['google']
+      setOnboardingSources(
+        existingSources.filter((key) => key === 'google' || (key === 'freelancer' && FREELANCER_PRODUCTION_ENABLED))
+      )
       setSearchForm({
         min_intent_level:
-          Number.isFinite(minIntentLevel) && minIntentLevel > 0 ? minIntentLevel : 3,
+          Number.isInteger(minIntentLevel) && minIntentLevel >= 1 && minIntentLevel <= 4
+            ? minIntentLevel
+            : minIntentLevel === 5 ? 4 : 3,
         max_age_hours:
           Number.isFinite(maxAgeHours) && maxAgeHours > 0 ? maxAgeHours : 72,
         active: typeof data.active === 'boolean' ? data.active : true,
@@ -775,12 +792,17 @@ function Onboarding({ user, workspace, onComplete }) {
 
     const minIntentLevel = Number(searchForm.min_intent_level)
     const maxAgeHours = Number(searchForm.max_age_hours)
-    if (!Number.isInteger(minIntentLevel) || minIntentLevel < 1 || minIntentLevel > 5) {
-      setSearchMessage('Minimum buying intent must be a whole number between 1 and 5.')
+    if (!Number.isInteger(minIntentLevel) || minIntentLevel < 1 || minIntentLevel > 4) {
+      setSearchMessage('Minimum buying intent must be a whole number between 1 and 4.')
       return
     }
     if (!Number.isInteger(maxAgeHours) || maxAgeHours <= 0) {
       setSearchMessage('Opportunity freshness must be a positive whole number of hours.')
+      return
+    }
+
+    if (onboardingSources.length === 0) {
+      setSearchMessage('Select at least one discovery source to continue.')
       return
     }
 
@@ -808,6 +830,7 @@ function Onboarding({ user, workspace, onComplete }) {
         min_intent_level: minIntentLevel,
         max_age_hours: maxAgeHours,
         active: Boolean(searchForm.active),
+        enabled_sources: onboardingSources,
         updated_at: new Date().toISOString(),
       }
 
@@ -2024,13 +2047,12 @@ function Onboarding({ user, workspace, onComplete }) {
                       }}
                       className={inputClass}
                     >
-                      {![2, 3, 4, 5].includes(searchForm.min_intent_level) && (
+                      {![2, 3, 4].includes(searchForm.min_intent_level) && (
                         <option value={searchForm.min_intent_level}>{searchForm.min_intent_level} — Existing setting</option>
                       )}
                       <option value={2}>2 — Possible interest</option>
                       <option value={3}>3 — Credible requirement</option>
                       <option value={4}>4 — Clearly looking to hire</option>
-                      <option value={5}>5 — Very strong / urgent intent</option>
                     </select>
                   </Field>
                   <p className="mt-2 text-sm text-slate-500">Higher intent produces fewer but stronger opportunities.</p>
@@ -2056,6 +2078,50 @@ function Onboarding({ user, workspace, onComplete }) {
                   </Field>
                   <p className="mt-2 text-sm text-slate-500">Older opportunities are more likely to already be filled.</p>
                 </div>
+              </div>
+
+              <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-6">
+                <h3 className="font-semibold">Opportunity sources</h3>
+                <p className="mt-1 text-sm text-slate-400">
+                  Select where to look for buyer requests. You can change these choices later in Settings.
+                </p>
+                <div className="mt-4 space-y-3">
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 p-4">
+                    <input
+                      type="checkbox"
+                      checked={onboardingSources.includes('google')}
+                      onChange={(event) => {
+                        setOnboardingSources((sources) => toggleOnboardingSource(sources, 'google', event.target.checked, FREELANCER_PRODUCTION_ENABLED))
+                        setSearchMessage('')
+                      }}
+                      className="mt-1 accent-violet-500"
+                    />
+                    <span>
+                      <span className="block font-medium">Google Web Search</span>
+                      <span className="mt-1 block text-sm text-slate-400">Find public requests and business signals across the web.</span>
+                    </span>
+                  </label>
+                  {FREELANCER_PRODUCTION_ENABLED && (
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 p-4">
+                      <input
+                        type="checkbox"
+                        checked={onboardingSources.includes('freelancer')}
+                        onChange={(event) => {
+                          setOnboardingSources((sources) => toggleOnboardingSource(sources, 'freelancer', event.target.checked, FREELANCER_PRODUCTION_ENABLED))
+                          setSearchMessage('')
+                        }}
+                        className="mt-1 accent-violet-500"
+                      />
+                      <span>
+                        <span className="block font-medium">Freelancer direct projects</span>
+                        <span className="mt-1 block text-sm text-slate-400">Search posted marketplace projects with explicit budgets and requirements.</span>
+                      </span>
+                    </label>
+                  )}
+                </div>
+                {onboardingSources.length === 0 && (
+                  <p className="mt-3 text-sm text-amber-300">Enable at least one source to continue.</p>
+                )}
               </div>
 
               <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-6">
