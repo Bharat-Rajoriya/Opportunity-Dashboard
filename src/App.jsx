@@ -37,6 +37,7 @@ import {
   DISCOVERY_EVENT_LABELS,
 } from './services/discoveryDiagnostics'
 import { shouldSuggestFreelancer } from './config/discoverySources'
+import { getServiceMatchDetails } from './services/serviceMatch'
 import {
   PROOF_TYPE_OPTIONS,
   changeProofType,
@@ -383,6 +384,7 @@ function App() {
           source,
           source_url,
           country,
+          raw_payload,
           source_result_type,
           source_quality_score,
           source_quality_reason,
@@ -6577,6 +6579,7 @@ function OpportunityCard({
 }) {
   const score = Number(opportunity.total_score || 0)
   const followUpState = getFollowUpState(opportunity.next_follow_up_at)
+  const serviceMatch = getServiceMatchDetails(opportunity)
 
   const scoreStyle =
     score >= 75
@@ -6607,6 +6610,19 @@ function OpportunityCard({
             {opportunity.recommended_action && (
               <span className="text-xs bg-violet-500/10 border border-violet-500/30 px-2.5 py-1 rounded-full text-violet-300">
                 {opportunity.recommended_action}
+              </span>
+            )}
+
+            {serviceMatch && (
+              <span
+                title={serviceMatch.reason || serviceMatch.label}
+                className={`rounded-full border px-2.5 py-1 text-xs ${
+                  serviceMatch.level === 'exact'
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                    : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                }`}
+              >
+                {serviceMatch.label}
               </span>
             )}
 
@@ -7238,6 +7254,7 @@ function OpportunityDrawer({
   }
 
   const score = Number(opportunity.total_score || 0)
+  const serviceMatch = getServiceMatchDetails(opportunity)
 
   const formattedAction =
     opportunity.recommended_action
@@ -7508,6 +7525,27 @@ function OpportunityDrawer({
               )}
 
             </div>
+
+            {serviceMatch && (
+              <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950 p-4">
+                <p className="text-sm font-semibold text-white">{serviceMatch.label}</p>
+                {serviceMatch.evidence && (
+                  <p className="mt-2 text-xs leading-5 text-slate-300">
+                    Buyer evidence: “{serviceMatch.evidence}”
+                  </p>
+                )}
+                {serviceMatch.reason && (
+                  <p className="mt-1 text-xs leading-5 text-slate-400">
+                    {serviceMatch.reason}
+                  </p>
+                )}
+                {serviceMatch.level === 'related' && (
+                  <p className="mt-2 text-xs text-amber-300">
+                    Requires a manual relevance check. Automatic pitch recommendation is disabled.
+                  </p>
+                )}
+              </div>
+            )}
 
             {opportunity.eligibility_match && (
               <div className={`mt-4 rounded-xl border p-4 ${eligibilityClass}`}>
