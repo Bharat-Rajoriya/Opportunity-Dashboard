@@ -44,7 +44,7 @@ import WorkspaceShell from './components/WorkspaceShell'
 import WorkspaceOverview from './components/WorkspaceOverview'
 import { getWorkspaceSection } from './config/workspaceUi'
 import { approvalWarning, manualPitchWarning, markedAsSentPrompt } from './services/outreachSafety'
-import { getDraftWordCount, getOutreachSummary, getSendInstruction } from './services/outreachPresentation'
+import { getDraftWordCount, getOutreachLeadContext, getOutreachSummary, getSendInstruction } from './services/outreachPresentation'
 import OutreachLeadContext from './components/OutreachLeadContext'
 import {
   PROOF_TYPE_OPTIONS,
@@ -4109,141 +4109,82 @@ function App() {
           )}
         </section>
 
-        <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+        <section className="outreach-v2-section" aria-labelledby="outreach-approved-title">
+          <div className="outreach-v2-section-heading">
             <div>
-              <h2 className="text-xl font-semibold">Approved Outreach</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Reviewed messages ready for you to send.
-              </p>
+              <span className="outreach-v2-eyebrow">OUTREACH WORKSPACE / STEP 2</span>
+              <h2 id="outreach-approved-title">Approved & ready for manual sending</h2>
+              <p>These messages are approved, but have not been sent by the dashboard.</p>
             </div>
-
             {!approvedOutreachLoading && !approvedOutreachError && (
-              <span className="text-sm text-slate-400">
-                {approvedOutreach.length} ready
-              </span>
+              <span className="outreach-v2-count">{getOutreachSummary(reviewQueue.length, approvedOutreach.length).ready} ready</span>
             )}
           </div>
-
           {approvedOutreachLoading ? (
-            <p role="status" className="mt-6 text-slate-400">
-              Loading approved outreach...
-            </p>
+            <p role="status" className="outreach-v2-feedback">Loading approved outreach...</p>
           ) : approvedOutreachError ? (
-            <div role="alert" className="mt-6 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-red-300">
+            <div role="alert" className="outreach-v2-error">
               <p>Unable to load approved outreach: {approvedOutreachError}</p>
-              <button
-                type="button"
-                onClick={() => void loadApprovedOutreach(workspace?.id)}
-                className="mt-3 text-sm font-medium underline hover:text-white"
-              >
-                Retry
-              </button>
+              <button type="button" onClick={() => void loadApprovedOutreach(workspace?.id)}>Retry</button>
             </div>
           ) : approvedOutreach.length === 0 ? (
-            <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-5">
-              <h3 className="font-medium">No approved outreach ready to send</h3>
-              <p className="mt-1 text-sm text-slate-400">
-                Approve a draft in the review queue and it will appear here.
-              </p>
+            <div className="outreach-v2-empty">
+              <h3>No approved messages awaiting manual sending</h3>
+              <p>Approve a draft above and it will appear here with copy and source-link actions.</p>
             </div>
           ) : (
-            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            <div className="outreach-v2-approved-grid">
               {approvedOutreach.map((lead) => {
-                const hasSourceUrl = Boolean(
-                  lead.source_url && /^https?:\/\//i.test(lead.source_url)
-                )
-
+                const sourceUrl = getOutreachLeadContext(lead).sourceUrl
                 return (
-                  <article
-                    key={lead.id}
-                    className="flex min-w-0 flex-col rounded-lg border border-slate-800 bg-slate-950 p-5"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-white">
-                          {lead.title || 'Untitled opportunity'}
-                        </h3>
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                          <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1">
-                            {lead.source || 'Unknown source'}
-                          </span>
-                          <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1">
-                            {lead.outreach_channel || 'Channel not set'}
-                          </span>
-                          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-emerald-300">
-                            Ready to send
-                          </span>
+                  <article key={lead.id} className="outreach-v2-approved-card">
+                    <OutreachLeadContext lead={lead} approved />
+                    <div className="outreach-v2-approved-message">
+                      <div className="outreach-v2-draft-head">
+                        <div>
+                          <span className="outreach-v2-eyebrow">APPROVED MESSAGE</span>
+                          <h4>Ready to copy</h4>
                         </div>
+                        <span className="outreach-v2-draft-length">
+                          {getDraftWordCount(lead.outreach_message)} words
+                        </span>
                       </div>
-
-                      <div className="shrink-0 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-center text-violet-200">
-                        <p className="text-xs text-violet-300">Score</p>
-                        <p className="mt-0.5 text-lg font-bold">
-                          {Number(lead.total_score || 0)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 flex-1 border-t border-slate-800 pt-4">
                       {lead.outreach_subject && (
-                        <p className="mb-3 text-sm font-medium text-white">
-                          {lead.outreach_subject}
-                        </p>
+                        <div className="outreach-v2-subject">
+                          <span>Subject</span><strong>{lead.outreach_subject}</strong>
+                        </div>
                       )}
-                      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-300">
-                        {lead.outreach_message || 'No approved message available.'}
-                      </p>
+                      <p className="outreach-v2-message">{lead.outreach_message || 'No approved message available.'}</p>
                     </div>
-
+                    <div className="outreach-v2-send-instruction">
+                      <span>MANUAL SEND CHECKLIST</span>
+                      <p>{getSendInstruction(lead)}</p>
+                      <p>Recording it as sent does not send or verify delivery.</p>
+                    </div>
                     {sendActionError?.id === lead.id && (
-                      <p role="alert" className="mt-4 text-sm text-red-300">
-                        {sendActionError.message}
-                      </p>
+                      <p role="alert" className="outreach-v2-action-error">{sendActionError.message}</p>
                     )}
-
-                    <p className="mt-4 text-xs text-slate-400">
-                      Send the message yourself on the external platform. Recording it as sent does not send or verify delivery.
-                    </p>
-                    <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-800 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => void copyApprovedMessage(lead)}
+                    <div className="outreach-v2-actions outreach-v2-approved-actions">
+                      <button type="button" onClick={() => void copyApprovedMessage(lead)}
                         disabled={!lead.outreach_message || sendActionId !== null}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Clipboard className="h-4 w-4" aria-hidden="true" />
+                        className="outreach-v2-primary-action">
+                        <Clipboard size={16} aria-hidden="true" />
                         {copiedOutreachId === lead.id ? 'Copied' : 'Copy Message'}
                       </button>
-
-                      {hasSourceUrl ? (
-                        <a
-                          href={lead.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-800"
-                        >
-                          <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                          Open Source
+                      {sourceUrl ? (
+                        <a href={sourceUrl} target="_blank" rel="noopener noreferrer"
+                          className="outreach-v2-subtle-action">
+                          <ExternalLink size={16} aria-hidden="true" /> Open Source
                         </a>
                       ) : (
-                        <button
-                          type="button"
-                          disabled
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 opacity-50"
-                        >
-                          <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                          Open Source
+                        <button type="button" disabled className="outreach-v2-subtle-action">
+                          <ExternalLink size={16} aria-hidden="true" /> Source unavailable
                         </button>
                       )}
-
-                      <button
-                        type="button"
-                        onClick={() => void markOutreachAsSent(lead)}
+                      <button type="button" onClick={() => void markOutreachAsSent(lead)}
                         disabled={sendActionId !== null}
-                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto"
-                      >
-                        <Send className="h-4 w-4" aria-hidden="true" />
+                        className="outreach-v2-manual-action">
+                        <Send size={16} aria-hidden="true" />
                         {sendActionId === lead.id ? 'Recording...' : 'I Sent This Manually'}
                       </button>
                     </div>
