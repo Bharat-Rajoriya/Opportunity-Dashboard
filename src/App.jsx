@@ -38,6 +38,9 @@ import {
 } from './services/discoveryDiagnostics'
 import { shouldSuggestFreelancer } from './config/discoverySources'
 import { getServiceMatchDetails } from './services/serviceMatch'
+import WorkspaceShell from './components/WorkspaceShell'
+import WorkspaceOverview from './components/WorkspaceOverview'
+import { getWorkspaceSection } from './config/workspaceUi'
 import { approvalWarning, manualPitchWarning, markedAsSentPrompt } from './services/outreachSafety'
 import {
   PROOF_TYPE_OPTIONS,
@@ -47,6 +50,7 @@ import {
   sanitizeProofFormForType,
 } from './config/proofProfiles'
 import './App.css'
+import './workspace-v1.css'
 
 const REJECTION_REASONS = [
   ['not_relevant', 'Not relevant'],
@@ -268,6 +272,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('')
   const [actionFilter, setActionFilter] = useState('all')
   const [activePage, setActivePage] = useState('dashboard')
+  const [activeWorkspaceSection, setActiveWorkspaceSection] = useState('overview')
   const [showAdvancedQueries, setShowAdvancedQueries] = useState(false)
   const [scoreFilter, setScoreFilter] = useState('all')
   const [draftFilter, setDraftFilter] = useState('all')
@@ -3271,6 +3276,25 @@ function App() {
 
   const visibleFollowUps = followUpQueue.slice(0, 5)
 
+
+  // Keep the existing mounted dashboard state and action handlers intact.
+  // V1 navigation only jumps to sections; Settings keeps its existing view.
+  const navigateWorkspaceSection = (sectionId) => {
+    const section = getWorkspaceSection(sectionId)
+    setActiveWorkspaceSection(section.id)
+    if (section.id === 'settings') {
+      setActivePage('settings')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    setActivePage('dashboard')
+    window.setTimeout(() => {
+      document.getElementById(section.target)?.scrollIntoView({
+        behavior: 'smooth', block: 'start',
+      })
+    }, 0)
+  }
+
   // -----------------------------------------------------
   // LOADING SCREEN
   // -----------------------------------------------------
@@ -3620,108 +3644,56 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        {/* Header */}
-        <header className="mb-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="mb-1 text-sm font-medium text-violet-400">
-                Opportunity Engine
-              </p>
-
-              <h1 className="text-3xl font-bold text-white">
-                {activePage === 'dashboard'
-                  ? 'Sales Dashboard'
-                  : 'Settings'}
-              </h1>
-
-              <p className="mt-2 text-slate-400">
-                {activePage === 'dashboard'
-                  ? 'Discover, qualify and pitch relevant opportunities.'
-                  : 'Manage how your Opportunity Engine discovers new business.'}
-              </p>
+    <WorkspaceShell
+      workspaceName={workspace?.name}
+      userEmail={user?.email}
+      activeSection={activePage === 'settings' ? 'settings' : activeWorkspaceSection}
+      onNavigate={navigateWorkspaceSection}
+      onSignOut={handleSignOut}
+    >
+      <div className="workspace-content">
+        <header className="workspace-page-header">
+          <div>
+            <div className="workspace-header-eyebrow">
+              WORKSPACE / {activePage === 'settings' ? 'SETTINGS' : activeWorkspaceSection.toUpperCase()}
             </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="mr-2 hidden text-right md:block">
-                <p className="text-xs text-slate-500">
-                  Signed in as
-                </p>
-
-                <p className="max-w-55 truncate text-sm text-slate-300">
-                  {user.email}
-                </p>
-              </div>
-
-            {activePage === 'dashboard' && (
-              <button
-                type="button"
-                onClick={refreshDashboard}
-                disabled={
-                  dataLoading ||
-                  searchSettingsLoading ||
-                  reviewQueueLoading ||
-                  approvedOutreachLoading ||
-                  searchSettingsSaving ||
-                  reviewActionId !== null ||
-                  sendActionId !== null ||
-                  editingId !== null
-                }
-                className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium transition hover:bg-slate-800 disabled:opacity-50"
-              >
-                {dataLoading ||
-                searchSettingsLoading ||
-                reviewQueueLoading ||
-                approvedOutreachLoading
-                  ? 'Refreshing...'
-                  : 'Refresh'}
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium transition hover:bg-slate-800"
-            >
-              Sign Out
-            </button>
+            <h1>{activePage === 'settings'
+              ? 'Workspace settings'
+              : getWorkspaceSection(activeWorkspaceSection).label}</h1>
+            <p>{activePage === 'settings'
+              ? 'Manage the services, proof, and search settings behind your results.'
+              : 'An organized view of your discovery, prospects, and next actions.'}</p>
           </div>
-          </div>
-
-          <nav
-            className="mt-7 flex gap-1 border-b border-slate-800"
-            aria-label="Main navigation"
-          >
+          {activePage === 'dashboard' && (
             <button
               type="button"
-              onClick={() => setActivePage('dashboard')}
-              className={`border-b-2 px-4 py-3 text-sm font-medium transition ${
-                activePage === 'dashboard'
-                  ? 'border-violet-500 text-white'
-                  : 'border-transparent text-slate-400 hover:text-white'
-              }`}
+              onClick={refreshDashboard}
+              disabled={
+                dataLoading || searchSettingsLoading || reviewQueueLoading ||
+                approvedOutreachLoading || searchSettingsSaving ||
+                reviewActionId !== null || sendActionId !== null || editingId !== null
+              }
+              className="workspace-header-refresh"
             >
-              Dashboard
+              {dataLoading || searchSettingsLoading || reviewQueueLoading || approvedOutreachLoading
+                ? 'Refreshing…'
+                : 'Refresh data'}
             </button>
-
-            <button
-              type="button"
-              onClick={() => setActivePage('settings')}
-              className={`border-b-2 px-4 py-3 text-sm font-medium transition ${
-                activePage === 'settings'
-                  ? 'border-violet-500 text-white'
-                  : 'border-transparent text-slate-400 hover:text-white'
-              }`}
-            >
-              Settings
-            </button>
-          </nav>
+          )}
         </header>
 
         {activePage === 'dashboard' && (
           <>
-            <section className="engine-action-card" aria-labelledby="engine-action-title">
+            <WorkspaceOverview
+              stats={stats}
+              reviewCount={reviewQueue.length}
+              enabledSources={enabledSources}
+              sourcesLoading={searchSettingsLoading}
+              engineRun={engineRun}
+              searchRunning={searchRunning}
+              onNavigate={navigateWorkspaceSection}
+            />
+            <section id="workspace-discovery" className="engine-action-card workspace-anchor" aria-labelledby="engine-action-title">
           <div>
             <span className="engine-eyebrow">OPPORTUNITY ENGINE</span>
             <h2 id="engine-action-title">Find new opportunities</h2>
@@ -3843,14 +3815,14 @@ function App() {
         </section>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+        <div className="workspace-metric-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
           <StatCard label="Total Opportunities" value={stats.total} />
           <StatCard label="Pitch Ready" value={stats.pitchReady} />
           <StatCard label="High Score" value={stats.highScore} />
           <StatCard label="Drafts Generated" value={stats.draftsReady} />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div id="workspace-followups" className="workspace-anchor grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <button
             type="button"
             onClick={() =>
@@ -3995,7 +3967,7 @@ function App() {
           </section>
         )}
 
-        <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <section id="workspace-outreach" className="workspace-anchor mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-xl font-semibold">Review Queue</h2>
           <p className="mt-1 text-sm text-slate-400">
             Pitch drafts waiting for your review.
@@ -4384,7 +4356,7 @@ function App() {
         )}
 
         {/* Opportunities */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div id="workspace-opportunities" className="workspace-anchor bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="p-6 border-b border-slate-800">
             <div className="flex items-center justify-between">
               <div>
@@ -4469,7 +4441,7 @@ function App() {
         )}
 
         {activePage === 'settings' && (
-          <div className="space-y-8">
+          <div id="workspace-settings" className="workspace-anchor space-y-8">
             <section className="settings-section">
               <div className="settings-section-header">
                 <div>
@@ -6407,7 +6379,7 @@ hiring video editor`}
           </div>
         )}
       </div>
-    </div>
+    </WorkspaceShell>
   )
 }
 
