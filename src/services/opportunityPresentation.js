@@ -97,8 +97,19 @@ export function getOpportunityResearch(opportunity = {}) {
   }
 }
 
-export function getOpportunityAction(opportunity = {}) {
+export function getOpportunityAction(opportunity = {}, serviceMatch = getServiceMatchDetails(opportunity)) {
   const key = String(opportunity?.recommended_action || '').toLowerCase()
+  if (serviceMatch?.level === 'unsupported') return {
+    label: 'Not recommended',
+    caution: true,
+    detail: 'The saved service evidence does not support this offer. Review the buyer requirement before any outreach.',
+  }
+  if (serviceMatch?.level === 'related' &&
+      ['pitch', 'high_priority_pitch'].includes(key)) return {
+    label: 'Manual review — related fit',
+    caution: true,
+    detail: 'The buyer did not confirm an exact service match. Review the listing before choosing to pitch.',
+  }
   return {
     label: ACTION_LABELS[key] || 'Review next action',
     caution: ['skip', 'review', 'research'].includes(key) || !ACTION_LABELS[key],
@@ -136,12 +147,13 @@ export function getRequirementPreview(opportunity = {}, limit = 210) {
 }
 
 export function getOpportunityPresentation(opportunity = {}) {
+  const serviceMatch = getServiceMatchDetails(opportunity)
   return {
     score: getOpportunityScore(opportunity),
     budget: getOpportunityBudget(opportunity),
     research: getOpportunityResearch(opportunity),
-    serviceMatch: getServiceMatchDetails(opportunity),
-    action: getOpportunityAction(opportunity),
+    serviceMatch,
+    action: getOpportunityAction(opportunity, serviceMatch),
     sourceUrl: getSafeSourceUrl(opportunity),
     requirement: getRequirementPreview(opportunity),
   }
