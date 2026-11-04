@@ -377,8 +377,10 @@ test('late review results cannot remove a new workspace queue or reset its actio
 })
 
 test('review cards expose all three actions and the inline editor', () => {
-  const card = source.slice(source.indexOf('<h2 className="text-xl font-semibold">Review Queue</h2>'),
-    source.indexOf('{/* Opportunities */}'))
+  const start = source.indexOf('id="workspace-outreach"')
+  const end = source.indexOf('{/* Opportunities */}', start)
+  assert(start >= 0 && end > start)
+  const card = source.slice(start, end)
   for (const label of ['Approve', 'Edit', 'Reject', 'Save & Approve', 'Cancel']) {
     assert(card.includes(label))
   }
