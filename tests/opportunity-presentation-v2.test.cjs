@@ -101,3 +101,26 @@ test('new card and details preserve existing actions and source safeguards', () 
   assert(facts.includes('getOpportunityPresentation(opportunity)'))
   assert(css.includes('@media(max-width:640px)'))
 })
+
+test('legacy related matches never look like an automatic pitch recommendation', async () => {
+  const { getOpportunityPresentation } = await load
+  const related = {
+    recommended_action: 'high_priority_pitch',
+    raw_payload: { service_match: {
+      level: 'related', evidence: 'website', reason: 'Platform not specified.',
+    } },
+  }
+  const result = getOpportunityPresentation(related)
+  assert.equal(result.action.label, 'Manual review — related fit')
+  assert.equal(result.action.caution, true)
+  assert.match(result.action.detail, /did not confirm an exact service match/i)
+
+  const unsupported = getOpportunityPresentation({
+    recommended_action: 'pitch',
+    raw_payload: { service_match: {
+      level: 'unsupported', evidence: 'graphic design',
+    } },
+  })
+  assert.equal(unsupported.action.label, 'Not recommended')
+  assert.equal(unsupported.action.caution, true)
+})
