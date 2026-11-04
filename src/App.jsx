@@ -1598,7 +1598,8 @@ function App() {
       if (requestId !== reviewQueueRequest.current) return
       if (error) throw error
 
-      console.log('Review queue:', data ?? [])
+      // Outreach drafts can contain buyer contact details and private pitch text.
+      // Do not dump the entire queue into the browser console.
       setReviewQueue(data ?? [])
     } catch (error) {
       if (requestId === reviewQueueRequest.current) {
