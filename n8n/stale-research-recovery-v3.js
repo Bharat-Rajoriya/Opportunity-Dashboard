@@ -1,6 +1,7 @@
 
 import { workflow, trigger, node, splitInBatches, nextBatch, expr, newCredential } from '@n8n/workflow-sdk';
 const start=trigger({type:'n8n-nodes-base.manualTrigger',version:1,config:{name:'Manual Recovery Start'}});
+const daily=trigger({type:'n8n-nodes-base.scheduleTrigger',version:1.4,config:{name:'Daily Stale Recovery',parameters:{rule:{interval:[{triggerAtHour:11}]}}}});
 const pending=node({type:'n8n-nodes-base.supabase',version:1,config:{
  name:'Get Pending Stale Research',credentials:{supabaseApi:newCredential('Supabase account')},
  parameters:{operation:'getAll',tableId:'opportunities',returnAll:true,matchType:'allFilters',filters:{conditions:[
@@ -39,4 +40,5 @@ const done=node({type:'n8n-nodes-base.code',version:2,config:{
 }});
 export default workflow('stale-research-recovery-v3','Stale Research Recovery V3')
  .add(start).to(pending).to(failed).to(groups)
- .to(loop.onDone(done).onEachBatch(research.to(scoring.to(nextBatch(loop)))));
+ .to(loop.onDone(done).onEachBatch(research.to(scoring.to(nextBatch(loop)))))
+ .add(daily).to(pending);
