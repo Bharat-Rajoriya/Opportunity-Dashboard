@@ -38,6 +38,8 @@ import {
 } from './services/discoveryDiagnostics'
 import { shouldSuggestFreelancer } from './config/discoverySources'
 import { getServiceMatchDetails } from './services/serviceMatch'
+import { getOpportunityPresentation } from './services/opportunityPresentation'
+import OpportunityFactsStrip from './components/OpportunityFactsStrip'
 import WorkspaceShell from './components/WorkspaceShell'
 import WorkspaceOverview from './components/WorkspaceOverview'
 import { getWorkspaceSection } from './config/workspaceUi'
@@ -51,6 +53,7 @@ import {
 } from './config/proofProfiles'
 import './App.css'
 import './workspace-v1.css'
+import './opportunity-v2.css'
 
 const REJECTION_REASONS = [
   ['not_relevant', 'Not relevant'],
@@ -6564,161 +6567,84 @@ function OpportunityCard({
   pitchDisabled,
   pitchError,
 }) {
-  const score = Number(opportunity.total_score || 0)
+  const view = getOpportunityPresentation(opportunity)
   const followUpState = getFollowUpState(opportunity.next_follow_up_at)
-  const serviceMatch = getServiceMatchDetails(opportunity)
-
-  const scoreStyle =
-    score >= 75
-      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-      : score >= 60
-        ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-        : 'bg-slate-800 text-slate-300 border-slate-700'
+  const hasDraft = Boolean(opportunity.outreach_message)
+  const canGenerateDraft = !hasDraft &&
+    (!opportunity.outreach_status || opportunity.outreach_status === 'not_generated')
 
   return (
-    <div className="p-6">
-      <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
-
-        <div className="flex-1 min-w-0">
-
-          {/* Tags */}
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-
-            <span className="text-xs bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-full text-slate-300">
-              {opportunity.source || 'Unknown source'}
-            </span>
-
-            {opportunity.country && (
-              <span className="text-xs bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-full text-slate-300">
-                {opportunity.country}
-              </span>
-            )}
-
-            {opportunity.recommended_action && (
-              <span className="text-xs bg-violet-500/10 border border-violet-500/30 px-2.5 py-1 rounded-full text-violet-300">
-                {opportunity.recommended_action}
-              </span>
-            )}
-
-            {serviceMatch && (
-              <span
-                title={serviceMatch.reason || serviceMatch.label}
-                className={`rounded-full border px-2.5 py-1 text-xs ${
-                  serviceMatch.level === 'exact'
-                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                    : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                }`}
-              >
-                {serviceMatch.label}
-              </span>
-            )}
-
-            {opportunity.outreach_message && (
-              <span className="text-xs bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full text-emerald-300">
-                Draft Ready
-              </span>
-            )}
+    <article className="opp-v2-card" aria-label={opportunity.title || 'Opportunity'}>
+      <div className="opp-v2-card-heading">
+        <div className="opp-v2-card-copy">
+          <div className="opp-v2-eyebrow">
+            <span className="opp-v2-source">{opportunity.source || 'Unknown source'}</span>
+            {opportunity.country && <span>· {opportunity.country}</span>}
             <StatusBadge status={opportunity.status || 'new'} />
-
-            {followUpState === 'overdue' && (
-              <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs text-red-300">
-                Follow-up Overdue
-              </span>
-            )}
-
-            {followUpState === 'today' && (
-              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-300">
-                Follow-up Today
-              </span>
-            )}
-
-            {followUpState === 'upcoming' && (
-              <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-1 text-xs text-blue-300">
-                Follow-up Scheduled
-              </span>
-            )}
-            
+            {hasDraft && <span className="opp-v2-draft-tag">Draft available</span>}
           </div>
 
-          {/* Title */}
-          <h3 className="font-semibold text-lg text-white">
-            {opportunity.title || 'Untitled opportunity'}
-          </h3>
+          <h3 className="opp-v2-title">{opportunity.title || 'Untitled opportunity'}</h3>
+          <p className="opp-v2-description">{view.requirement}</p>
 
-          {/* Requirement */}
-          {opportunity.requirement && (
-            <p className="text-slate-400 mt-2 leading-6">
-              {opportunity.requirement}
-            </p>
+          {view.serviceMatch?.evidence && (
+            <div className="opp-v2-evidence">
+              <strong>Match evidence</strong>
+              <span>{view.serviceMatch.evidence}</span>
+            </div>
           )}
-
-          {/* Actions */}
-          <div className="flex flex-wrap gap-4 mt-5">
-
-            <button
-              onClick={onViewDetails}
-              className="text-sm px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 transition font-medium"
-            >
-              View Details
-            </button>
-
-            {opportunity.source_url && (
-              <a
-                href={opportunity.source_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-800 transition"
-              >
-                Open Source ↗
-              </a>
-            )}
-
-            {!opportunity.outreach_message &&
-              (!opportunity.outreach_status ||
-                opportunity.outreach_status === 'not_generated') && (
-                <button
-                  type="button"
-                  onClick={onGeneratePitch}
-                  disabled={pitchGenerating || pitchDisabled}
-                  className="text-sm px-4 py-2 rounded-lg border border-violet-500/50 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 transition font-medium disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {pitchGenerating ? 'Generating Pitch...' : '✨ Generate Pitch'}
-                </button>
-              )}
-
-          </div>
-
-          {pitchError && (
-            <p role="alert" className="mt-3 text-sm text-red-300">
-              {pitchError}
-            </p>
-          )}
-
         </div>
 
-        {/* Score */}
-        <div className="xl:w-32 shrink-0">
-
-          <div
-            className={`border rounded-xl px-4 py-3 text-center ${scoreStyle}`}
-          >
-            <p className="text-xs opacity-70">
-              Score
-            </p>
-
-            <p className="text-2xl font-bold mt-1">
-              {score}
-            </p>
-
-            <p className="text-xs opacity-70">
-              / 100
-            </p>
-          </div>
-
+        <div className={`opp-v2-decision${view.action.caution ? ' is-caution' : ''}`}>
+          <span>NEXT ACTION</span>
+          <strong>{view.action.label}</strong>
+          {view.action.caution && <small>Review before pitching</small>}
         </div>
-            
       </div>
-    </div>
+
+      <OpportunityFactsStrip opportunity={opportunity} />
+
+      {(view.research.tone === 'partial' || view.research.tone === 'pending') && (
+        <p className="opp-v2-research-note">
+          {view.research.tone === 'partial'
+            ? 'Partial research — company and contact details may be unverified.'
+            : 'Research is pending. Review before using this lead for outreach.'}
+        </p>
+      )}
+
+      {followUpState !== 'none' && (
+        <p className={`opp-v2-followup opp-v2-followup-${followUpState}`}>
+          {followUpState === 'overdue'
+            ? 'Follow-up overdue'
+            : followUpState === 'today'
+              ? 'Follow-up due today'
+              : 'Follow-up scheduled'}
+          {opportunity.next_follow_up_at && (
+            <span> · {formatFollowUpDate(opportunity.next_follow_up_at)}</span>
+          )}
+        </p>
+      )}
+
+      <div className="opp-v2-card-actions">
+        <button type="button" onClick={onViewDetails} className="opp-v2-primary-action">
+          View Details
+        </button>
+        {canGenerateDraft && (
+          <button type="button" onClick={onGeneratePitch}
+            disabled={pitchGenerating || pitchDisabled}
+            className="opp-v2-secondary-action">
+            {pitchGenerating ? 'Generating Pitch...' : 'Generate Pitch'}
+          </button>
+        )}
+        {view.sourceUrl && (
+          <a href={view.sourceUrl} target="_blank" rel="noopener noreferrer"
+            className="opp-v2-source-action">
+            Open Source <ExternalLink size={15} aria-hidden="true" />
+          </a>
+        )}
+      </div>
+      {pitchError && <p role="alert" className="opp-v2-action-error">{pitchError}</p>}
+    </article>
   )
 }
 
@@ -7240,13 +7166,8 @@ function OpportunityDrawer({
     return null
   }
 
-  const score = Number(opportunity.total_score || 0)
+  const view = getOpportunityPresentation(opportunity)
   const serviceMatch = getServiceMatchDetails(opportunity)
-
-  const formattedAction =
-    opportunity.recommended_action
-      ?.replaceAll('_', ' ')
-      || 'Not assigned'
 
   const estimatedValue =
     Number(opportunity.estimated_value_min || 0) > 0 ||
@@ -7467,34 +7388,52 @@ function OpportunityDrawer({
       />
 
       {/* Drawer */}
-      <div className="absolute right-0 top-0 h-full w-full max-w-2xl bg-slate-900 border-l border-slate-800 shadow-2xl overflow-y-auto">
+      <div role="dialog" aria-modal="true" aria-labelledby="opportunity-drawer-title"
+        className="opp-v2-drawer absolute right-0 top-0 h-full w-full max-w-2xl bg-slate-900 border-l border-slate-800 shadow-2xl overflow-y-auto">
 
         <div className="p-6 space-y-6">
 
-          {/* Score */}
-          <div className="grid grid-cols-2 gap-4">
+          <header className="opp-v2-drawer-header">
+            <div className="opp-v2-drawer-header-copy">
+              <span className="opp-v2-drawer-eyebrow">OPPORTUNITY DETAILS</span>
+              <h2 id="opportunity-drawer-title">{opportunity.title || 'Untitled opportunity'}</h2>
+              <p>{opportunity.source || 'Source not specified'}
+                {opportunity.country ? ` · ${opportunity.country}` : ''}
+              </p>
+            </div>
+            <button type="button" onClick={onClose}
+              className="opp-v2-drawer-close" aria-label="Close opportunity details">
+              <X size={20} aria-hidden="true" />
+            </button>
+          </header>
 
-            <DrawerInfo
-              label="Final Score"
-              value={`${score} / 100`}
-            />
+          <section className="opp-v2-drawer-summary" aria-label="Opportunity decision summary">
+            <div className={`opp-v2-next-action${view.action.caution ? ' is-caution' : ''}`}>
+              <div>
+                <span>RECOMMENDED NEXT ACTION</span>
+                <strong>{view.action.label}</strong>
+                <p>{view.action.detail}</p>
+              </div>
+              {view.sourceUrl && (
+                <a href={view.sourceUrl} target="_blank" rel="noopener noreferrer">
+                  Original listing <ExternalLink size={14} aria-hidden="true" />
+                </a>
+              )}
+            </div>
+            <OpportunityFactsStrip opportunity={opportunity} detailed />
+            {serviceMatch?.evidence && (
+              <p className="opp-v2-drawer-evidence">
+                <strong>Buyer evidence:</strong> {serviceMatch.evidence}
+                {serviceMatch.reason && <span> — {serviceMatch.reason}</span>}
+              </p>
+            )}
+          </section>
 
-            <DrawerInfo
-              label="Recommended Action"
-              value={formattedAction}
-            />
-
-            <DrawerInfo
-              label="Score Stage"
-              value={opportunity.score_stage || '—'}
-            />
-
-            <DrawerInfo
-              label="Research Status"
-              value={opportunity.research_status || '—'}
-            />
-
-          </div>
+          <DrawerSection title="Buyer's Requirements">
+            <p className="whitespace-pre-wrap text-sm leading-7 text-slate-300">
+              {opportunity.requirement || 'No requirement information available. Check the original listing.'}
+            </p>
+          </DrawerSection>
 
           {/* Source */}
           <DrawerSection title="Source">
@@ -7703,14 +7642,6 @@ function OpportunityDrawer({
             </DrawerSection>
           )}
 
-          {/* Requirement */}
-          <DrawerSection title="Requirement">
-
-            <p className="text-sm leading-6 text-slate-300">
-              {opportunity.requirement || 'No requirement information available.'}
-            </p>
-
-          </DrawerSection>
 
           {/* Outreach */}
           <DrawerSection title="AI Outreach Draft">
