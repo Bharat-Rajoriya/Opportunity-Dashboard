@@ -103,6 +103,8 @@ function setupSendAction(options = {}) {
   const calls = []
   const env = {
     navigator: { clipboard: { writeText: async () => {} } },
+    markedAsSentPrompt: () => 'Confirm external manual sending',
+    window: { confirm: () => options.confirm !== false },
     workspace: { id: 'workspace-1' },
     approvedOutreachLoading: false,
     approvedOutreachRequest: { current: 1 },
@@ -183,5 +185,14 @@ test('failed send keeps approved outreach available for retry', async () => {
 
   assert.equal(h.state.approved.length, 1)
   assert.equal(h.state.error.message, 'Write denied')
+  assert.equal(h.state.actionId, null)
+})
+
+
+test('declining manual-send confirmation never marks a lead as sent', async () => {
+  const h = setupSendAction({ confirm: false })
+  await h.markOutreachAsSent(h.lead)
+  assert(!h.calls.some(([kind]) => kind === 'update'))
+  assert.equal(h.state.approved.length, 1)
   assert.equal(h.state.actionId, null)
 })
