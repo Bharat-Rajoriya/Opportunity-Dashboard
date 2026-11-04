@@ -172,6 +172,8 @@ function setupActions(options = {}) {
     reviewQueueRequest: request,
     reviewActionPendingRef: pending,
     reviewQueueLoading: false,
+    approvalWarning: options.approvalWarning || (() => null),
+    window: { confirm: options.confirm || (() => true) },
     editingId: options.editingId ?? null,
     editedMessage: options.editedMessage ?? '',
     editedSubject: options.editedSubject ?? '',
@@ -386,4 +388,16 @@ test('review cards expose all three actions and the inline editor', () => {
   }
   assert(card.includes('Reject Outreach'))
   assert(source.includes('outreach_review_note'))
+})
+
+
+test('cancelled low-confidence approval makes no database write', async () => {
+  const h = setupActions({
+    approvalWarning: () => 'Unverified lead',
+    confirm: () => false,
+  })
+  await h.approveOpportunity(sampleLead)
+  assert(!h.calls.some(([kind]) => kind === 'update'))
+  assert.deepEqual(h.state.queue.map((lead) => lead.id), ['lead-1', 'lead-2'])
+  assert.deepEqual(h.state.approvedOutreach, [])
 })
