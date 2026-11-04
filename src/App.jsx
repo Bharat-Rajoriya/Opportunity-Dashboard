@@ -38,6 +38,7 @@ import {
 } from './services/discoveryDiagnostics'
 import { shouldSuggestFreelancer } from './config/discoverySources'
 import { getServiceMatchDetails } from './services/serviceMatch'
+import { approvalWarning, manualPitchWarning, markedAsSentPrompt } from './services/outreachSafety'
 import {
   PROOF_TYPE_OPTIONS,
   changeProofType,
@@ -1555,6 +1556,7 @@ function App() {
           country,
           requirement,
           matched_service_id,
+          raw_payload,
           total_score,
           score_confidence,
           recommended_action,
@@ -1617,6 +1619,8 @@ function App() {
           source,
           source_url,
           total_score,
+          recommended_action,
+          raw_payload,
           outreach_status,
           outreach_review_status,
           outreach_channel,
@@ -1703,6 +1707,9 @@ function App() {
   }
 
   const approveOpportunity = async (lead) => {
+    const warning = approvalWarning(lead)
+    if (warning && !window.confirm(warning)) return
+
     const changes = {
       outreach_review_status: 'approved',
       outreach_reviewed_at: new Date().toISOString(),
@@ -1855,6 +1862,8 @@ function App() {
       })
       return
     }
+
+    if (!window.confirm(markedAsSentPrompt(lead))) return
 
     const requestId = approvedOutreachRequest.current
     const pendingAction = { id: lead.id }
@@ -3085,6 +3094,9 @@ function App() {
       return
     }
 
+    const warning = manualPitchWarning(opportunity)
+    if (warning && !window.confirm(warning)) return
+
     setManualPitchId(opportunity.id)
     setManualPitchError(null)
 
@@ -4216,6 +4228,9 @@ function App() {
                       </p>
                     )}
 
+                    <p className="mt-4 text-xs text-slate-400">
+                      Send the message yourself on the external platform. Recording it as sent does not send or verify delivery.
+                    </p>
                     <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-800 pt-4">
                       <button
                         type="button"
@@ -4255,7 +4270,7 @@ function App() {
                         className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto"
                       >
                         <Send className="h-4 w-4" aria-hidden="true" />
-                        {sendActionId === lead.id ? 'Marking Sent...' : 'Mark as Sent'}
+                        {sendActionId === lead.id ? 'Recording...' : 'I Sent This Manually'}
                       </button>
                     </div>
                   </article>
