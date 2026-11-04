@@ -8265,20 +8265,4 @@ function DrawerSection({ title, children }) {
   )
 }
 
-function DrawerInfo({ label, value }) {
-  return (
-    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4">
-
-      <p className="text-xs uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-
-      <p className="text-sm font-medium text-slate-200 mt-2 capitalize">
-        {value}
-      </p>
-
-    </div>
-  )
-}
-
 export default App
