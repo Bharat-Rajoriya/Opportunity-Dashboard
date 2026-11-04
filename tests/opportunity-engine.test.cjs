@@ -305,7 +305,7 @@ test('stale diagnostics response cannot overwrite a newer workspace run', async 
 })
 
 test('dashboard exposes accessible success/error feedback and responsive engine styles', () => {
-  const dashboard = source.slice(source.indexOf('className="engine-action-card"'), source.indexOf('{/* Stats */}'))
+  const dashboard = source.slice(source.indexOf('id="workspace-discovery"'), source.indexOf('{/* Stats */}'))
   assert(dashboard.includes('handleFindOpportunities'))
   assert(dashboard.includes('Search Running...'))
   assert(dashboard.includes('role="status"'))
