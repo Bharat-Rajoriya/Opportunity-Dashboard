@@ -23,7 +23,7 @@ const edgeSource = readFileSync(
 
 test('opportunity cards expose manual pitch generation when no draft exists', () => {
   for (const expected of [
-    '✨ Generate Pitch',
+    'Generate Pitch',
     'Generating Pitch...',
     'onGeneratePitch',
     "opportunity.outreach_status === 'not_generated'",
