@@ -1,4 +1,4 @@
-import { getServiceMatchDetails } from './serviceMatch'
+import { getServiceMatchDetails } from './serviceMatch.js'
 
 /** These are workflow warnings, not an authorization decision. */
 export function requiresOutreachReview(opportunity) {
