@@ -7452,27 +7452,6 @@ function OpportunityDrawer({
 
             </div>
 
-            {serviceMatch && (
-              <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950 p-4">
-                <p className="text-sm font-semibold text-white">{serviceMatch.label}</p>
-                {serviceMatch.evidence && (
-                  <p className="mt-2 text-xs leading-5 text-slate-300">
-                    Buyer evidence: “{serviceMatch.evidence}”
-                  </p>
-                )}
-                {serviceMatch.reason && (
-                  <p className="mt-1 text-xs leading-5 text-slate-400">
-                    {serviceMatch.reason}
-                  </p>
-                )}
-                {serviceMatch.level === 'related' && (
-                  <p className="mt-2 text-xs text-amber-300">
-                    Requires a manual relevance check. Automatic pitch recommendation is disabled.
-                  </p>
-                )}
-              </div>
-            )}
-
             {opportunity.eligibility_match && (
               <div className={`mt-4 rounded-xl border p-4 ${eligibilityClass}`}>
                 <div className="flex flex-wrap items-center gap-2">
