@@ -377,8 +377,10 @@ test('late review results cannot remove a new workspace queue or reset its actio
 })
 
 test('review cards expose all three actions and the inline editor', () => {
-  const card = source.slice(source.indexOf('<h2 className="text-xl font-semibold">Review Queue</h2>'),
-    source.indexOf('{/* Opportunities */}'))
+  const start = source.indexOf('id="workspace-outreach"')
+  const end = source.indexOf('{/* Opportunities */}', start)
+  assert(start >= 0 && end > start)
+  const card = source.slice(start, end)
   for (const label of ['Approve', 'Edit', 'Reject', 'Save & Approve', 'Cancel']) {
     assert(card.includes(label))
   }
@@ -400,4 +402,20 @@ test('cancelled low-confidence approval makes no database write', async () => {
   assert(!h.calls.some(([kind]) => kind === 'update'))
   assert.deepEqual(h.state.queue.map((lead) => lead.id), ['lead-1', 'lead-2'])
   assert.deepEqual(h.state.approvedOutreach, [])
+})
+
+
+test('editing a low-confidence pitch requires explicit approval confirmation', async () => {
+  const h = setupActions({
+    editingId: sampleLead.id,
+    editedMessage: 'Carefully revised pitch',
+    approvalWarning: () => 'Buyer service fit needs manual review',
+    confirm: () => false,
+  })
+  await h.saveEditedOpportunity(sampleLead)
+  assert(!h.calls.some(([kind]) => kind === 'update'))
+  assert.equal(h.state.editingId, sampleLead.id)
+  assert.equal(h.state.editedMessage, 'Carefully revised pitch')
+  assert.deepEqual(h.state.queue.map((lead) => lead.id), ['lead-1', 'lead-2'])
+  assert.equal(h.state.approvedOutreach.length, 0)
 })
