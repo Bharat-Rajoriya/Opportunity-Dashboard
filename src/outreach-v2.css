@@ -1,0 +1,83 @@
+/* Outreach Workflow UI V2 — applies only inside authenticated workspace. */
+.workspace-shell .outreach-v2-section{margin-bottom:24px;padding:25px;border:1px solid #30405c;border-radius:19px;background:#101b2e}
+.workspace-shell .outreach-v2-section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:21px}
+.workspace-shell .outreach-v2-eyebrow{display:block;font-size:10px;font-weight:750;letter-spacing:.14em;color:#b8a7ed}
+.workspace-shell .outreach-v2-section-heading h2{margin:7px 0 8px;color:#f7f8ff;font-size:22px;font-weight:740;letter-spacing:-.035em;line-height:1.3}
+.workspace-shell .outreach-v2-section-heading p{max-width:760px;color:#a3b3cc;font-size:13px;line-height:1.65}
+.workspace-shell .outreach-v2-count{display:inline-flex;align-items:center;gap:5px;flex:none;padding:8px 11px;border:1px solid #4b4778;border-radius:999px;background:#25203f;color:#d6c9ff;font-size:11px;font-weight:760}
+.workspace-shell .outreach-v2-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 20px;padding:0;list-style:none}
+.workspace-shell .outreach-v2-steps li{display:flex;flex-direction:column;gap:5px;min-width:0;padding:13px 15px;border:1px solid #2c3d5a;border-radius:11px;background:#0d1729}
+.workspace-shell .outreach-v2-steps li.is-current{border-color:#63558f;background:#201f3b}
+.workspace-shell .outreach-v2-steps li span{color:#a99cca;font-size:10px;font-weight:750;letter-spacing:.08em}
+.workspace-shell .outreach-v2-steps li strong{color:#e4eafa;font-size:12px;line-height:1.3}
+.workspace-shell .outreach-v2-steps li small{color:#8fa0be;font-size:10.5px;line-height:1.4}
+.workspace-shell .outreach-v2-feedback,.workspace-shell .outreach-v2-empty{padding:20px;border:1px solid #2c3952;border-radius:12px;background:#0d1627;color:#a7b6ce;font-size:13px}
+.workspace-shell .outreach-v2-empty h3{color:#f0f3ff;font-size:15px;font-weight:720}
+.workspace-shell .outreach-v2-empty p{margin-top:6px;line-height:1.65}
+.workspace-shell .outreach-v2-error{padding:16px;border:1px solid #994a64;border-radius:11px;background:#37202e;color:#fecdd3;font-size:13px}
+.workspace-shell .outreach-v2-error button{margin-top:11px;text-decoration:underline;color:#fff}
+.workspace-shell .outreach-v2-review-list{display:flex;flex-direction:column;gap:16px}
+.workspace-shell .outreach-v2-review-card,.workspace-shell .outreach-v2-approved-card{min-width:0;overflow:hidden;border:1px solid #334461;border-radius:15px;background:#0d172a}
+.workspace-shell .outreach-v2-review-card{padding:21px}
+.workspace-shell .outreach-v2-approved-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.workspace-shell .outreach-v2-approved-card{display:flex;flex-direction:column;padding:20px}
+.workspace-shell .outreach-v2-context{min-width:0}
+.workspace-shell .outreach-v2-lead-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.workspace-shell .outreach-v2-lead-title{min-width:0}
+.workspace-shell .outreach-v2-source{display:inline-block;margin-bottom:8px;color:#c5b7ff;font-size:10.5px;font-weight:740;letter-spacing:.03em}
+.workspace-shell .outreach-v2-lead-title h3{color:#f1f5ff;font-size:17px;font-weight:730;line-height:1.35;letter-spacing:-.025em;overflow-wrap:anywhere}
+.workspace-shell .outreach-v2-lead-subtitle{margin-top:6px;color:#8ea1be;font-size:11.5px;line-height:1.5}
+.workspace-shell .outreach-v2-original{display:inline-flex;gap:5px;align-items:center;flex:none;padding:7px 9px;border:1px solid #394864;border-radius:8px;color:#d8d2fa;font-size:11px;font-weight:670}
+.workspace-shell .outreach-v2-original:hover{border-color:#8374bf;background:#24203e}
+.workspace-shell .outreach-v2-metadata{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:17px}
+.workspace-shell .outreach-v2-metadata>div{min-width:0;padding:11px 12px;border:1px solid #2a3953;border-radius:10px;background:#111e34}
+.workspace-shell .outreach-v2-metadata>div>span{display:block;margin-bottom:6px;color:#8ea2c1;font-size:10px;font-weight:640;line-height:1.4}
+.workspace-shell .outreach-v2-metadata strong{display:block;color:#e3eafa;font-size:11.5px;font-weight:720;line-height:1.55;overflow-wrap:anywhere}
+.workspace-shell .outreach-v2-metadata .outreach-v2-fit-exact{color:#8ee1bb}
+.workspace-shell .outreach-v2-metadata .outreach-v2-fit-related{color:#f5d69a}
+.workspace-shell .outreach-v2-metadata .outreach-v2-fit-unsupported{color:#f9a8b2}
+.workspace-shell .outreach-v2-caution,.workspace-shell .outreach-v2-research-caution{display:flex;gap:10px;align-items:flex-start;margin-top:13px;padding:11px 13px;border:1px solid #715838;border-radius:10px;background:#2b241e;color:#f7d7a1;font-size:11px;line-height:1.65}
+.workspace-shell .outreach-v2-caution svg,.workspace-shell .outreach-v2-research-caution svg{flex:none;margin-top:1px}
+.workspace-shell .outreach-v2-research-caution{border-color:#435d83;background:#1b293e;color:#c6d5ed}
+.workspace-shell .outreach-v2-evidence{display:flex;align-items:baseline;gap:8px;margin-top:12px;color:#d1cbe1;font-size:11px;line-height:1.6;overflow-wrap:anywhere}
+.workspace-shell .outreach-v2-evidence svg{flex:none;color:#9bdbbf}
+.workspace-shell .outreach-v2-evidence strong{color:#d5c6ff}
+.workspace-shell .outreach-v2-reason{margin-top:14px;padding:11px 13px;border-left:2px solid #8073ad;background:#181e33;color:#bfc9df}
+.workspace-shell .outreach-v2-reason strong{color:#d4caf6;font-size:11px}
+.workspace-shell .outreach-v2-reason p{margin-top:5px;font-size:12px;line-height:1.6}
+.workspace-shell .outreach-v2-draft-panel,.workspace-shell .outreach-v2-approved-message{min-width:0;margin-top:19px;padding:19px;border:1px solid #354660;border-radius:12px;background:#111d32}
+.workspace-shell .outreach-v2-approved-message{flex:1}
+.workspace-shell .outreach-v2-draft-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.workspace-shell .outreach-v2-draft-head h4{margin-top:6px;color:#eff3fc;font-size:15px;font-weight:740}
+.workspace-shell .outreach-v2-draft-length{flex:none;color:#99aaca;font-size:11px;font-weight:650}
+.workspace-shell .outreach-v2-subject{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin-top:15px;color:#dce5f9}
+.workspace-shell .outreach-v2-subject span{color:#94a5c3;font-size:11px;font-weight:700}
+.workspace-shell .outreach-v2-subject strong{font-size:12px;font-weight:690;overflow-wrap:anywhere}
+.workspace-shell .outreach-v2-message{max-height:245px;overflow-y:auto;margin-top:14px;padding:13px;border:1px solid #2d3c59;border-radius:9px;background:#0d1627;color:#cdd8ed;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.75;scrollbar-width:thin}
+.workspace-shell .outreach-v2-editor{display:flex;flex-direction:column;gap:14px;margin-top:17px}
+.workspace-shell .outreach-v2-editor label{display:flex;flex-direction:column;gap:7px;color:#cbd6e8;font-size:12px;font-weight:680}
+.workspace-shell .outreach-v2-field{width:100%;min-width:0;padding:11px 12px;border:1px solid #485674;border-radius:9px;background:#0c1627;color:#f1f4fc;font-size:13px;line-height:1.6}
+.workspace-shell .outreach-v2-textarea{min-height:165px;resize:vertical}
+.workspace-shell .outreach-v2-field:focus-visible{outline:2px solid #ad97fc;outline-offset:1px}
+.workspace-shell .outreach-v2-editor-note{margin-top:13px;color:#97a8c7;font-size:11px;line-height:1.55}
+.workspace-shell .outreach-v2-actions{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:17px}
+.workspace-shell .outreach-v2-actions :is(button,a){display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:37px;padding:8px 13px;border-radius:9px;font-size:12px;font-weight:720;text-align:center;transition:background .15s,border-color .15s}
+.workspace-shell .outreach-v2-primary-action{border:1px solid #9374f3;background:#8064df;color:#fff}
+.workspace-shell .outreach-v2-primary-action:hover:not(:disabled){background:#a28af2}
+.workspace-shell .outreach-v2-subtle-action{border:1px solid #465877;background:#1a2740;color:#d6e0f4}
+.workspace-shell .outreach-v2-subtle-action:hover:not(:disabled){border-color:#8072b4;background:#2a3250}
+.workspace-shell .outreach-v2-danger-action{border:1px solid #765066;background:#31202f;color:#ffbec8}
+.workspace-shell .outreach-v2-danger-action:hover:not(:disabled){background:#47283a}
+.workspace-shell .outreach-v2-manual-action{border:1px solid #498e76;background:#1d624b;color:#ebfff5}
+.workspace-shell .outreach-v2-manual-action:hover:not(:disabled){background:#287b5d}
+.workspace-shell .outreach-v2-actions :is(button,a):disabled{opacity:.52;cursor:not-allowed}
+.workspace-shell .outreach-v2-action-error{margin-top:12px;color:#ffb8c4;font-size:12px}
+.workspace-shell .outreach-v2-send-instruction{margin-top:15px;padding:13px;border:1px solid #46577a;border-radius:10px;background:#17233b}
+.workspace-shell .outreach-v2-send-instruction>span{font-size:10px;font-weight:770;letter-spacing:.1em;color:#bcaeff}
+.workspace-shell .outreach-v2-send-instruction p{margin-top:6px;color:#acbdd5;font-size:11.5px;line-height:1.6}
+.workspace-shell .outreach-v2-approved-actions{margin-top:16px;padding-top:13px;border-top:1px solid #31425f}
+.workspace-shell .outreach-v2-approved-actions .outreach-v2-manual-action{margin-left:auto}
+@media(max-width:1270px){.workspace-shell .outreach-v2-approved-grid{grid-template-columns:1fr}.workspace-shell .outreach-v2-approved-card{padding:19px}}
+@media(max-width:980px){.workspace-shell .outreach-v2-metadata{grid-template-columns:repeat(3,minmax(0,1fr))}.workspace-shell .outreach-v2-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.workspace-shell .outreach-v2-section{padding:17px}.workspace-shell .outreach-v2-section-heading{flex-direction:column;gap:10px}.workspace-shell .outreach-v2-section-heading h2{font-size:19px}.workspace-shell .outreach-v2-review-card,.workspace-shell .outreach-v2-approved-card{padding:15px}.workspace-shell .outreach-v2-lead-top{flex-wrap:wrap}.workspace-shell .outreach-v2-metadata{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-shell .outreach-v2-draft-panel,.workspace-shell .outreach-v2-approved-message{padding:14px}.workspace-shell .outreach-v2-steps{gap:6px}.workspace-shell .outreach-v2-steps li{padding:10px}.workspace-shell .outreach-v2-approved-actions .outreach-v2-manual-action{margin-left:0}.workspace-shell .outreach-v2-actions :is(button,a){flex:1 1 auto}}
+@media(prefers-reduced-motion:reduce){.workspace-shell .outreach-v2-actions :is(button,a){transition:none}}
