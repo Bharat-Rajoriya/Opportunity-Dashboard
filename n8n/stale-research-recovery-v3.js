@@ -22,16 +22,16 @@ const research=node({type:'n8n-nodes-base.executeWorkflow',version:1.3,config:{
  name:'Recover Research Only',parameters:{
  workflowId:{__rl:true,value:'Q1MQ3Lx1C9ABAdjW',mode:'list',cachedResultUrl:'/workflow/Q1MQ3Lx1C9ABAdjW',cachedResultName:'Opportunity Enrichment - V1'},
  workflowInputs:{mappingMode:'defineBelow',value:{
- workspace_id:expr('{{ $json.workspace_id }}'),master_execution_id:expr('{{ $json.master_execution_id }}'),requested_by_user_id:''},
- matchingColumns:[],schema:[{"id":"workspace_id","displayName":"workspace_id","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"},{"id":"master_execution_id","displayName":"master_execution_id","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"},{"id":"requested_by_user_id","displayName":"requested_by_user_id","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"}],attemptToConvertTypes:false,convertFieldsToString:true},
+ workspace_id:expr('{{ $json.workspace_id }}'),master_execution_id:expr('{{ $json.master_execution_id }}'),requested_by_user_id:'',recovery_only:'true',recovery_candidate_ids:expr('{{ JSON.stringify($json.candidate_ids) }}')},
+ matchingColumns:[],schema:[{"id":"workspace_id","displayName":"workspace_id","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"},{"id":"master_execution_id","displayName":"master_execution_id","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"},{"id":"requested_by_user_id","displayName":"requested_by_user_id","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"},{"id":"recovery_only","displayName":"recovery_only","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"},{"id":"recovery_candidate_ids","displayName":"recovery_candidate_ids","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"}],attemptToConvertTypes:false,convertFieldsToString:true},
  options:{waitForSubWorkflow:true}
 }}});
 const scoring=node({type:'n8n-nodes-base.executeWorkflow',version:1.3,config:{
  name:'Score For Manual Review Only',parameters:{
  workflowId:{__rl:true,value:'gP9uaThwYFX0xnhB',mode:'list',cachedResultUrl:'/workflow/gP9uaThwYFX0xnhB',cachedResultName:'Final Scoring'},
  workflowInputs:{mappingMode:'defineBelow',value:{
- workspace_id:expr('{{ $json.workspace_id }}'),master_execution_id:expr('{{ $json.master_execution_id }}'),recovery_only:'true'},
- matchingColumns:[],schema:[{"id":"workspace_id","displayName":"workspace_id","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"},{"id":"master_execution_id","displayName":"master_execution_id","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"},{"id":"recovery_only","displayName":"recovery_only","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"}],attemptToConvertTypes:false,convertFieldsToString:true},
+ workspace_id:expr('{{ $json.workspace_id }}'),master_execution_id:expr('{{ $json.master_execution_id }}'),recovery_only:'true',recovery_candidate_ids:expr('{{ $json.recovery_candidate_ids }}')},
+ matchingColumns:[],schema:[{"id":"workspace_id","displayName":"workspace_id","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"},{"id":"master_execution_id","displayName":"master_execution_id","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"},{"id":"recovery_only","displayName":"recovery_only","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"},{"id":"recovery_candidate_ids","displayName":"recovery_candidate_ids","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string"}],attemptToConvertTypes:false,convertFieldsToString:true},
  options:{waitForSubWorkflow:true}
 }}});
 const done=node({type:'n8n-nodes-base.code',version:2,config:{
