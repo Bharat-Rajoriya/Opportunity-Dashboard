@@ -14,6 +14,11 @@ export default function WorkspaceOverview({
 }) {
   const focus = getWorkspaceFocus(stats, reviewCount)
   const sources = sourcesLoading ? [] : enabledSources
+  const recordedStatus = String(engineRun?.run_status || engineRun?.status || '').toLowerCase()
+  const statusTone = searchRunning ? 'is-busy'
+    : ['failed', 'error', 'cancelled', 'canceled'].includes(recordedStatus) ? 'is-error'
+      : ['completed', 'success', 'succeeded'].includes(recordedStatus) ? 'is-good'
+        : 'is-neutral'
   return (
     <section id="workspace-overview" className="workspace-overview workspace-anchor"
       aria-labelledby="workspace-overview-title">
@@ -35,7 +40,7 @@ export default function WorkspaceOverview({
       <div className="workspace-overview-side">
         <div className="workspace-status-label"><CircleDot size={16} aria-hidden="true" /> WORKSPACE PULSE</div>
         <div className="workspace-status-line">
-          <span className={`workspace-status-light${searchRunning ? ' is-busy' : ''}`} aria-hidden="true" />
+          <span className={`workspace-status-light ${statusTone}`} aria-hidden="true" />
           <span>{searchRunning ? 'Discovery is running' : readableStatus(engineRun)}</span>
         </div>
         <div className="workspace-focus">
