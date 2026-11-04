@@ -401,3 +401,19 @@ test('cancelled low-confidence approval makes no database write', async () => {
   assert.deepEqual(h.state.queue.map((lead) => lead.id), ['lead-1', 'lead-2'])
   assert.deepEqual(h.state.approvedOutreach, [])
 })
+
+
+test('editing a low-confidence pitch requires explicit approval confirmation', async () => {
+  const h = setupActions({
+    editingId: sampleLead.id,
+    editedMessage: 'Carefully revised pitch',
+    approvalWarning: () => 'Buyer service fit needs manual review',
+    confirm: () => false,
+  })
+  await h.saveEditedOpportunity(sampleLead)
+  assert(!h.calls.some(([kind]) => kind === 'update'))
+  assert.equal(h.state.editingId, sampleLead.id)
+  assert.equal(h.state.editedMessage, 'Carefully revised pitch')
+  assert.deepEqual(h.state.queue.map((lead) => lead.id), ['lead-1', 'lead-2'])
+  assert.equal(h.state.approvedOutreach.length, 0)
+})
