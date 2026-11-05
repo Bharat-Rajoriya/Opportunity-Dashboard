@@ -4768,8 +4768,9 @@ function App() {
                             type="checkbox"
                             checked={targetCountries.includes(country)}
                             onChange={(event) => {
+                              const checked = event.currentTarget.checked
                               setTargetCountries((current) =>
-                                toggleTargetMarket(current, country, event.target.checked)
+                                toggleTargetMarket(current, country, checked)
                               )
 
                               setSearchSettingsError('')
