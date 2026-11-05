@@ -60,6 +60,7 @@ begin
      or length(p_provider) > 64
      or p_execution_id is null or length(trim(p_execution_id)) < 1
      or length(p_execution_id) > 128
+     or p_lease_seconds is null
      or p_lease_seconds < 30 or p_lease_seconds > 300 then
     raise exception 'Invalid recovery probe claim parameters';
   end if;
