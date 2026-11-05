@@ -59,3 +59,30 @@ export function getProofTypeTip(type) {
   }
   return tips[type] || tips.other
 }
+
+const normalizedText = value => String(value ?? '').trim()
+const normalizedList = value => Array.isArray(value)
+  ? [...new Set(value.filter(item => typeof item === 'string').map(item => item.trim()).filter(Boolean))]
+    .map(item => item.toLowerCase()).sort()
+  : []
+
+/** Protect unsaved edits when closing the Business Profile editor. */
+export function hasUnsavedProfileChanges(form = {}, saved = {}) {
+  const fields = [
+    'business_name', 'business_type', 'website_url', 'primary_goal',
+    'preferred_language', 'provider_country', 'good_opportunity_definition',
+  ]
+  if (fields.some(key => normalizedText(form[key]) !== normalizedText(saved[key]))) return true
+
+  const originalLanguages = Array.isArray(saved.working_languages) && saved.working_languages.length
+    ? saved.working_languages
+    : saved.preferred_language ? [saved.preferred_language] : []
+  const arrays = [
+    ['working_languages', originalLanguages],
+    ['ideal_client_types', saved.ideal_client_types],
+    ['rejection_rules', saved.rejection_rules],
+  ]
+  return arrays.some(([field, original]) =>
+    JSON.stringify(normalizedList(form[field])) !== JSON.stringify(normalizedList(original))
+  )
+}
