@@ -50,6 +50,7 @@ import ProfileSnapshot from './components/ProfileSnapshot'
 import { hasUnsavedProfileChanges } from './config/profileExperience'
 import DiscoveryQueryEditor from './components/DiscoveryQueryEditor'
 import DiscoveryRunPanel from './components/DiscoveryRunPanel'
+import AcquisitionDiagnostics from './components/AcquisitionDiagnostics'
 import { getWorkspaceSection } from './config/workspaceUi'
 import { approvalWarning, manualPitchWarning, markedAsSentPrompt } from './services/outreachSafety'
 import { getDraftWordCount, getOutreachLeadContext, getOutreachSummary, getSendInstruction } from './services/outreachPresentation'
@@ -3328,6 +3329,11 @@ function App() {
   const navigateWorkspaceSection = (sectionId) => {
     const section = getWorkspaceSection(sectionId)
     setActiveWorkspaceSection(section.id)
+    if (section.id === 'diagnostics') {
+      setActivePage('diagnostics')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     if (section.id === 'settings') {
       setActivePage('settings')
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -3693,7 +3699,7 @@ function App() {
     <WorkspaceShell
       workspaceName={workspace?.name}
       userEmail={user?.email}
-      activeSection={activePage === 'settings' ? 'settings' : activeWorkspaceSection}
+      activeSection={activePage === 'settings' ? 'settings' : activePage === 'diagnostics' ? 'diagnostics' : activeWorkspaceSection}
       onNavigate={navigateWorkspaceSection}
       onSignOut={handleSignOut}
     >
@@ -3701,13 +3707,15 @@ function App() {
         <header className="workspace-page-header">
           <div>
             <div className="workspace-header-eyebrow">
-              WORKSPACE / {activePage === 'settings' ? 'SETTINGS' : activeWorkspaceSection.toUpperCase()}
+              WORKSPACE / {activePage === 'settings' ? 'SETTINGS' : activePage === 'diagnostics' ? 'DIAGNOSTICS' : activeWorkspaceSection.toUpperCase()}
             </div>
             <h1>{activePage === 'settings'
               ? 'Workspace settings'
+              : activePage === 'diagnostics' ? 'Acquisition diagnostics'
               : getWorkspaceSection(activeWorkspaceSection).label}</h1>
             <p>{activePage === 'settings'
               ? 'Manage the services, proof, and search settings behind your results.'
+              : activePage === 'diagnostics' ? 'Inspect source performance and recorded qualification outcomes.'
               : 'An organized view of your discovery, prospects, and next actions.'}</p>
           </div>
           {activePage === 'dashboard' && (
@@ -4393,6 +4401,8 @@ function App() {
         />
           </>
         )}
+
+        {activePage === 'diagnostics' && <AcquisitionDiagnostics workspaceId={workspace.id} />}
 
         {activePage === 'settings' && (
           <div id="workspace-settings" className="workspace-anchor space-y-8">
