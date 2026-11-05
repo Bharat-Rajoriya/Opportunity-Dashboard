@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import OnboardingProgress from './OnboardingProgress'
+import ProfileSnapshot from './ProfileSnapshot'
+import { getProofTypeTip } from '../config/profileExperience'
+import '../profile-experience-v2.css'
 import {
   generateOnboardingCopy,
   triggerAiQueryGeneration,
@@ -1260,8 +1264,8 @@ function Onboarding({ user, workspace, onComplete }) {
   const activeServiceCount = services.filter((service) => service.active).length
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white">
-      <div className="mx-auto max-w-5xl px-6 py-16">
+    <div className="onboard-v2-shell min-h-screen bg-[#020617] text-white">
+      <div className="onboard-v2-content mx-auto max-w-5xl px-6 py-16">
 
         <div className="mb-10">
           <p className="mb-2 text-sm font-medium text-violet-400">
@@ -1278,46 +1282,10 @@ function Onboarding({ user, workspace, onComplete }) {
           </p>
         </div>
 
-        <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm text-slate-400">
-              Setup progress
-            </span>
-
-            <span className="text-sm font-medium text-violet-400">
-              Step {currentStep} of 5
-            </span>
-          </div>
-
-          <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-            <div
-              className="h-full rounded-full bg-violet-600 transition-all"
-              style={{ width: `${currentStep * 20}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="mb-8 grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-xs uppercase tracking-wider text-slate-500">
-              Signed in as
-            </p>
-
-            <p className="mt-2 font-semibold">
-              {user?.email}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-xs uppercase tracking-wider text-slate-500">
-              Workspace
-            </p>
-
-            <p className="mt-2 font-semibold">
-              {workspace?.name}
-            </p>
-          </div>
-        </div>
+        <OnboardingProgress currentStep={currentStep} workspaceName={workspace?.name} />
+        <p className="onboard-v2-session">
+          Signed in as <strong>{user?.email || 'your account'}</strong>. Your setup is scoped to this workspace.
+        </p>
 
         {currentStep === 1 && (
           <form
@@ -1330,7 +1298,7 @@ function Onboarding({ user, workspace, onComplete }) {
               </span>
 
               <h2 className="mt-4 text-2xl font-bold">
-                About You
+                Business Basics
               </h2>
 
               <p className="mt-2 text-slate-400">
@@ -1874,7 +1842,7 @@ function Onboarding({ user, workspace, onComplete }) {
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 font-semibold">
                 3
               </div>
-              <h2 className="text-3xl font-bold">Ideal Opportunities</h2>
+              <h2 className="text-3xl font-bold">Ideal Buyers &amp; Opportunities</h2>
               <p className="mt-2 text-slate-400">
                 Tell us what kinds of clients and opportunities you want the engine to prioritize.
               </p>
@@ -2219,7 +2187,7 @@ function Onboarding({ user, workspace, onComplete }) {
                 <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 text-lg font-bold">
                   5
                 </div>
-                <h2 className="text-3xl font-bold">Proof &amp; Profiles</h2>
+                <h2 className="text-3xl font-bold">Proof &amp; Profiles <span className="onboard-v2-optional">Optional</span></h2>
                 <p className="mt-3 text-slate-400">
                   Add links or evidence that show what you can do — for example Dribbble, Behance, YouTube, LinkedIn, GitHub, your website, case studies, publications or client work.
                 </p>
@@ -2285,6 +2253,9 @@ function Onboarding({ user, workspace, onComplete }) {
                       </select>
                     </Field>
                   </div>
+                  <p className="onboard-v2-proof-tip md:col-span-2" role="note">
+                    {getProofTypeTip(portfolioForm.proof_type)} Only fields relevant to this proof type are shown.
+                  </p>
 
                   {isProofFieldVisible(
                     portfolioForm.proof_type,
@@ -2733,6 +2704,24 @@ function Onboarding({ user, workspace, onComplete }) {
               </p>
             )}
 
+            <ProfileSnapshot
+              compact
+              profile={{
+                business_name: businessName,
+                business_type: businessType,
+                primary_goal: primaryGoal,
+                provider_country: providerCountry,
+                preferred_language: preferredLanguage,
+                working_languages: parseCommaList(workingLanguagesText),
+                ideal_client_types: idealForm.ideal_client_types,
+                good_opportunity_definition: idealForm.good_opportunity_definition,
+              }}
+              services={services}
+              proofs={portfolioItems}
+              servicesLoading={servicesLoading}
+              proofsLoading={portfolioLoading}
+            />
+
             <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
               <button
                 type="button"
@@ -2826,7 +2815,7 @@ function IdealTagField({
   )
 }
 
-function Field({ label, required = false, children }) {
+function Field({ label, hint, required = false, children }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-slate-200">
@@ -2838,6 +2827,7 @@ function Field({ label, required = false, children }) {
       </span>
 
       {children}
+      {hint && <span className="onboard-v2-field-hint">{hint}</span>}
     </label>
   )
 }
