@@ -27,3 +27,15 @@ test('safe completion and event never include original payload', () => {
   assert.equal(JSON.stringify(event).includes('SECRET'),false);
   assert.equal(event.outcome,'failed');
 });
+
+test('missing or malformed provider responses never clear cooldown', () => {
+  assert.equal(classifyResponse(null).success, false);
+  assert.equal(classifyResponse({}).success, false);
+  assert.equal(classifyResponse({unrelated: true}).success, false);
+  assert.equal(classifyResponse({statusCode:200}).success, true);
+  assert.equal(classifyResponse({search_metadata:{status:'Success'}, organic_results:[]}).success, true);
+});
+test('invalid lease timeouts fail closed', () => {
+  assert.equal(decideProbe(valid,[{search_query:'x'}],now,-1).authorized,false);
+  assert.equal(decideProbe(valid,[{search_query:'x'}],now,31*60*1000).authorized,false);
+});
