@@ -1,13 +1,13 @@
 import {
   BriefcaseBusiness, CalendarClock, Compass, LayoutDashboard,
-  LogOut, MessageSquareText, Settings2, Sparkles,
+  LogOut, MessageSquareText, Settings2, Activity, Sparkles,
 } from 'lucide-react'
 import { WORKSPACE_SECTIONS } from '../config/workspaceUi'
 
 const icons = {
   overview: LayoutDashboard, discovery: Compass,
   opportunities: BriefcaseBusiness, outreach: MessageSquareText,
-  followups: CalendarClock, settings: Settings2,
+  followups: CalendarClock, diagnostics: Activity, settings: Settings2,
 }
 
 export default function WorkspaceShell({
