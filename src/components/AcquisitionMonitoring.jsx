@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchEngineRunMonitoring, summarizeRunSignals, summarizeAcquisitionMonitoring } from '../services/acquisitionMonitoring'
+import { sourceRecoverySummary, getSourceRecoveryGuidance } from '../services/sourceReliability'
 import './AcquisitionMonitoring.css'
 
 const number = value => Number(value || 0).toLocaleString()
@@ -38,6 +39,7 @@ export default function AcquisitionMonitoring({ workspaceId, days, funnelRows = 
     response.runs.map(run => summarizeRunSignals(run, funnelRows)),
   [response.runs, funnelRows])
   const totals = useMemo(() => summarizeAcquisitionMonitoring(runs), [runs])
+  const recovery = useMemo(() => sourceRecoverySummary(runs), [runs])
 
   return (
     <section className="monitor-panel" aria-labelledby="monitor-title">
@@ -70,6 +72,24 @@ export default function AcquisitionMonitoring({ workspaceId, days, funnelRows = 
               <div className="acq-kpi" key={label}><span>{label}</span><strong>{number(value)}</strong></div>
             ))}
           </div>
+          {recovery.failedRuns > 0 && (
+            <section className="acq-panel" aria-labelledby="recovery-title">
+              <h3 id="recovery-title">Source reliability &amp; recovery guidance</h3>
+              <p className="acq-note">Actions are advisory only. No provider is retried from this page. A failed workflow step does not establish which API caused the failure.</p>
+              <ul className="acq-reasons">
+                {recovery.actionable.slice(0, 5).map(item => (
+                  <li key={`${item.executionId}-${item.startedAt}`} className="recovery-guidance-item">
+                    <div><strong>Run #{item.executionId}: {item.title}</strong>
+                      <p className="acq-note">{item.action}</p>
+                      <p className="acq-note">{item.retry}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {recovery.failedRuns > 5 && <p className="acq-note">Showing guidance for the five most recent failed runs.</p>}
+              <p className="acq-note">Google SERP API uses an existing backend cooldown and bounded recovery probe. This report cannot confirm the current provider cooldown or guarantee a probe is globally exclusive.</p>
+            </section>
+          )}
           {runs.length === 0 ? <div className="acq-empty">
             <h3>No engine run records found</h3>
             <p>This workspace has no execution log in the selected period. This does not prove a scheduled search occurred.</p>
@@ -90,6 +110,7 @@ export default function AcquisitionMonitoring({ workspaceId, days, funnelRows = 
                         <td>
                           <span className={`monitor-status is-${run.severity}`}>{run.label}</span>
                           {run.failedStep && <small>Failed step: {run.failedStep}</small>}
+                          {getSourceRecoveryGuidance(run) && <small>{getSourceRecoveryGuidance(run).attribution}</small>}
                           {run.warningLabels.length > 0 && <small>{run.warningLabels.join(' · ')}</small>}
                         </td>
                       </tr>
