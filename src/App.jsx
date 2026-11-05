@@ -40,6 +40,8 @@ import { SEARCH_COUNTRIES, normalizeTargetMarkets, isTargetMarketSelected, toggl
 import { getServiceMatchDetails } from './services/serviceMatch'
 import { getOpportunityPresentation } from './services/opportunityPresentation'
 import OpportunityFactsStrip from './components/OpportunityFactsStrip'
+import ModalFocusScope from './components/ModalFocusScope'
+import { useModalFocus } from './hooks/useModalFocus'
 import OpportunityPlatformFilters from './components/OpportunityPlatformFilters'
 import { getOpportunityPlatformOptions, matchesOpportunityPlatforms, sortOpportunities, toggleOpportunityPlatform } from './services/opportunityPlatforms'
 import WorkspaceShell from './components/WorkspaceShell'
@@ -65,6 +67,7 @@ import './opportunity-v2.css'
 import './outreach-v2.css'
 import './discovery-v2.css'
 import './profile-experience-v2.css'
+import './responsive-a11y.css'
 import './opportunity-platforms.css'
 
 const REJECTION_REASONS = [
@@ -4179,16 +4182,17 @@ function App() {
         </section>
 
         {rejectingOpportunity && (
-          <div
+          <ModalFocusScope
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-5"
-            role="presentation"
+            onClose={cancelRejecting}
+            initialFocusSelector="[data-modal-initial-focus]"
           >
             <div
               role="dialog"
               aria-modal="true"
               aria-labelledby="reject-outreach-title"
               aria-describedby="reject-outreach-description"
-              className="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
+              className="review-reject-dialog w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
             >
               <div className="mb-6 flex items-start justify-between gap-5">
                 <div>
@@ -4224,7 +4228,7 @@ function App() {
                     <button
                       key={value}
                       type="button"
-                      autoFocus={index === 0}
+                      data-modal-initial-focus={index === 0 ? true : undefined}
                       aria-pressed={rejectionReason === value}
                       onClick={() => setRejectionReason(value)}
                       className={`rounded-lg border px-4 py-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
@@ -4278,7 +4282,7 @@ function App() {
                 </button>
               </div>
             </div>
-          </div>
+          </ModalFocusScope>
         )}
 
         {/* Opportunities */}
@@ -4321,6 +4325,20 @@ function App() {
             setStatusFilter={setStatusFilter}
             followUpFilter={followUpFilter}
             setFollowUpFilter={setFollowUpFilter}
+            hasActiveFilters={Boolean(
+              searchTerm.trim() || actionFilter !== 'all' || scoreFilter !== 'all' ||
+              draftFilter !== 'all' || statusFilter !== 'all' || followUpFilter !== 'all' ||
+              selectedPlatforms.length > 0
+            )}
+            onResetFilters={() => {
+              setSearchTerm('')
+              setActionFilter('all')
+              setScoreFilter('all')
+              setDraftFilter('all')
+              setStatusFilter('all')
+              setFollowUpFilter('all')
+              setSelectedPlatforms([])
+            }}
           />
 
           {dataLoading ? (
@@ -5219,12 +5237,12 @@ function App() {
             </section>
 
             {portfolioDrawerOpen && (
-              <div className="service-editor-overlay">
-                <aside className="service-editor-panel">
+              <ModalFocusScope className="service-editor-overlay" onClose={closePortfolioEditor}>
+                <aside className="service-editor-panel" role="dialog" aria-modal="true" aria-labelledby="portfolio-editor-title" tabIndex={-1}>
                   <div className="service-editor-header">
                     <div>
                       <span className="settings-eyebrow">PROOF &amp; PROFILES</span>
-                      <h2>
+                      <h2 id="portfolio-editor-title">
                         {editingPortfolio ? 'Edit Proof / Profile' : 'Add Proof / Profile'}
                       </h2>
                     </div>
@@ -5551,19 +5569,19 @@ function App() {
                     </button>
                   </form>
                 </aside>
-              </div>
+              </ModalFocusScope>
             )}
 
             {businessProfileEditorOpen && (
-              <div className="service-editor-overlay profile-v2-editor-overlay">
-                <aside className="service-editor-panel">
+              <ModalFocusScope className="service-editor-overlay profile-v2-editor-overlay" onClose={closeBusinessProfileEditor}>
+                <aside className="service-editor-panel" role="dialog" aria-modal="true" aria-labelledby="business-profile-editor-title" tabIndex={-1}>
                   <div className="service-editor-header">
                     <div>
                       <span className="settings-eyebrow">
                         BUSINESS PROFILE
                       </span>
 
-                      <h2>Edit Business Profile</h2>
+                      <h2 id="business-profile-editor-title">Edit Business Profile</h2>
                     </div>
 
                     <button
@@ -5933,19 +5951,19 @@ function App() {
                     </button>
                   </form>
                 </aside>
-              </div>
+              </ModalFocusScope>
             )}
 
             {serviceDrawerOpen && serviceForm && (
-              <div className="service-editor-overlay">
-                <aside className="service-editor-panel">
+              <ModalFocusScope className="service-editor-overlay" onClose={closeServiceEditor}>
+                <aside className="service-editor-panel" role="dialog" aria-modal="true" aria-labelledby="service-editor-title" tabIndex={-1}>
                   <div className="service-editor-header">
                     <div>
                       <span className="settings-eyebrow">
                         SERVICE SETTINGS
                       </span>
 
-                      <h2>
+                      <h2 id="service-editor-title">
                         {editingService ? 'Edit Service' : 'Add Service'}
                       </h2>
                     </div>
@@ -6169,7 +6187,7 @@ function App() {
                     </button>
                   </div>
                 </aside>
-              </div>
+              </ModalFocusScope>
             )}
           </div>
         )}
@@ -6194,6 +6212,8 @@ function FilterBar({
   setStatusFilter,
   followUpFilter,
   setFollowUpFilter,
+  hasActiveFilters,
+  onResetFilters,
 }) {
   return (
     <div className="p-5 border-b border-slate-800">
@@ -6202,6 +6222,7 @@ function FilterBar({
         {/* Search */}
         <input
           type="text"
+          aria-label="Search opportunities"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search opportunities..."
@@ -6210,6 +6231,7 @@ function FilterBar({
 
         {/* Action */}
         <select
+          aria-label="Filter by recommended action"
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value)}
           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none focus:border-violet-500"
@@ -6225,6 +6247,7 @@ function FilterBar({
 
         {/* Score */}
         <select
+          aria-label="Filter by opportunity score"
           value={scoreFilter}
           onChange={(e) => setScoreFilter(e.target.value)}
           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none focus:border-violet-500"
@@ -6238,6 +6261,7 @@ function FilterBar({
 
         {/* Draft */}
         <select
+          aria-label="Filter by draft status"
           value={draftFilter}
           onChange={(e) => setDraftFilter(e.target.value)}
           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none focus:border-violet-500"
@@ -6249,6 +6273,7 @@ function FilterBar({
 
         {/* Status */}
         <select
+          aria-label="Filter by opportunity status"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none focus:border-violet-500"
@@ -6263,6 +6288,18 @@ function FilterBar({
         </select>
 
       </div>
+
+      {hasActiveFilters && (
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span role="status" className="text-xs text-slate-400">
+            Showing opportunities matching the selected filters.
+          </span>
+          <button type="button" onClick={onResetFilters}
+            className="responsive-clear-filters rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-200 hover:border-violet-400 hover:text-white">
+            Clear all filters
+          </button>
+        </div>
+      )}
 
       {followUpFilter !== 'all' && (
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -6562,6 +6599,7 @@ function ThemedDatePicker({ value, min, onChange }) {
     const handleEscape = (event) => {
       if (event.key === 'Escape') {
         setIsOpen(false)
+        calendarRef.current?.querySelector('[aria-haspopup="dialog"]')?.focus({ preventScroll: true })
       }
     }
 
@@ -6642,7 +6680,7 @@ function ThemedDatePicker({ value, min, onChange }) {
         <div
           role="dialog"
           aria-label="Choose follow-up date"
-          className="absolute left-0 top-full z-40 mt-2 w-full min-w-72 rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl shadow-black/50"
+          className="responsive-date-popover absolute left-0 top-full z-40 mt-2 w-full min-w-0 rounded-xl border border-slate-700 bg-slate-900 p-3 sm:p-4 shadow-2xl shadow-black/50"
         >
           <div className="mb-4 flex items-center justify-between">
             <p className="font-semibold text-white">
@@ -6704,7 +6742,7 @@ function ThemedDatePicker({ value, min, onChange }) {
                   })}
                   aria-current={isCurrentDay ? 'date' : undefined}
                   aria-pressed={isSelected}
-                  className={`flex h-9 items-center justify-center rounded-lg text-sm transition ${
+                  className={`flex h-9 w-full min-w-0 items-center justify-center rounded-lg text-sm transition ${
                     isSelected
                       ? 'bg-violet-600 font-semibold text-white shadow-lg shadow-violet-950/40'
                       : isDisabled
@@ -6818,24 +6856,8 @@ function OpportunityDrawer({
     }
   }
 
-  useEffect(() => {
-    if (!opportunity) return
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    document.body.style.overflow = 'hidden'
-
-    window.addEventListener('keydown', handleEscape)
-
-    return () => {
-      document.body.style.overflow = ''
-      window.removeEventListener('keydown', handleEscape)
-    }
-  }, [opportunity, onClose])
+  // Keyboard focus stays inside the open drawer and returns to View Details on close.
+  const dialogRef = useModalFocus(onClose, { active: Boolean(opportunity) })
 
   const handleStatusChange = async (newStatus) => {
     if (!opportunity?.id || !onUpdateStatus) {
@@ -7180,7 +7202,7 @@ function OpportunityDrawer({
       />
 
       {/* Drawer */}
-      <div role="dialog" aria-modal="true" aria-labelledby="opportunity-drawer-title"
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="opportunity-drawer-title" tabIndex={-1}
         className="opp-v2-drawer absolute right-0 top-0 h-full w-full max-w-2xl bg-slate-900 border-l border-slate-800 shadow-2xl overflow-y-auto">
 
         <div className="p-6 space-y-6">
