@@ -44,6 +44,8 @@ import OpportunityPlatformFilters from './components/OpportunityPlatformFilters'
 import { getOpportunityPlatformOptions, matchesOpportunityPlatforms, sortOpportunities, toggleOpportunityPlatform } from './services/opportunityPlatforms'
 import WorkspaceShell from './components/WorkspaceShell'
 import WorkspaceOverview from './components/WorkspaceOverview'
+import ProfileSnapshot from './components/ProfileSnapshot'
+import { hasUnsavedProfileChanges } from './config/profileExperience'
 import DiscoveryQueryEditor from './components/DiscoveryQueryEditor'
 import DiscoveryRunPanel from './components/DiscoveryRunPanel'
 import { getWorkspaceSection } from './config/workspaceUi'
@@ -62,6 +64,7 @@ import './workspace-v1.css'
 import './opportunity-v2.css'
 import './outreach-v2.css'
 import './discovery-v2.css'
+import './profile-experience-v2.css'
 import './opportunity-platforms.css'
 
 const REJECTION_REASONS = [
@@ -550,6 +553,10 @@ function App() {
 
   const closeBusinessProfileEditor = () => {
     if (businessProfileSaving) return
+    if (hasUnsavedProfileChanges(businessProfileForm, businessProfile) &&
+      !window.confirm('Discard your unsaved Business Profile changes?')) {
+      return
+    }
 
     setBusinessProfileEditorOpen(false)
     setBusinessProfileError('')
@@ -4414,26 +4421,13 @@ function App() {
               )}
 
               {businessProfile && (
-                <dl className="mt-6 grid gap-4 border-t border-slate-800 pt-5 sm:grid-cols-3">
-                  <div>
-                    <dt className="text-xs uppercase text-slate-500">Business</dt>
-                    <dd className="mt-1 text-sm font-medium text-white">
-                      {businessProfile.business_name || 'Not set'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs uppercase text-slate-500">Type</dt>
-                    <dd className="mt-1 text-sm capitalize text-slate-300">
-                      {businessProfile.business_type || 'Not set'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs uppercase text-slate-500">Language</dt>
-                    <dd className="mt-1 text-sm text-slate-300">
-                      {businessProfile.preferred_language || 'Not set'}
-                    </dd>
-                  </div>
-                </dl>
+                <ProfileSnapshot
+                  profile={businessProfile}
+                  services={services}
+                  proofs={portfolioItems}
+                  servicesLoading={servicesLoading}
+                  proofsLoading={portfolioLoading}
+                />
               )}
             </section>
 
@@ -5561,7 +5555,7 @@ function App() {
             )}
 
             {businessProfileEditorOpen && (
-              <div className="service-editor-overlay">
+              <div className="service-editor-overlay profile-v2-editor-overlay">
                 <aside className="service-editor-panel">
                   <div className="service-editor-header">
                     <div>
@@ -5588,6 +5582,11 @@ function App() {
                       void saveBusinessProfile()
                     }}
                   >
+                    <div className="profile-v2-editor-section">
+                      <span className="profile-v2-eyebrow">01 / BUSINESS ESSENTIALS</span>
+                      <h3>Tell buyers who you are</h3>
+                      <p>Update your identity and working location. Your base country provides context and does not restrict you to local buyers.</p>
+                    </div>
                     <label>
                       Business Name
                       <input
@@ -5695,6 +5694,11 @@ function App() {
                       </span>
                     </label>
 
+                    <div className="profile-v2-editor-section">
+                      <span className="profile-v2-eyebrow">02 / BUYER TARGETING</span>
+                      <h3>Describe the opportunities you want</h3>
+                      <p>Use your goal, ideal client types and rejection rules to guide discovery. Review any AI-written suggestions before saving.</p>
+                    </div>
                     <div className="settings-ai-field">
                       <label>
                         Primary Goal
@@ -5917,6 +5921,9 @@ function App() {
                       </div>
                     )}
 
+                    <p className="profile-v2-editor-footnote">
+                      Saving refreshes the business context used for matching and may trigger AI search-query regeneration. Changes are not saved until you select Save Profile.
+                    </p>
                     <button
                       type="submit"
                       disabled={businessProfileSaving}
