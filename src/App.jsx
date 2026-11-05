@@ -5087,6 +5087,8 @@ function App() {
                     aiQueries={aiSuggestedQueries}
                     aiEnabled={aiQueryGenerationEnabled}
                     aiGeneratedAt={aiQueriesGeneratedAt}
+                    regenerateStatus={searchSettingsMessage?.startsWith('AI queries regenerated')
+                      ? searchSettingsMessage : ''}
                     generating={aiQueriesGenerating}
                     saving={searchSettingsSaving}
                     searching={searchRunning}
