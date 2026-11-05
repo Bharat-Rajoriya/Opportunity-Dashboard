@@ -6,12 +6,12 @@ const { pathToFileURL } = require('node:url')
 
 const load = import(pathToFileURL(join(__dirname, '../src/config/workspaceUi.js')).href)
 
-test('workspace navigation has six unique real sections', async () => {
+test('workspace navigation has seven unique real sections', async () => {
   const { WORKSPACE_SECTIONS, getWorkspaceSection } = await load
   assert.deepEqual(WORKSPACE_SECTIONS.map(item => item.id), [
-    'overview', 'discovery', 'opportunities', 'outreach', 'followups', 'settings',
+    'overview', 'discovery', 'opportunities', 'outreach', 'followups', 'diagnostics', 'settings',
   ])
-  assert.equal(new Set(WORKSPACE_SECTIONS.map(item => item.target)).size, 6)
+  assert.equal(new Set(WORKSPACE_SECTIONS.map(item => item.target)).size, 7)
   assert.equal(getWorkspaceSection('invalid').id, 'overview')
 })
 
