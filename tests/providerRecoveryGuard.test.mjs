@@ -34,6 +34,8 @@ test('missing or malformed provider responses never clear cooldown', () => {
   assert.equal(classifyResponse({unrelated: true}).success, false);
   assert.equal(classifyResponse({statusCode:200}).success, true);
   assert.equal(classifyResponse({search_metadata:{status:'Success'}, organic_results:[]}).success, true);
+  assert.equal(classifyResponse({search_metadata:{status:'Error'}, organic_results:[]}).success, false);
+  assert.equal(classifyResponse({statusCode:200,search_metadata:{status:'Processing'}}).success, false);
 });
 test('invalid lease timeouts fail closed', () => {
   assert.equal(decideProbe(valid,[{search_query:'x'}],now,-1).authorized,false);
