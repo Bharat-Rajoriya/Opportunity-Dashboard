@@ -54,4 +54,4 @@ Do not put privileged API keys or tokens in workflow JSON exports. Use backend c
 - [ ] Confirm n8n active/published graph is the graph that was reviewed.
 
 ## Notes
-This is a safe implementation package and dry-run contract, **not an activated production integration**. A GitHub connector write was blocked during preparation; these files must be committed through an authorized path to produce PR #43. The branch `feat/provider-activation-v1` exists but does not contain this package.
+This is a safe implementation package and dry-run contract, **not an activated production integration**. The recovery helper and tests are committed to PR #43. The production n8n collector is still unchanged. The standard CI test script includes the ESM recovery tests, but their passing does not constitute an end-to-end n8n credential or provider API verification.
