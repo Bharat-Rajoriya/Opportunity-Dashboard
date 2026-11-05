@@ -40,6 +40,8 @@ import { SEARCH_COUNTRIES, normalizeTargetMarkets, isTargetMarketSelected, toggl
 import { getServiceMatchDetails } from './services/serviceMatch'
 import { getOpportunityPresentation } from './services/opportunityPresentation'
 import OpportunityFactsStrip from './components/OpportunityFactsStrip'
+import ModalFocusScope from './components/ModalFocusScope'
+import { useModalFocus } from './hooks/useModalFocus'
 import OpportunityPlatformFilters from './components/OpportunityPlatformFilters'
 import { getOpportunityPlatformOptions, matchesOpportunityPlatforms, sortOpportunities, toggleOpportunityPlatform } from './services/opportunityPlatforms'
 import WorkspaceShell from './components/WorkspaceShell'
@@ -65,6 +67,7 @@ import './opportunity-v2.css'
 import './outreach-v2.css'
 import './discovery-v2.css'
 import './profile-experience-v2.css'
+import './responsive-a11y.css'
 import './opportunity-platforms.css'
 
 const REJECTION_REASONS = [
@@ -4179,16 +4182,17 @@ function App() {
         </section>
 
         {rejectingOpportunity && (
-          <div
+          <ModalFocusScope
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-5"
-            role="presentation"
+            onClose={cancelRejecting}
+            initialFocusSelector="[data-modal-initial-focus]"
           >
             <div
               role="dialog"
               aria-modal="true"
               aria-labelledby="reject-outreach-title"
               aria-describedby="reject-outreach-description"
-              className="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
+              className="review-reject-dialog w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
             >
               <div className="mb-6 flex items-start justify-between gap-5">
                 <div>
@@ -4224,7 +4228,7 @@ function App() {
                     <button
                       key={value}
                       type="button"
-                      autoFocus={index === 0}
+                      data-modal-initial-focus={index === 0 ? true : undefined}
                       aria-pressed={rejectionReason === value}
                       onClick={() => setRejectionReason(value)}
                       className={`rounded-lg border px-4 py-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
@@ -4278,7 +4282,7 @@ function App() {
                 </button>
               </div>
             </div>
-          </div>
+          </ModalFocusScope>
         )}
 
         {/* Opportunities */}
@@ -5219,12 +5223,12 @@ function App() {
             </section>
 
             {portfolioDrawerOpen && (
-              <div className="service-editor-overlay">
-                <aside className="service-editor-panel">
+              <ModalFocusScope className="service-editor-overlay" onClose={closePortfolioEditor}>
+                <aside className="service-editor-panel" role="dialog" aria-modal="true" aria-labelledby="portfolio-editor-title" tabIndex={-1}>
                   <div className="service-editor-header">
                     <div>
                       <span className="settings-eyebrow">PROOF &amp; PROFILES</span>
-                      <h2>
+                      <h2 id="portfolio-editor-title">
                         {editingPortfolio ? 'Edit Proof / Profile' : 'Add Proof / Profile'}
                       </h2>
                     </div>
@@ -5551,19 +5555,19 @@ function App() {
                     </button>
                   </form>
                 </aside>
-              </div>
+              </ModalFocusScope>
             )}
 
             {businessProfileEditorOpen && (
-              <div className="service-editor-overlay profile-v2-editor-overlay">
-                <aside className="service-editor-panel">
+              <ModalFocusScope className="service-editor-overlay profile-v2-editor-overlay" onClose={closeBusinessProfileEditor}>
+                <aside className="service-editor-panel" role="dialog" aria-modal="true" aria-labelledby="business-profile-editor-title" tabIndex={-1}>
                   <div className="service-editor-header">
                     <div>
                       <span className="settings-eyebrow">
                         BUSINESS PROFILE
                       </span>
 
-                      <h2>Edit Business Profile</h2>
+                      <h2 id="business-profile-editor-title">Edit Business Profile</h2>
                     </div>
 
                     <button
@@ -5933,19 +5937,19 @@ function App() {
                     </button>
                   </form>
                 </aside>
-              </div>
+              </ModalFocusScope>
             )}
 
             {serviceDrawerOpen && serviceForm && (
-              <div className="service-editor-overlay">
-                <aside className="service-editor-panel">
+              <ModalFocusScope className="service-editor-overlay" onClose={closeServiceEditor}>
+                <aside className="service-editor-panel" role="dialog" aria-modal="true" aria-labelledby="service-editor-title" tabIndex={-1}>
                   <div className="service-editor-header">
                     <div>
                       <span className="settings-eyebrow">
                         SERVICE SETTINGS
                       </span>
 
-                      <h2>
+                      <h2 id="service-editor-title">
                         {editingService ? 'Edit Service' : 'Add Service'}
                       </h2>
                     </div>
@@ -6169,7 +6173,7 @@ function App() {
                     </button>
                   </div>
                 </aside>
-              </div>
+              </ModalFocusScope>
             )}
           </div>
         )}
@@ -6818,24 +6822,8 @@ function OpportunityDrawer({
     }
   }
 
-  useEffect(() => {
-    if (!opportunity) return
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    document.body.style.overflow = 'hidden'
-
-    window.addEventListener('keydown', handleEscape)
-
-    return () => {
-      document.body.style.overflow = ''
-      window.removeEventListener('keydown', handleEscape)
-    }
-  }, [opportunity, onClose])
+  // Keyboard focus stays inside the open drawer and returns to View Details on close.
+  const dialogRef = useModalFocus(onClose, { active: Boolean(opportunity) })
 
   const handleStatusChange = async (newStatus) => {
     if (!opportunity?.id || !onUpdateStatus) {
@@ -7180,7 +7168,7 @@ function OpportunityDrawer({
       />
 
       {/* Drawer */}
-      <div role="dialog" aria-modal="true" aria-labelledby="opportunity-drawer-title"
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="opportunity-drawer-title" tabIndex={-1}
         className="opp-v2-drawer absolute right-0 top-0 h-full w-full max-w-2xl bg-slate-900 border-l border-slate-800 shadow-2xl overflow-y-auto">
 
         <div className="p-6 space-y-6">
