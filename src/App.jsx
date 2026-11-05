@@ -36,6 +36,7 @@ import {
   discoveryRunExplanation,
 } from './services/discoveryDiagnostics'
 import { shouldSuggestFreelancer } from './config/discoverySources'
+import { SEARCH_COUNTRIES, toggleTargetMarket, hasUnsavedTargetMarkets } from './config/targetMarkets'
 import { getServiceMatchDetails } from './services/serviceMatch'
 import { getOpportunityPresentation } from './services/opportunityPresentation'
 import OpportunityFactsStrip from './components/OpportunityFactsStrip'
@@ -69,7 +70,6 @@ const REJECTION_REASONS = [
   ['other', 'Other'],
 ]
 
-const SEARCH_COUNTRIES = ['USA', 'UK', 'UAE', 'Australia', 'India']
 
 const FREELANCER_PRODUCTION_ENABLED =
   import.meta.env.VITE_FREELANCER_PRODUCTION_ENABLED === 'true'
@@ -4740,15 +4740,17 @@ function App() {
                   </div>
 
                   <fieldset
-                    disabled={searchSettingsSaving || searchRunning}
-                    className="rounded-xl border border-slate-800 p-5"
+                    disabled={searchSettingsSaving}
+                    aria-labelledby="target-markets-title"
+                    aria-describedby="target-markets-description"
+                    className="rounded-xl border border-slate-800 p-5 disabled:opacity-60"
                   >
                     <div className="mb-4">
-                      <h3 className="font-medium text-white">
+                      <h3 id="target-markets-title" className="font-medium text-white">
                         Target Markets
                       </h3>
-                      <p className="mt-1 text-sm text-slate-400">
-                        Select preferred markets for discovery. These are targeting preferences, not a strict same-country hiring requirement.
+                      <p id="target-markets-description" className="mt-1 text-sm text-slate-400">
+                        Choose one or more preferred markets. These guide discovery but do not restrict you to clients in your own country.
                       </p>
                     </div>
 
@@ -4767,9 +4769,7 @@ function App() {
                             checked={targetCountries.includes(country)}
                             onChange={(event) => {
                               setTargetCountries((current) =>
-                                event.target.checked
-                                  ? normalizeSearchList([...current, country])
-                                  : current.filter((item) => item !== country)
+                                toggleTargetMarket(current, country, event.target.checked)
                               )
 
                               setSearchSettingsError('')
@@ -4782,6 +4782,19 @@ function App() {
                         </label>
                       ))}
                     </div>
+                    <p className="mt-3 text-xs text-slate-400">
+                      {SEARCH_COUNTRIES.filter((country) => targetCountries.includes(country)).length} of {SEARCH_COUNTRIES.length} markets selected. You can select multiple countries.
+                    </p>
+                    {hasUnsavedTargetMarkets(targetCountries, searchProfile?.target_countries) && (
+                      <p role="status" className="mt-2 text-xs text-violet-300">
+                        Unsaved market changes. Select Save Changes below to use these preferences in future searches.
+                      </p>
+                    )}
+                    {searchRunning && (
+                      <p role="status" className="mt-2 text-xs text-amber-300">
+                        Discovery is running. You can edit markets now, but saving is available only after the run finishes.
+                      </p>
+                    )}
                   </fieldset>
 
                   <section className="rounded-xl border border-slate-800 p-5">
