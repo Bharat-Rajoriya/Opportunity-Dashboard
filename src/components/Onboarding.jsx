@@ -2048,13 +2048,18 @@ function Onboarding({ user, workspace, onComplete }) {
                 </div>
               </div>
 
-              <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-6">
-                <h3 className="font-semibold">Opportunity sources</h3>
+              <fieldset className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4 sm:p-6">
+                <legend className="sr-only">Opportunity platforms</legend>
+                <h3 className="font-semibold">Where should we find opportunities?</h3>
                 <p className="mt-1 text-sm text-slate-400">
-                  Select where to look for buyer requests. You can change these choices later in Settings.
+                  Choose one or more available sources. We'll search your selected sources together when you run discovery.
+                  These are preferences, not a guarantee that a provider is online or has matching projects.
                 </p>
-                <div className="mt-4 space-y-3">
-                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 p-4">
+                <p className="mt-3 text-sm text-violet-300" aria-live="polite">
+                  {onboardingSources.length} available {onboardingSources.length === 1 ? 'source' : 'sources'} selected
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-700 bg-slate-900/70 p-4 transition hover:border-violet-500 focus-within:ring-2 focus-within:ring-violet-400">
                     <input
                       type="checkbox"
                       checked={onboardingSources.includes('google')}
@@ -2062,15 +2067,18 @@ function Onboarding({ user, workspace, onComplete }) {
                         setOnboardingSources((sources) => toggleOnboardingSource(sources, 'google', event.target.checked, FREELANCER_PRODUCTION_ENABLED))
                         setSearchMessage('')
                       }}
-                      className="mt-1 accent-violet-500"
+                      className="mt-1 h-4 w-4 shrink-0 accent-violet-500"
                     />
                     <span>
-                      <span className="block font-medium">Google Web Search</span>
-                      <span className="mt-1 block text-sm text-slate-400">Find public requests and business signals across the web.</span>
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">Google Web Search</span>
+                        <span className="rounded-full border border-emerald-600/50 px-2 py-0.5 text-xs text-emerald-300">Selectable</span>
+                      </span>
+                      <span className="mt-1 block text-sm text-slate-400">Discover public buyer requests and business signals across the web.</span>
                     </span>
                   </label>
-                  {FREELANCER_PRODUCTION_ENABLED && (
-                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 p-4">
+                  {FREELANCER_PRODUCTION_ENABLED ? (
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-700 bg-slate-900/70 p-4 transition hover:border-violet-500 focus-within:ring-2 focus-within:ring-violet-400">
                       <input
                         type="checkbox"
                         checked={onboardingSources.includes('freelancer')}
@@ -2078,19 +2086,53 @@ function Onboarding({ user, workspace, onComplete }) {
                           setOnboardingSources((sources) => toggleOnboardingSource(sources, 'freelancer', event.target.checked, FREELANCER_PRODUCTION_ENABLED))
                           setSearchMessage('')
                         }}
-                        className="mt-1 accent-violet-500"
+                        className="mt-1 h-4 w-4 shrink-0 accent-violet-500"
                       />
                       <span>
-                        <span className="block font-medium">Freelancer direct projects</span>
-                        <span className="mt-1 block text-sm text-slate-400">Search posted marketplace projects with explicit budgets and requirements.</span>
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">Freelancer</span>
+                          <span className="rounded-full border border-emerald-600/50 px-2 py-0.5 text-xs text-emerald-300">Selectable</span>
+                        </span>
+                        <span className="mt-1 block text-sm text-slate-400">Find marketplace projects with posted requirements and budgets.</span>
                       </span>
                     </label>
+                  ) : (
+                    <div className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+                      <input type="checkbox" disabled checked={false} aria-label="Freelancer unavailable" className="mt-1 h-4 w-4 shrink-0" />
+                      <span>
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">Freelancer</span>
+                          <span className="rounded-full border border-slate-600 px-2 py-0.5 text-xs text-slate-400">Not configured</span>
+                        </span>
+                        <span className="mt-1 block text-sm text-slate-400">Direct collection is not enabled in this deployment.</span>
+                      </span>
+                    </div>
                   )}
+                  <div className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+                    <input type="checkbox" disabled checked={false} aria-label="Upwork coming soon" className="mt-1 h-4 w-4 shrink-0" />
+                    <span>
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">Upwork</span>
+                        <span className="rounded-full border border-amber-600/50 px-2 py-0.5 text-xs text-amber-300">Planned · not connected</span>
+                      </span>
+                      <span className="mt-1 block text-sm text-slate-400">Pending permission for a compliant integration. No Upwork opportunities are collected directly yet.</span>
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+                    <input type="checkbox" disabled checked={false} aria-label="Reddit coming soon" className="mt-1 h-4 w-4 shrink-0" />
+                    <span>
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">Reddit</span>
+                        <span className="rounded-full border border-slate-600 px-2 py-0.5 text-xs text-slate-400">Planned · not connected</span>
+                      </span>
+                      <span className="mt-1 block text-sm text-slate-400">Community opportunity discovery is planned, but not enabled.</span>
+                    </span>
+                  </div>
                 </div>
                 {onboardingSources.length === 0 && (
-                  <p className="mt-3 text-sm text-amber-300">Enable at least one source to continue.</p>
+                  <p role="alert" className="mt-3 text-sm text-amber-300">Select at least one available source to continue.</p>
                 )}
-              </div>
+              </fieldset>
 
               <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-6">
                 <h3 className="font-semibold">Target Countries</h3>
