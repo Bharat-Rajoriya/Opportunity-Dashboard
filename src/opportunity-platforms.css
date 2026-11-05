@@ -1,0 +1,19 @@
+/* Platform-based filtering of saved opportunities; independent of discovery sources. */
+.workspace-shell .opp-platform-toolbar{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;column-gap:20px;row-gap:12px;padding:17px 20px;border-bottom:1px solid #293b55;background:#111b30}
+.workspace-shell .opp-platform-row{display:flex;flex:1 1 580px;align-items:flex-start;gap:14px;min-width:0}
+.workspace-shell .opp-platform-heading{display:inline-flex;align-items:center;gap:8px;flex:none;padding-top:10px;color:#b2c3df;font-size:12px;font-weight:730}
+.workspace-shell .opp-platform-heading svg{color:#b8a5fa}
+.workspace-shell .opp-platform-choices{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
+.workspace-shell .opp-platform-choice{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:8px 12px;border:1px solid #3b4d68;border-radius:10px;background:#0d172a;color:#bcc9dc;font-size:12px;font-weight:660;transition:background .15s,border-color .15s,color .15s}
+.workspace-shell .opp-platform-choice:hover{border-color:#7666a8;background:#22233f;color:#f2f0ff}
+.workspace-shell .opp-platform-choice.is-active{border-color:#8c75ed;background:#302754;color:#f4efff;box-shadow:inset 0 0 0 1px #8c75ed22}
+.workspace-shell .opp-platform-choice span{min-width:23px;padding:3px 6px;border-radius:999px;background:#25344d;color:#d5e0f4;font-size:10px;font-variant-numeric:tabular-nums;text-align:center}
+.workspace-shell .opp-platform-choice.is-active span{background:#55458c;color:#fff}
+.workspace-shell .opp-platform-sort{display:flex;align-items:center;flex:0 1 auto;gap:10px}
+.workspace-shell .opp-platform-sort label{display:inline-flex;align-items:center;gap:7px;flex:none;color:#9eb3cf;font-size:12px;font-weight:720;white-space:nowrap}
+.workspace-shell .opp-platform-sort select{width:235px;max-width:100%;min-height:39px;padding:8px 11px;border:1px solid #445676;border-radius:10px;background:#0b1425;color:#e6eefa;font-size:12px;outline:none}
+.workspace-shell .opp-platform-sort select:focus-visible,.workspace-shell .opp-platform-choice:focus-visible{outline:2px solid #bfaaff;outline-offset:2px}
+.workspace-shell .opp-platform-hint{flex:0 0 100%;margin-top:1px;color:#94a7c4;font-size:11px;line-height:1.55}
+@media(max-width:950px){.workspace-shell .opp-platform-row{flex:1 1 100%}.workspace-shell .opp-platform-sort{margin-left:0}.workspace-shell .opp-platform-toolbar{padding:16px}}
+@media(max-width:600px){.workspace-shell .opp-platform-row{flex-direction:column;gap:9px}.workspace-shell .opp-platform-heading{padding-top:0}.workspace-shell .opp-platform-choices{width:100%;gap:6px}.workspace-shell .opp-platform-choice{min-height:37px;padding:8px 10px;font-size:11px}.workspace-shell .opp-platform-sort{width:100%;justify-content:space-between}.workspace-shell .opp-platform-sort select{flex:1;min-width:0}}
+@media(prefers-reduced-motion:reduce){.workspace-shell .opp-platform-choice{transition:none}}
