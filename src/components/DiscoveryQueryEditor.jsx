@@ -2,7 +2,7 @@ import { Check, ChevronDown, ChevronUp, Lightbulb, PenLine, Sparkles } from 'luc
 import { getDiscoveryQuerySummary } from '../services/discoveryPresentation'
 
 export default function DiscoveryQueryEditor({
-  customQueries, aiQueries, aiEnabled, aiGeneratedAt,
+  customQueries, aiQueries, aiEnabled, aiGeneratedAt, regenerateStatus,
   generating, saving, searching, hasProfile,
   advancedOpen, onAdvancedToggle, onAiEnabledChange,
   onRegenerate, onCustomChange, onResetMessage,
@@ -45,6 +45,9 @@ export default function DiscoveryQueryEditor({
             )}
             {summary.aiCount > 5 && <small>+{summary.aiCount - 5} more saved suggestions</small>}
           </div>
+          {regenerateStatus && (
+            <p role="status" className="discovery-v2-regenerate-status">{regenerateStatus}</p>
+          )}
           <div className="discovery-v2-query-card-footer">
             <span>{aiGeneratedAt ? `Last generated ${new Date(aiGeneratedAt).toLocaleDateString()}` : 'Not generated yet'}</span>
             <button type="button" onClick={onRegenerate}
@@ -90,7 +93,7 @@ export default function DiscoveryQueryEditor({
           <div className="discovery-v2-query-card-footer">
             <span><Lightbulb size={14} aria-hidden="true" /> Use needs, not just service names.</span>
             <button type="button" onClick={onAdvancedToggle} disabled={saving || searching}
-              aria-expanded={advancedOpen} aria-controls="advanced-search-queries">
+              aria-expanded={advancedOpen} aria-controls={advancedOpen ? 'advanced-search-queries' : undefined}>
               {advancedOpen ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
               {advancedOpen ? 'Close editor' : 'Edit custom phrases'}
             </button>
