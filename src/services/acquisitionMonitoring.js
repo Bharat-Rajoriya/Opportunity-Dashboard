@@ -44,7 +44,7 @@ export function summarizeRunSignals(run, funnelRows = [], now = Date.now()) {
   const category = failed ? classifyEngineFailure(run.error_message) : null
 
   let severity = 'ok'
-  let label = 'Completed'
+  let label
   if (failed) {
     severity = 'error'
     label = category.label
