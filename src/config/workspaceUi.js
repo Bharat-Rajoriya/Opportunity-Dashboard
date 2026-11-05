@@ -4,6 +4,7 @@ export const WORKSPACE_SECTIONS = Object.freeze([
   { id: 'opportunities', label: 'Opportunities', target: 'workspace-opportunities', group: 'workspace' },
   { id: 'outreach', label: 'Outreach', target: 'workspace-outreach', group: 'workspace' },
   { id: 'followups', label: 'Follow-ups', target: 'workspace-followups', group: 'workspace' },
+  { id: 'diagnostics', label: 'Diagnostics', target: 'workspace-diagnostics', group: 'manage' },
   { id: 'settings', label: 'Settings', target: 'workspace-settings', group: 'manage' },
 ])
 
