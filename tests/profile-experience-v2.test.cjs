@@ -112,7 +112,7 @@ test('onboarding and Settings share the new profile UI without changing save han
   assert(app.includes('void saveBusinessProfile()'))
   assert(app.includes("hasUnsavedProfileChanges(businessProfileForm, businessProfile)"))
   assert(app.includes('Discard your unsaved Business Profile changes?'))
-  assert(snapshot.includes('Setup checklist only'))
+  assert(snapshot.includes('{summary.note}'))
   assert(css.includes('@media(max-width:750px)'))
   assert(css.includes('prefers-reduced-motion'))
 })
