@@ -40,6 +40,8 @@ import { SEARCH_COUNTRIES, normalizeTargetMarkets, isTargetMarketSelected, toggl
 import { getServiceMatchDetails } from './services/serviceMatch'
 import { getOpportunityPresentation } from './services/opportunityPresentation'
 import OpportunityFactsStrip from './components/OpportunityFactsStrip'
+import OpportunityPlatformFilters from './components/OpportunityPlatformFilters'
+import { getOpportunityPlatformOptions, matchesOpportunityPlatforms, sortOpportunities, toggleOpportunityPlatform } from './services/opportunityPlatforms'
 import WorkspaceShell from './components/WorkspaceShell'
 import WorkspaceOverview from './components/WorkspaceOverview'
 import DiscoveryQueryEditor from './components/DiscoveryQueryEditor'
@@ -60,6 +62,7 @@ import './workspace-v1.css'
 import './opportunity-v2.css'
 import './outreach-v2.css'
 import './discovery-v2.css'
+import './opportunity-platforms.css'
 
 const REJECTION_REASONS = [
   ['not_relevant', 'Not relevant'],
@@ -286,6 +289,8 @@ function App() {
   const [draftFilter, setDraftFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [followUpFilter, setFollowUpFilter] = useState('all')
+  const [selectedPlatforms, setSelectedPlatforms] = useState([])
+  const [opportunitySort, setOpportunitySort] = useState('score')
   const [selectedOpportunity, setSelectedOpportunity] = useState(null)
 
   const [opportunityActivity, setOpportunityActivity] = useState([])
@@ -3225,10 +3230,15 @@ function App() {
   // -----------------------------------------------------
   // FILTERED OPPORTUNITIES
   // -----------------------------------------------------
+  const platformOptions = useMemo(
+    () => getOpportunityPlatformOptions(opportunities, selectedPlatforms),
+    [opportunities, selectedPlatforms]
+  )
+
   const filteredOpportunities = useMemo(() => {
     const search = searchTerm.toLowerCase().trim()
 
-    return opportunities.filter((opportunity) => {
+    return sortOpportunities(opportunities.filter((opportunity) => {
       const matchesSearch =
         !search ||
         opportunity.title?.toLowerCase().includes(search) ||
@@ -3270,6 +3280,7 @@ function App() {
       }
 
       return (
+        matchesOpportunityPlatforms(opportunity, selectedPlatforms) &&
         matchesSearch &&
         matchesAction &&
         matchesScore &&
@@ -3277,9 +3288,11 @@ function App() {
         matchesStatus &&
         matchesFollowUp
       )
-    })
+    }), opportunitySort)
   }, [
     opportunities,
+    selectedPlatforms,
+    opportunitySort,
     searchTerm,
     actionFilter,
     scoreFilter,
@@ -4268,7 +4281,7 @@ function App() {
               <div>
                 <h2 className="text-xl font-semibold">Opportunities</h2>
                 <p className="text-sm text-slate-400 mt-1">
-                  Ranked by final opportunity score.
+                  Browse opportunities by platform, score, or date.
                 </p>
               </div>
 
@@ -4277,6 +4290,16 @@ function App() {
               </span>
             </div>
           </div>
+
+          <OpportunityPlatformFilters
+            platformOptions={platformOptions}
+            selectedPlatforms={selectedPlatforms}
+            onToggle={(platform) => setSelectedPlatforms(current => toggleOpportunityPlatform(current, platform))}
+            onClear={() => setSelectedPlatforms([])}
+            sortBy={opportunitySort}
+            onSortChange={setOpportunitySort}
+            total={opportunities.length}
+          />
 
           <FilterBar
             searchTerm={searchTerm}
