@@ -51,6 +51,9 @@ export function summarizeRunSignals(run, funnelRows = [], now = Date.now()) {
   } else if (stale) {
     severity = 'warning'
     label = 'Run may be stalled (over 30 minutes)'
+  } else if (status === 'running' && run.run_finished_at) {
+    severity = 'warning'
+    label = 'Run still marked running after finish timestamp'
   } else if (status === 'running') {
     severity = 'info'
     label = 'Run in progress'
@@ -62,13 +65,13 @@ export function summarizeRunSignals(run, funnelRows = [], now = Date.now()) {
     label = 'Completed with critical workflow health warning'
   } else if (totals.evaluated === 0) {
     severity = 'warning'
-    label = 'Completed; no candidate evaluation events'
+    label = 'Completed; no candidate evaluation events recorded'
   } else if (totals.created > 0) {
     label = 'New opportunities recorded'
   } else if (totals.qualified > 0 && totals.duplicates >= totals.qualified) {
     label = 'Qualified candidates already saved'
   } else if (totals.qualified === 0 && totals.rejected > 0) {
-    label = 'All recorded evaluated candidates rejected'
+    label = 'No qualified candidates; rejections recorded'
   } else {
     severity = 'warning'
     label = 'Completed; no new opportunities saved'
