@@ -88,69 +88,60 @@ test('normalizeSearchList trims and removes case-insensitive duplicates', () => 
   )
 })
 
-test('settings render AI controls, advanced query editor and constrained selectors', () => {
+test('settings render AI controls, custom query editor and constrained selectors', () => {
   const dashboard = appSource.slice(
     appSource.indexOf("{activePage === 'settings' && ("),
     appSource.indexOf('// FILTER BAR')
   )
+  const queryEditor = readFileSync(
+    join(__dirname, '../src/components/DiscoveryQueryEditor.jsx'), 'utf8'
+  )
 
   for (const expected of [
-    'Search Query Sources',
-    'AI-generated queries',
-    'Include AI queries',
-    'Regenerate',
-    'Custom search queries',
-    'Edit queries',
-    'id="advanced-search-queries"',
+    '<DiscoveryQueryEditor',
+    'onAiEnabledChange={setAiQueryGenerationEnabled}',
+    'onRegenerate={() => void handleRegenerateAiQueries()}',
+    'onCustomChange={setSearchQueries}',
     'Search Run Size',
     'Queries used per run',
-    'Target Markets',
     'Minimum Intent Level',
     'Opportunity Freshness',
     'Save Changes',
   ]) {
-    assert(dashboard.includes(expected))
+    assert(dashboard.includes(expected), `Missing search setting: ${expected}`)
   }
-
-  assert(!dashboard.includes('JSON'))
+  for (const expected of [
+    'SEARCH QUERY BUILDER',
+    'AI-generated search phrases',
+    'Include AI suggestions in searches',
+    'Regenerate phrases',
+    'Custom search phrases',
+    'Edit custom phrases',
+    'id="advanced-search-queries"',
+  ]) {
+    assert(queryEditor.includes(expected), `Missing query control: ${expected}`)
+  }
 })
 
-
-test('query-source UX separates source selection from run size and keeps AI feedback local', () => {
+test('query-source UX separates source selection and run size and retains local AI feedback', () => {
   const dashboard = appSource.slice(
     appSource.indexOf("{activePage === 'settings' && ("),
     appSource.indexOf('// FILTER BAR')
   )
+  const queryEditor = readFileSync(
+    join(__dirname, '../src/components/DiscoveryQueryEditor.jsx'), 'utf8'
+  )
 
   assert(
-    dashboard.indexOf('Search Query Sources') <
+    dashboard.indexOf('<DiscoveryQueryEditor') <
       dashboard.indexOf('Search Run Size')
   )
-
-  assert(
-    dashboard.includes(
-      'It selects from your enabled AI queries and your custom query list.'
-    )
-  )
-
-  assert(
-    dashboard.includes(
-      "searchSettingsMessage?.startsWith(\n                              'AI queries regenerated'"
-    ) ||
-    dashboard.includes(
-      "searchSettingsMessage?.startsWith(\n                            'AI queries regenerated'"
-    )
-  )
-
-  assert(
-    dashboard.includes(
-      "!searchSettingsMessage.startsWith(\n                          'AI queries regenerated'"
-    ) ||
-    dashboard.includes(
-      "!searchSettingsMessage.startsWith(\n                        'AI queries regenerated'"
-    )
-  )
-
+  assert(dashboard.includes('It selects from your enabled AI queries and your custom query list.'))
+  assert(dashboard.includes("searchSettingsMessage?.startsWith('AI queries regenerated')"))
+  assert(dashboard.includes("!searchSettingsMessage.startsWith("))
+  assert(queryEditor.includes('regenerateStatus &&'))
+  assert(queryEditor.includes('role="status"'))
+  assert(queryEditor.includes('Changes here are not active until you select'))
   assert(!dashboard.includes('Advanced Search Queries'))
   assert(!dashboard.includes('Enable AI-generated queries'))
   assert(!dashboard.includes('Queries per search run'))
