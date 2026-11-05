@@ -5,7 +5,9 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // These are n8n Code-node bodies, not standalone JS modules. n8n supplies
+  // the function scope and $-prefixed globals at execution time.
+  globalIgnores(['dist', 'n8n/qualification-v3/**']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
