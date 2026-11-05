@@ -13,7 +13,7 @@ let previousOverflow = ''
  * Keep keyboard focus in an open drawer/dialog, restore it on close, and
  * prevent background scrolling. React components only mount this when open.
  */
-export function useModalFocus(onClose, { initialFocusSelector = '' } = {}) {
+export function useModalFocus(onClose, { active = true, initialFocusSelector = '' } = {}) {
   const modalRef = useRef(null)
   const closeRef = useRef(onClose)
 
@@ -23,7 +23,7 @@ export function useModalFocus(onClose, { initialFocusSelector = '' } = {}) {
 
   useEffect(() => {
     const modal = modalRef.current
-    if (!modal) return undefined
+    if (!active || !modal) return undefined
 
     const previousFocus = document.activeElement
     if (activeLocks === 0) {
@@ -83,7 +83,7 @@ export function useModalFocus(onClose, { initialFocusSelector = '' } = {}) {
         previousFocus.focus({ preventScroll: true })
       }
     }
-  }, [initialFocusSelector])
+  }, [active, initialFocusSelector])
 
   return modalRef
 }
