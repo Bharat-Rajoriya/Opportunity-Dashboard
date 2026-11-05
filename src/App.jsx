@@ -42,6 +42,8 @@ import { getOpportunityPresentation } from './services/opportunityPresentation'
 import OpportunityFactsStrip from './components/OpportunityFactsStrip'
 import WorkspaceShell from './components/WorkspaceShell'
 import WorkspaceOverview from './components/WorkspaceOverview'
+import DiscoveryQueryEditor from './components/DiscoveryQueryEditor'
+import DiscoveryRunPanel from './components/DiscoveryRunPanel'
 import { getWorkspaceSection } from './config/workspaceUi'
 import { approvalWarning, manualPitchWarning, markedAsSentPrompt } from './services/outreachSafety'
 import { getDraftWordCount, getOutreachLeadContext, getOutreachSummary, getSendInstruction } from './services/outreachPresentation'
@@ -57,6 +59,7 @@ import './App.css'
 import './workspace-v1.css'
 import './opportunity-v2.css'
 import './outreach-v2.css'
+import './discovery-v2.css'
 
 const REJECTION_REASONS = [
   ['not_relevant', 'Not relevant'],
@@ -1524,7 +1527,7 @@ function App() {
           .freelancer.result_limit
       )
       setSearchSettingsMessage('Search settings saved.')
-      console.log('Search settings saved:', data)
+      // Avoid logging complete targeting and search settings in the browser.
     } catch (error) {
       if (requestId === searchSettingsRequest.current) {
         console.error('Failed to save search settings:', error)
@@ -3732,26 +3735,19 @@ function App() {
             {searchRunning ? 'Search Running...' : 'Find Opportunities'}
           </button>
 
-          {engineRun && searchRunning && (
-            <div className="mt-4 rounded-xl border border-violet-500/30 bg-violet-500/10 p-4">
-              <div className="flex items-center gap-3">
-                <span className="relative flex h-3 w-3">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75"></span>
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-violet-500"></span>
-                </span>
-
-                <div>
-                  <p className="font-medium text-white">
-                    Opportunity Engine is running
-                  </p>
-
-                  <p className="mt-1 text-sm text-slate-400">
-                    Collecting, researching and scoring opportunities.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          <DiscoveryRunPanel
+            run={engineRun}
+            running={searchRunning}
+            diagnostics={discoveryDiagnostics}
+            diagnosticsError={discoveryDiagnosticsError}
+            customQueries={searchQueries}
+            aiQueries={aiSuggestedQueries}
+            aiEnabled={aiQueryGenerationEnabled}
+            queryBatchSize={queryBatchSize}
+            enabledSources={enabledSources}
+            onOpenSettings={() => navigateWorkspaceSection('settings')}
+            explanation={discoveryRunExplanation(discoveryDiagnostics, enabledSources)}
+          />
 
           {searchMessage && (
             <div role="status" className="engine-success-message">
@@ -3791,39 +3787,6 @@ function App() {
               </div>
               {sourceEnableError && (
                 <p role="alert" className="mt-3 text-sm text-red-300">{sourceEnableError}</p>
-              )}
-            </div>
-          )}
-
-          {engineRun && !searchRunning && !searchError && (
-            <div className="mt-4 rounded-xl border border-slate-700 bg-slate-900/60 p-4" aria-label="Search run breakdown">
-              <h3 className="text-sm font-semibold text-white">Latest search breakdown</h3>
-              {discoveryDiagnostics ? (
-                <>
-                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
-                    {Object.entries(DISCOVERY_EVENT_LABELS).map(([key, label]) => (
-                      <div key={key}>
-                        <p className="text-xs text-slate-400">{label}</p>
-                        <p className="text-lg font-semibold text-white">{discoveryDiagnostics.counts[key]}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="mt-3 text-sm text-slate-300">
-                    {discoveryRunExplanation(discoveryDiagnostics, enabledSources)}
-                  </p>
-                  {Object.keys(discoveryDiagnostics.sourceCounts).length > 0 && (
-                    <p className="mt-2 text-xs text-slate-400">
-                      Sources checked: {Object.keys(discoveryDiagnostics.sourceCounts).join(', ')}
-                    </p>
-                  )}
-                  {discoveryDiagnostics.truncated && (
-                    <p className="mt-2 text-xs text-amber-300">This breakdown covers the first 2,000 events only.</p>
-                  )}
-                </>
-              ) : (
-                <p className="mt-2 text-sm text-slate-400">
-                  {discoveryDiagnosticsError || 'Detailed candidate events were not recorded for this run.'}
-                </p>
               )}
             </div>
           )}
@@ -4751,7 +4714,7 @@ function App() {
 
                     <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
                       <p className="text-xs uppercase tracking-wide text-slate-500">
-                        Target Countries
+                        Preferred Markets
                       </p>
                       <p className="mt-2 text-2xl font-semibold text-white">
                         {targetCountries.length}
@@ -4786,7 +4749,7 @@ function App() {
                         Target Markets
                       </h3>
                       <p className="mt-1 text-sm text-slate-400">
-                        Choose the countries where you want the engine to prioritize opportunities.
+                        Select preferred markets for discovery. These are targeting preferences, not a strict same-country hiring requirement.
                       </p>
                     </div>
 
@@ -4882,7 +4845,7 @@ function App() {
                             Opportunity Sources
                           </h3>
                           <p className="mt-1 text-sm text-slate-400">
-                            Choose where the engine acquires candidate opportunities before Quality v2 qualification.
+                            Select the sources the engine may use. Enabled is a preference, not proof that an API is working or within quota.
                           </p>
                         </div>
 
@@ -5120,182 +5083,25 @@ function App() {
                     </div>
                   </section>
 
-                  <section className="overflow-hidden rounded-xl border border-slate-800">
-                    <div className="border-b border-slate-800 px-5 py-4">
-                      <h3 className="font-medium text-white">
-                        Search Query Sources
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-400">
-                        Choose which query sources the engine can use when looking for opportunities.
-                      </p>
-                    </div>
-
-                    <div className="divide-y divide-slate-800">
-                      <div className="p-5">
-                        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-3">
-                              <h4 className="font-medium text-white">
-                                AI-generated queries
-                              </h4>
-
-                              <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300">
-                                {aiSuggestedQueries.length} queries
-                              </span>
-
-                              <span
-                                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                                  aiQueryGenerationEnabled
-                                    ? 'bg-emerald-500/10 text-emerald-300'
-                                    : 'bg-slate-800 text-slate-400'
-                                }`}
-                              >
-                                {aiQueryGenerationEnabled
-                                  ? 'Included'
-                                  : 'Not included'}
-                              </span>
-                            </div>
-
-                            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-                              AI creates buyer-intent search phrases from your services,
-                              business profile and targeting preferences. Regenerate them
-                              whenever your offer or ideal client changes.
-                            </p>
-
-                            <p className="mt-2 text-xs text-slate-500">
-                              {aiQueriesGeneratedAt
-                                ? `Last generated ${new Date(aiQueriesGeneratedAt).toLocaleString()}`
-                                : 'No AI query set has been generated yet.'}
-                            </p>
-
-                            {searchSettingsMessage?.startsWith(
-                              'AI queries regenerated'
-                            ) && (
-                              <p
-                                role="status"
-                                className="mt-3 text-sm text-emerald-300"
-                              >
-                                {searchSettingsMessage}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-slate-200">
-                              <input
-                                type="checkbox"
-                                checked={aiQueryGenerationEnabled}
-                                onChange={(event) => {
-                                  setAiQueryGenerationEnabled(event.target.checked)
-                                  setSearchSettingsError('')
-                                  setSearchSettingsMessage('')
-                                }}
-                                disabled={
-                                  searchSettingsSaving ||
-                                  searchRunning ||
-                                  aiQueriesGenerating
-                                }
-                                className="h-4 w-4 accent-violet-600"
-                              />
-
-                              Include AI queries
-                            </label>
-
-                            <button
-                              type="button"
-                              onClick={() => void handleRegenerateAiQueries()}
-                              disabled={
-                                aiQueriesGenerating ||
-                                !aiQueryGenerationEnabled ||
-                                searchSettingsSaving ||
-                                searchRunning ||
-                                !searchProfile?.id
-                              }
-                              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-violet-500/40 bg-violet-500/10 px-5 py-2.5 text-sm font-medium text-violet-200 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {aiQueriesGenerating
-                                ? 'Regenerating...'
-                                : 'Regenerate'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setShowAdvancedQueries((current) => !current)
-                          }
-                          className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition hover:bg-slate-800/40"
-                        >
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-3">
-                              <h4 className="font-medium text-white">
-                                Custom search queries
-                              </h4>
-
-                              <span className="rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-300">
-                                {normalizeSearchList(searchQueries).length} queries
-                              </span>
-                            </div>
-
-                            <p className="mt-2 text-sm text-slate-400">
-                              Your own exact search phrases. Use these when you want
-                              direct control over what the engine searches for.
-                            </p>
-                          </div>
-
-                          <span className="shrink-0 text-sm font-medium text-violet-400">
-                            {showAdvancedQueries ? 'Close editor' : 'Edit queries'}
-                          </span>
-                        </button>
-
-                        {showAdvancedQueries && (
-                          <div className="border-t border-slate-800 p-5">
-                            <div className="rounded-lg border border-slate-700 bg-slate-950 px-4 py-3">
-                              <p className="text-sm text-slate-300">
-                                Add one search phrase per line.
-                              </p>
-                              <p className="mt-1 text-xs text-slate-500">
-                                Blank lines and duplicate queries are removed automatically
-                                when you save.
-                              </p>
-                            </div>
-
-                            <label
-                              htmlFor="advanced-search-queries"
-                              className="mt-5 block text-sm font-medium text-slate-200"
-                            >
-                              Custom Queries
-                            </label>
-
-                            <textarea
-                              id="advanced-search-queries"
-                              value={searchQueries.join('\n')}
-                              onChange={(event) => {
-                                setSearchQueries(event.target.value.split('\n'))
-                                setSearchSettingsError('')
-                                setSearchSettingsMessage('')
-                              }}
-                              disabled={searchSettingsSaving || searchRunning}
-                              rows={14}
-                              spellCheck="false"
-                              className="mt-2 w-full resize-y rounded-xl border border-slate-700 bg-slate-950 p-4 font-mono text-sm leading-6 text-slate-200 outline-none placeholder:text-slate-600 focus:border-violet-500 disabled:opacity-50"
-                              placeholder={`looking for logo designer
-need PPC consultant
-seeking contract lawyer
-hiring video editor`}
-                            />
-
-                            <p className="mt-3 text-xs text-slate-500">
-                              {normalizeSearchList(searchQueries).length} valid custom queries
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </section>
+                  <DiscoveryQueryEditor
+                    customQueries={searchQueries}
+                    aiQueries={aiSuggestedQueries}
+                    aiEnabled={aiQueryGenerationEnabled}
+                    aiGeneratedAt={aiQueriesGeneratedAt}
+                    generating={aiQueriesGenerating}
+                    saving={searchSettingsSaving}
+                    searching={searchRunning}
+                    hasProfile={Boolean(searchProfile?.id)}
+                    advancedOpen={showAdvancedQueries}
+                    onAdvancedToggle={() => setShowAdvancedQueries(current => !current)}
+                    onAiEnabledChange={setAiQueryGenerationEnabled}
+                    onRegenerate={() => void handleRegenerateAiQueries()}
+                    onCustomChange={setSearchQueries}
+                    onResetMessage={() => {
+                      setSearchSettingsError('')
+                      setSearchSettingsMessage('')
+                    }}
+                  />
 
                   <section className="rounded-xl border border-slate-800 p-5">
                     <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
