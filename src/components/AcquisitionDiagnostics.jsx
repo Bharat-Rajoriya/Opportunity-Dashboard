@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { aggregateRejectionReasons, explainAcquisitionRun, fetchAcquisitionDiagnostics, summarizeAcquisitionRuns } from '../services/acquisitionDiagnostics'
+import AcquisitionMonitoring from './AcquisitionMonitoring'
 import './AcquisitionDiagnostics.css'
 
 function formatDate(value) {
@@ -93,7 +94,8 @@ export default function AcquisitionDiagnostics({ workspaceId }) {
           <div className="acq-kpis" aria-label="Recorded acquisition stage events">
             {metrics.map(([label, value]) => <div className="acq-kpi" key={label}><span>{label}</span><strong>{value.toLocaleString()}</strong></div>)}
           </div>
-          <p className="acq-note">These are recorded stage <strong>events</strong>, not unique candidates. One candidate can appear in multiple stages. Runs that fail before emitting events will not appear here.</p>
+          <p className="acq-note">These are recorded stage <strong>events</strong>, not unique candidates. One candidate can appear in multiple stages. The execution monitor below also includes runs that failed before candidate events were recorded.</p>
+          <AcquisitionMonitoring workspaceId={workspaceId} days={days} funnelRows={data.runs} funnelTruncated={data.truncated} />
 
           {visibleRuns.length === 0 ? (
             <div className="acq-empty">
