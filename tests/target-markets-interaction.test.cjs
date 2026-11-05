@@ -49,7 +49,8 @@ test('search running does not disable editing market checkboxes', () => {
 
   assert.match(marketSection, /disabled=\{searchSettingsSaving\}/)
   assert.doesNotMatch(marketSection, /disabled=\{searchSettingsSaving \|\| searchRunning\}/)
-  assert.match(marketSection, /toggleTargetMarket\(current, country, event\.target\.checked\)/)
+  assert.match(marketSection, /const checked = event\.currentTarget\.checked/)
+  assert.match(marketSection, /toggleTargetMarket\(current, country, checked\)/)
   assert.match(marketSection, /checked=\{targetCountries\.includes\(country\)\}/)
   assert.match(marketSection, /You can select multiple countries/)
   assert.match(marketSection, /Unsaved market changes/)
