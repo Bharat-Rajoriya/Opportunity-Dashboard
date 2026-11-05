@@ -51,7 +51,7 @@ test('search running does not disable editing market checkboxes', () => {
   assert.doesNotMatch(marketSection, /disabled=\{searchSettingsSaving \|\| searchRunning\}/)
   assert.match(marketSection, /const checked = event\.currentTarget\.checked/)
   assert.match(marketSection, /toggleTargetMarket\(current, country, checked\)/)
-  assert.match(marketSection, /checked=\{targetCountries\.includes\(country\)\}/)
+  assert.match(marketSection, /checked=\{isTargetMarketSelected\(targetCountries, country\)\}/)
   assert.match(marketSection, /You can select multiple countries/)
   assert.match(marketSection, /Unsaved market changes/)
   assert.match(marketSection, /Discovery is running\. You can edit markets now/)
@@ -64,4 +64,43 @@ test('save remains unavailable until active search completes', () => {
   const block = app.slice(buttonAt, buttonAt + 500)
   assert.match(block, /searchSettingsSaving\s*\|\|\s*searchRunning/)
   assert.match(block, /targetCountries\.length === 0/)
+})
+
+test('legacy lowercase values from the live profile display all five selected checkboxes', async () => {
+  const { normalizeTargetMarkets, isTargetMarketSelected, SEARCH_COUNTRIES } = await load
+  const saved = ['usa', 'uae', 'india', 'uk', 'Australia']
+  const normalized = normalizeTargetMarkets(saved)
+  assert.deepEqual(normalized, ['USA', 'UAE', 'India', 'UK', 'Australia'])
+  for (const country of SEARCH_COUNTRIES) {
+    assert.equal(isTargetMarketSelected(saved, country), true, country)
+    assert.equal(isTargetMarketSelected(normalized, country), true, country)
+  }
+})
+
+test('unchecking a legacy lowercase country removes it; rechecking adds it only once', async () => {
+  const { toggleTargetMarket, isTargetMarketSelected } = await load
+  const saved = ['usa', 'uae', 'india', 'uk', 'Australia']
+  const withoutUsa = toggleTargetMarket(saved, 'USA', false)
+  assert.deepEqual(withoutUsa, ['UAE', 'India', 'UK', 'Australia'])
+  assert.equal(isTargetMarketSelected(withoutUsa, 'USA'), false)
+  const restored = toggleTargetMarket(withoutUsa, 'USA', true)
+  assert.equal(isTargetMarketSelected(restored, 'USA'), true)
+  assert.equal(restored.length, 5)
+})
+
+test('legacy comma-separated countries canonicalize without losing extra markets', async () => {
+  const { normalizeTargetMarkets, hasUnsavedTargetMarkets } = await load
+  assert.deepEqual(normalizeTargetMarkets(['USA, UK, UAE', 'Canada', 'australia']),
+    ['USA', 'UK', 'UAE', 'Canada', 'Australia'])
+  assert.equal(hasUnsavedTargetMarkets(['USA', 'UK', 'UAE'], ['usa, uk, uae']), false)
+  assert.equal(hasUnsavedTargetMarkets(['USA', 'UK'], ['usa', 'uk', 'uae']), true)
+})
+
+test('profile loading, regeneration and save all use canonical market names', () => {
+  const app = readFileSync(join(__dirname, '../src/App.jsx'), 'utf8')
+  assert.match(app, /setTargetCountries\(normalizeTargetMarkets\(data\.target_countries\)\)/)
+  assert.match(app, /normalizeTargetMarkets\(updatedProfile\.target_countries\)/)
+  assert.match(app, /const cleanCountries = normalizeTargetMarkets\(targetCountries\)/)
+  assert.match(app, /checked=\{isTargetMarketSelected\(targetCountries, country\)\}/)
+  assert.match(app, /SEARCH_COUNTRIES\.filter\(\(country\) => isTargetMarketSelected\(targetCountries, country\)\)/)
 })

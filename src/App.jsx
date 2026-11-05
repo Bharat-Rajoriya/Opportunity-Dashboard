@@ -36,7 +36,7 @@ import {
   discoveryRunExplanation,
 } from './services/discoveryDiagnostics'
 import { shouldSuggestFreelancer } from './config/discoverySources'
-import { SEARCH_COUNTRIES, toggleTargetMarket, hasUnsavedTargetMarkets } from './config/targetMarkets'
+import { SEARCH_COUNTRIES, normalizeTargetMarkets, isTargetMarketSelected, toggleTargetMarket, hasUnsavedTargetMarkets } from './config/targetMarkets'
 import { getServiceMatchDetails } from './services/serviceMatch'
 import { getOpportunityPresentation } from './services/opportunityPresentation'
 import OpportunityFactsStrip from './components/OpportunityFactsStrip'
@@ -1369,7 +1369,7 @@ function App() {
 
       setSearchProfile(data)
       setSearchQueries(normalizeSearchList(data.search_queries))
-      setTargetCountries(normalizeSearchList(data.target_countries))
+      setTargetCountries(normalizeTargetMarkets(data.target_countries))
       setMinIntentLevel(
         Number.isInteger(loadedIntentLevel) &&
           loadedIntentLevel >= 1 &&
@@ -1432,7 +1432,7 @@ function App() {
     }
 
     const cleanQueries = normalizeSearchList(searchQueries)
-    const cleanCountries = normalizeSearchList(targetCountries)
+    const cleanCountries = normalizeTargetMarkets(targetCountries)
     const intentLevel = Number(minIntentLevel)
     const freshnessHours = Number(maxAgeHours)
     const batchSize = Number(queryBatchSize)
@@ -2878,7 +2878,7 @@ function App() {
             normalizeSearchList(updatedProfile.search_queries)
           )
           setTargetCountries(
-            normalizeSearchList(updatedProfile.target_countries)
+            normalizeTargetMarkets(updatedProfile.target_countries)
           )
           setMinIntentLevel(Number(updatedProfile.min_intent_level) || 3)
           setMaxAgeHours(Number(updatedProfile.max_age_hours) || 72)
@@ -4759,14 +4759,14 @@ function App() {
                         <label
                           key={country}
                           className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition ${
-                            targetCountries.includes(country)
+                            isTargetMarketSelected(targetCountries, country)
                               ? 'border-violet-500/50 bg-violet-500/10 text-white'
                               : 'border-slate-700 bg-slate-950 text-slate-300 hover:border-slate-600'
                           }`}
                         >
                           <input
                             type="checkbox"
-                            checked={targetCountries.includes(country)}
+                            checked={isTargetMarketSelected(targetCountries, country)}
                             onChange={(event) => {
                               const checked = event.currentTarget.checked
                               setTargetCountries((current) =>
@@ -4784,7 +4784,7 @@ function App() {
                       ))}
                     </div>
                     <p className="mt-3 text-xs text-slate-400">
-                      {SEARCH_COUNTRIES.filter((country) => targetCountries.includes(country)).length} of {SEARCH_COUNTRIES.length} markets selected. You can select multiple countries.
+                      {SEARCH_COUNTRIES.filter((country) => isTargetMarketSelected(targetCountries, country)).length} of {SEARCH_COUNTRIES.length} markets selected. You can select multiple countries.
                     </p>
                     {hasUnsavedTargetMarkets(targetCountries, searchProfile?.target_countries) && (
                       <p role="status" className="mt-2 text-xs text-violet-300">
