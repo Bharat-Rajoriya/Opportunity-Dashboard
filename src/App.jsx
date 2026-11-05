@@ -34,7 +34,6 @@ import {
 import {
   fetchDiscoveryRunDiagnostics,
   discoveryRunExplanation,
-  DISCOVERY_EVENT_LABELS,
 } from './services/discoveryDiagnostics'
 import { shouldSuggestFreelancer } from './config/discoverySources'
 import { getServiceMatchDetails } from './services/serviceMatch'
@@ -86,7 +85,7 @@ const SOURCE_CATALOG = [
     key: 'google',
     name: 'Google Web Search',
     description: 'Broad web discovery through the existing search collector.',
-    status: 'Live',
+    status: 'Selectable',
     available: true,
   },
   {
@@ -94,7 +93,7 @@ const SOURCE_CATALOG = [
     name: 'Freelancer',
     description: 'Direct marketplace projects through the official Freelancer API.',
     status: FREELANCER_PRODUCTION_ENABLED
-      ? 'Production connected'
+      ? 'Selectable in production'
       : 'Sandbox verified',
     available: FREELANCER_PRODUCTION_ENABLED,
   },
