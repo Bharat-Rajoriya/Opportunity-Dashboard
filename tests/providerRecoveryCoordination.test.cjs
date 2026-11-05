@@ -11,6 +11,7 @@ test('provider recovery claims use a single guarded database UPDATE', () => {
   assert.match(sql, /update public\.external_provider_circuits[\s\S]*?where provider = p_provider/)
   assert.match(sql, /and cooldown_until <= clock_timestamp\(\)/)
   assert.match(sql, /and \(probe_lease_until is null or probe_lease_until <= clock_timestamp\(\)\)/)
+  assert.match(sql, /or p_lease_seconds is null/)
   assert.match(sql, /probe_lease_token = v_token/)
   assert.match(sql, /probe_execution_id = p_execution_id/)
   assert.match(sql, /'cooldown_or_probe_busy'/)
