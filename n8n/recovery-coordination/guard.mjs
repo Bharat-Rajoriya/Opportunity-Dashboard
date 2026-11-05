@@ -31,7 +31,16 @@ export function classifyResponse(response, transportError = null) {
   const numeric = Number(raw);
   const httpStatus = Number.isInteger(numeric) && numeric >= 100 && numeric <= 599 ? numeric : null;
   const message = String(response?.error?.message ?? transportError?.message ?? response?.message ?? '').toLowerCase();
-  const failed = Boolean(transportError || response?.error || (httpStatus !== null && httpStatus >= 400));
+  // A missing, empty, or malformed provider response is NOT evidence of recovery.
+  // Success requires an explicit 2xx status or a recognized SerpApi result envelope.
+  const hasEnvelope = Boolean(
+    response && typeof response === 'object' && !Array.isArray(response) &&
+    (response.search_metadata || response.search_information ||
+      Array.isArray(response.organic_results))
+  );
+  const explicitSuccess = httpStatus !== null && httpStatus >= 200 && httpStatus < 300;
+  const failed = Boolean(transportError || response?.error ||
+    (httpStatus !== null && httpStatus >= 400) || (!explicitSuccess && !hasEnvelope));
   if (!failed) return { success: true, httpStatus, category: null, failureCode: null };
   const quota = /quota exhausted|monthly limit reached|credits? exhausted|no searches left/.test(message);
   const rate = httpStatus === 429 || /too many requests|rate.?limit|throttl/.test(message);
