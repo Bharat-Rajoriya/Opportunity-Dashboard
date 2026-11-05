@@ -64,6 +64,7 @@
 .workspace-shell .discovery-v2-query-examples li{color:#bac8dc;font-size:11.5px;line-height:1.5;overflow-wrap:anywhere}
 .workspace-shell .discovery-v2-query-examples li:before{content:'•';margin-right:7px;color:#9983dc}
 .workspace-shell .discovery-v2-query-examples p,.workspace-shell .discovery-v2-query-examples small{display:block;margin-top:10px;color:#8c9fbd;font-size:11px;line-height:1.5}
+.workspace-shell .discovery-v2-regenerate-status{margin-top:12px;padding:10px 12px;border:1px solid #2a7058;border-radius:9px;background:#12352b;color:#a5efd0;font-size:11px;line-height:1.6}
 .workspace-shell .discovery-v2-query-card-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:17px}
 .workspace-shell .discovery-v2-query-card-footer>span{display:flex;align-items:center;gap:6px;color:#8fa3c0;font-size:10.5px}
 .workspace-shell .discovery-v2-query-card-footer button{display:inline-flex;align-items:center;gap:7px;min-height:37px;padding:8px 11px;border:1px solid #67569b;border-radius:9px;background:#292348;color:#e3d9ff;font-size:11.5px;font-weight:710}
