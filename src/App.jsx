@@ -4325,6 +4325,20 @@ function App() {
             setStatusFilter={setStatusFilter}
             followUpFilter={followUpFilter}
             setFollowUpFilter={setFollowUpFilter}
+            hasActiveFilters={Boolean(
+              searchTerm.trim() || actionFilter !== 'all' || scoreFilter !== 'all' ||
+              draftFilter !== 'all' || statusFilter !== 'all' || followUpFilter !== 'all' ||
+              selectedPlatforms.length > 0
+            )}
+            onResetFilters={() => {
+              setSearchTerm('')
+              setActionFilter('all')
+              setScoreFilter('all')
+              setDraftFilter('all')
+              setStatusFilter('all')
+              setFollowUpFilter('all')
+              setSelectedPlatforms([])
+            }}
           />
 
           {dataLoading ? (
@@ -6198,6 +6212,8 @@ function FilterBar({
   setStatusFilter,
   followUpFilter,
   setFollowUpFilter,
+  hasActiveFilters,
+  onResetFilters,
 }) {
   return (
     <div className="p-5 border-b border-slate-800">
@@ -6206,6 +6222,7 @@ function FilterBar({
         {/* Search */}
         <input
           type="text"
+          aria-label="Search opportunities"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search opportunities..."
@@ -6214,6 +6231,7 @@ function FilterBar({
 
         {/* Action */}
         <select
+          aria-label="Filter by recommended action"
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value)}
           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none focus:border-violet-500"
@@ -6229,6 +6247,7 @@ function FilterBar({
 
         {/* Score */}
         <select
+          aria-label="Filter by opportunity score"
           value={scoreFilter}
           onChange={(e) => setScoreFilter(e.target.value)}
           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none focus:border-violet-500"
@@ -6242,6 +6261,7 @@ function FilterBar({
 
         {/* Draft */}
         <select
+          aria-label="Filter by draft status"
           value={draftFilter}
           onChange={(e) => setDraftFilter(e.target.value)}
           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none focus:border-violet-500"
@@ -6253,6 +6273,7 @@ function FilterBar({
 
         {/* Status */}
         <select
+          aria-label="Filter by opportunity status"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none focus:border-violet-500"
@@ -6267,6 +6288,18 @@ function FilterBar({
         </select>
 
       </div>
+
+      {hasActiveFilters && (
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span role="status" className="text-xs text-slate-400">
+            Showing opportunities matching the selected filters.
+          </span>
+          <button type="button" onClick={onResetFilters}
+            className="responsive-clear-filters rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-200 hover:border-violet-400 hover:text-white">
+            Clear all filters
+          </button>
+        </div>
+      )}
 
       {followUpFilter !== 'all' && (
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -6566,6 +6599,7 @@ function ThemedDatePicker({ value, min, onChange }) {
     const handleEscape = (event) => {
       if (event.key === 'Escape') {
         setIsOpen(false)
+        calendarRef.current?.querySelector('[aria-haspopup="dialog"]')?.focus({ preventScroll: true })
       }
     }
 
@@ -6646,7 +6680,7 @@ function ThemedDatePicker({ value, min, onChange }) {
         <div
           role="dialog"
           aria-label="Choose follow-up date"
-          className="absolute left-0 top-full z-40 mt-2 w-full min-w-72 rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl shadow-black/50"
+          className="responsive-date-popover absolute left-0 top-full z-40 mt-2 w-full min-w-0 rounded-xl border border-slate-700 bg-slate-900 p-3 sm:p-4 shadow-2xl shadow-black/50"
         >
           <div className="mb-4 flex items-center justify-between">
             <p className="font-semibold text-white">
@@ -6708,7 +6742,7 @@ function ThemedDatePicker({ value, min, onChange }) {
                   })}
                   aria-current={isCurrentDay ? 'date' : undefined}
                   aria-pressed={isSelected}
-                  className={`flex h-9 items-center justify-center rounded-lg text-sm transition ${
+                  className={`flex h-9 w-full min-w-0 items-center justify-center rounded-lg text-sm transition ${
                     isSelected
                       ? 'bg-violet-600 font-semibold text-white shadow-lg shadow-violet-950/40'
                       : isDisabled
