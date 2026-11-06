@@ -19,8 +19,16 @@ export function interpretSerpApiHealth(payload, now = Date.now()) {
   if (state === 'cooldown' || state === 'recovery_eligible') {
     return {
       state: 'recovery_eligible',
-      label: 'Recovery eligible — not verified',
-      detail: 'The cooldown has elapsed, but a successful provider response has not been confirmed.',
+      label: 'Unavailable',
+      detail: 'Google search has not yet been verified with the current account.',
+      cooldownUntil: null,
+    }
+  }
+  if (state === 'verified_recently') {
+    return {
+      state: 'verified_recently',
+      label: 'Recently verified',
+      detail: 'A recent guarded Google search succeeded. Future availability is not guaranteed.',
       cooldownUntil: null,
     }
   }
