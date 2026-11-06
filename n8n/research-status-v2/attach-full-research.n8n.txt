@@ -1,0 +1,118 @@
+const opportunity = $('Build Research Packet').item.json;
+const research = $json.output ?? $json;
+
+const emptyToNull = (value) => {
+  if (value === undefined || value === null) return null;
+
+  const text = String(value).trim();
+
+  return text === '' ? null : text;
+};
+
+const positiveNumberOrNull = (value) => {
+  const number = Number(value);
+
+  if (!Number.isFinite(number) || number <= 0) {
+    return null;
+  }
+
+  return number;
+};
+
+return {
+  json: {
+    ...opportunity,
+
+    person_name:
+      emptyToNull(research.person_name),
+
+    company_name:
+      emptyToNull(research.company_name),
+
+    company_website:
+      emptyToNull(research.company_website),
+
+    country:
+      emptyToNull(research.country) ||
+      emptyToNull(opportunity.country_hint),
+
+    company_industry:
+      emptyToNull(research.company_industry) ||
+      emptyToNull(opportunity.industry_hint),
+
+    budget_text:
+      emptyToNull(research.budget_text) ||
+      emptyToNull(opportunity.prospect_budget_hint) ||
+      emptyToNull(opportunity.budget_text),
+
+    contact_email:
+      emptyToNull(opportunity.prospect_contact_email) ||
+      emptyToNull(opportunity.contact_email),
+
+    contact_phone:
+      emptyToNull(opportunity.prospect_contact_phone) ||
+      emptyToNull(opportunity.contact_phone),
+
+    project_type:
+      emptyToNull(opportunity.prospect_project_type) ||
+      emptyToNull(opportunity.project_type),
+
+    duration_text:
+      emptyToNull(opportunity.prospect_duration_text) ||
+      emptyToNull(opportunity.duration_text),
+
+    workload_text:
+      emptyToNull(opportunity.prospect_workload_text) ||
+      emptyToNull(opportunity.workload_text),
+
+    experience_level:
+      emptyToNull(opportunity.prospect_experience_level) ||
+      emptyToNull(opportunity.experience_level),
+
+    location_text:
+      emptyToNull(opportunity.prospect_location_text) ||
+      emptyToNull(opportunity.location_text),
+
+    remote_status:
+      emptyToNull(opportunity.prospect_remote_status) ||
+      emptyToNull(opportunity.remote_status),
+
+    skills:
+      Array.isArray(opportunity.prospect_skills)
+        ? opportunity.prospect_skills
+        : Array.isArray(opportunity.skills)
+          ? opportunity.skills
+          : [],
+
+    estimated_value_min:
+      positiveNumberOrNull(research.estimated_value_min),
+
+    estimated_value_max:
+      positiveNumberOrNull(research.estimated_value_max),
+
+    estimated_currency:
+      emptyToNull(research.estimated_currency) || 'USD',
+
+    client_quality_score:
+      Number(research.client_quality_score || 0),
+
+    project_value_score:
+      Number(research.project_value_score || 0),
+
+    research_summary:
+      research.research_summary ||
+      opportunity.context_summary ||
+      '',
+
+    research_confidence:
+      Number(research.research_confidence || 0),
+
+    research_status: 'complete',
+    research_detail_reason: 'web_research_completed',
+
+    score_stage: 'researched',
+
+    researched_at:
+      new Date().toISOString()
+  }
+};

@@ -47,6 +47,6 @@ test('dashboard wires confirmation at manual pitch, approval and mark-sent bound
   assert.match(app, /const warning = approvalWarning\(lead\)/)
   assert.match(app, /I Sent This Manually/)
   assert.match(app, /Recording it as sent does not send or verify delivery/)
-  assert.match(app, /recommended_action,\s+raw_payload,\s+research_status,\s+budget_text/)
+  assert.match(app, /recommended_action,\s+raw_payload,\s+research_status,\s+research_detail_reason,\s+budget_text/)
   assert.match(app, /estimated_value_min,\s+estimated_value_max,\s+estimated_currency,\s+outreach_status/)
 })
