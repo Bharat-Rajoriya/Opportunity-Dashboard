@@ -1,4 +1,4 @@
-import { buildProviderMonitorRows } from '../services/providerHealth'
+import { buildProviderMonitorRows } from '../lib/providerHealthPresentation'
 
 function SourceCard({ row }) {
   const style =
