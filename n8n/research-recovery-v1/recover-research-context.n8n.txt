@@ -1,0 +1,40 @@
+// Preserve the correct opportunity on the SerpApi error branch. The error
+// output is untrusted and must never become research/company evidence.
+let opportunity;
+try {
+  opportunity = $('Attach Prospect Context').item.json;
+} catch (error) {
+  const candidates = $('Attach Prospect Context').all(0, -1);
+  opportunity = candidates[candidates.length - 1]?.json;
+}
+const run = $('Research Run Context').first().json;
+if (!opportunity?.id || !opportunity?.workspace_id ||
+    opportunity.workspace_id !== run.workspace_id) {
+  throw new Error('Cannot associate SerpApi error with the current workspace');
+}
+const raw = typeof $json.error === 'object' && $json.error ? $json.error : $json;
+const message = String(raw.message || $json.error || raw.description || '');
+const rawCode = raw.httpCode || $json.httpCode || raw.statusCode ||
+  $json.statusCode || raw.code || $json.code;
+const isQuotaError = Number(rawCode) === 429 ||
+  /\b429\b|quota|too many requests|rate[- ]?limit/i.test(message);
+const httpCode = isQuotaError ? 429 : (Number(rawCode) || 503);
+return { json: {
+  ...opportunity,
+  provider_http_code: httpCode,
+  provider_error_class: isQuotaError ? 'quota_or_rate_limited' : 'temporarily_unavailable',
+  can_research_company: false,
+  _research_recovery_token: (() => {
+    try {
+      const lease = $('Authorize Research Recovery Probe').item.json || {};
+      if (lease._research_probe_authorized === true &&
+          String(lease.id || '') === String(opportunity.id) &&
+          String(lease.workspace_id || '') === String(opportunity.workspace_id) &&
+          lease._research_probe_execution === String($execution.id || '') &&
+          Number(lease._research_probe_until || 0) > Date.now()) {
+        return lease._research_recovery_token || null;
+      }
+    } catch (_) { /* Normal research requests have no recovery lease. */ }
+    return null;
+  })()
+} };
