@@ -1,0 +1,244 @@
+{
+  "provider_key": "serpapi_account_2",
+  "original_provider_key": "serpapi",
+  "published": false,
+  "workflows": [
+    {
+      "workflow": "collector",
+      "workflow_id": "lY5Xpce2mg5ABsy1",
+      "active_version_at_review": "4f489a35-414e-4717-8c21-9bb1c874b956",
+      "draft_version": "d729e16a-eae4-4880-abb3-53e35cc224b3",
+      "search_credential_name": "SerpApi Opportunity Dashboard 2",
+      "nodes": [
+        {
+          "name": "Google Source Enabled",
+          "type": "n8n-nodes-base.code",
+          "parameters": {
+            "mode": "runOnceForAllItems",
+            "language": "javaScript",
+            "jsCode": "// Account 2 is independently gated by an atomic recovery lease.\\n// An unverified account performs only one guarded probe before full search.\nconst circuit = $('Get SerpApi Circuit (Google)').last()?.json || {};\nconst until = Date.parse(circuit.cooldown_until || '');\nconst SERPAPI_GOOGLE_AVAILABLE =\n  circuit.provider === 'serpapi_account_2' &&\n  Number.isFinite(until) &&\n  Date.now() >= until;\n// An expired quota cooldown authorizes exactly one low-cost probe in this run.\n// Do not fan out all selected queries until a successful provider response clears 429.\nconst recoveryProbe = Number(circuit.last_failure_code || 0) !== 0;\nconst limitRecovery = selected => (recoveryProbe ? selected.slice(0, 1) : selected)\n  .map(item => ({ ...item, json: { ...item.json, _serpapi_recovery_needed: recoveryProbe } }));\nconst items = $input.all();\nif (!SERPAPI_GOOGLE_AVAILABLE) return [];\n\nif (!items.length) return [];\n\nconst profile = items[0].json?.search_profile || {};\nconst configured = Array.isArray(profile.enabled_sources)\n  ? profile.enabled_sources\n      .map((value) => String(value || '').trim().toLowerCase())\n      .filter(Boolean)\n  : [];\n\nconst enabledSources = configured.length > 0\n  ? configured\n  : ['google'];\n\nif (!enabledSources.includes('google')) {\n  return [];\n}\n\nconst plan =\n  items[0].json?.adaptive_source_strategy\n    ?.source_plans?.google || {};\n\nconst multiplier = Math.min(\n  1,\n  Math.max(\n    0.25,\n    Number(plan.traffic_multiplier ?? 1)\n  )\n);\n\nif (multiplier >= 1 || items.length === 1) {\n  return limitRecovery(items);\n}\n\nconst targetCount = Math.max(\n  1,\n  Math.ceil(items.length * multiplier)\n);\n\nif (targetCount >= items.length) {\n  return limitRecovery(items);\n}\n\nconst selectedIndexes = new Set();\n\nfor (let i = 0; i < targetCount; i++) {\n  const index = Math.min(\n    items.length - 1,\n    Math.floor(\n      (i * items.length) / targetCount\n    )\n  );\n\n  selectedIndexes.add(index);\n}\n\nreturn limitRecovery(items.filter((_, index) =>\n  selectedIndexes.has(index)\n));"
+          }
+        },
+        {
+          "name": "Get SerpApi Circuit (Google)",
+          "type": "n8n-nodes-base.supabase",
+          "parameters": {
+            "operation": "getAll",
+            "tableId": "external_provider_circuits",
+            "limit": 1,
+            "matchType": "allFilters",
+            "filters": {
+              "conditions": [
+                {
+                  "keyName": "provider",
+                  "condition": "eq",
+                  "keyValue": "serpapi_account_2"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Claim SerpApi Recovery Lease",
+          "type": "n8n-nodes-base.httpRequest",
+          "parameters": {
+            "method": "POST",
+            "url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/claim_provider_recovery_probe",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "supabaseApi",
+            "sendBody": true,
+            "contentType": "json",
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({ p_provider:'serpapi_account_2', p_execution_id: String($execution.id || 'n8n') + ':' + String($json.workspace_id || 'workspace'), p_lease_seconds: 180 }) }}",
+            "options": {
+              "timeout": 10000
+            }
+          }
+        },
+        {
+          "name": "Complete SerpApi Recovery Success",
+          "type": "n8n-nodes-base.httpRequest",
+          "parameters": {
+            "method": "POST",
+            "url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/complete_provider_recovery_probe",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "supabaseApi",
+            "sendBody": true,
+            "contentType": "json",
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({p_provider:'serpapi_account_2',p_lease_token:$json._serpapi_recovery_lease_token,p_success:true}) }}",
+            "options": {
+              "timeout": 10000
+            }
+          }
+        },
+        {
+          "name": "Complete SerpApi Recovery Failure",
+          "type": "n8n-nodes-base.httpRequest",
+          "parameters": {
+            "method": "POST",
+            "url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/complete_provider_recovery_probe",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "supabaseApi",
+            "sendBody": true,
+            "contentType": "json",
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({p_provider:'serpapi_account_2',p_lease_token:$json._serpapi_recovery_lease_token,p_success:false,p_failure_code:(Number($json.error?.httpCode || $json.error?.statusCode || $json._serpapi_response_status || 0)===429 || /429|quota|too many requests|rate[- ]?limit/i.test(String($json.error?.message || $json.error || $json.message || '')))?429:503}) }}",
+            "options": {
+              "timeout": 10000
+            }
+          }
+        },
+        {
+          "name": "Record SerpApi Normal Failure Safely",
+          "type": "n8n-nodes-base.httpRequest",
+          "parameters": {
+            "method": "POST",
+            "url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/record_provider_failure_if_unleased",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "supabaseApi",
+            "sendBody": true,
+            "contentType": "json",
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({p_provider:'serpapi_account_2',p_failure_code:(Number($json.error?.httpCode || $json.error?.statusCode || $json._serpapi_response_status || 0)===429 || /429|quota|too many requests|rate[- ]?limit/i.test(String($json.error?.message || $json.error || $json.message || '')))?429:(Number($json.error?.httpCode || $json.error?.statusCode || $json._serpapi_response_status || 0)>=400 && Number($json.error?.httpCode || $json.error?.statusCode || $json._serpapi_response_status || 0)<=599?Number($json.error?.httpCode || $json.error?.statusCode || $json._serpapi_response_status):503),p_failure_source:'google'}) }}",
+            "options": {
+              "timeout": 10000
+            }
+          }
+        }
+      ]
+    },
+    {
+      "workflow": "research",
+      "workflow_id": "Q1MQ3Lx1C9ABAdjW",
+      "active_version_at_review": "5879badc-8fb3-4849-a1ce-5efe87fbf2b2",
+      "draft_version": "c4f54099-0d64-45f1-b28d-955392b2daa4",
+      "search_credential_name": "SerpApi Opportunity Dashboard 2",
+      "nodes": [
+        {
+          "name": "Can Research Company?",
+          "type": "n8n-nodes-base.if",
+          "parameters": {
+            "conditions": {
+              "options": {
+                "caseSensitive": true,
+                "leftValue": "",
+                "typeValidation": "strict",
+                "version": 3
+              },
+              "conditions": [
+                {
+                  "id": "d841d330-ee51-4bad-9c45-8ef56ff9f846",
+                  "leftValue": "={{ (() => {\n  const row = $('Get SerpApi Circuit (Research)').first()?.json || {};\n  if (row.provider !== 'serpapi_account_2' || $json.can_research_company !== true ||\n      !String($json.prospect_research_query || '').trim()) return false;\n  // A provider error anywhere in this research run disables further search calls.\n  if ($('Recover Research Context').isExecuted) return false;\n  const failed = Number(row.last_failure_code || 0) !== 0;\n  if (!failed) return true;\n  const until = Date.parse(row.cooldown_until || '');\n  if (!Number.isFinite(until) || Date.now() < until) return false;\n  return !$('Claim Research Recovery Lease').isExecuted;\n})() }}",
+                  "rightValue": "",
+                  "operator": {
+                    "type": "boolean",
+                    "operation": "true",
+                    "singleValue": true
+                  }
+                }
+              ],
+              "combinator": "and"
+            },
+            "options": {}
+          }
+        },
+        {
+          "name": "Partial Research",
+          "type": "n8n-nodes-base.code",
+          "parameters": {
+            "mode": "runOnceForEachItem",
+            "jsCode": "const item = $json;\n\nconst cleanText = (value) => {\n  return String(value ?? '').trim();\n};\n\nconst confidence = Number(\n  item.prospect_context_confidence ??\n  item.prospect_context?.confidence ??\n  0\n);\n\nconst personName =\n  cleanText(item.prospect_person_name) ||\n  cleanText(item.person_name);\n\nconst companyName =\n  cleanText(item.prospect_company_name) ||\n  cleanText(item.company_name);\n\nconst companyWebsite =\n  cleanText(item.prospect_company_website) ||\n  cleanText(item.company_website);\n\nconst country =\n  cleanText(item.prospect_country_hint) ||\n  cleanText(item.country);\n\nconst industry =\n  cleanText(item.prospect_industry_hint);\n\nconst contextSummary =\n  cleanText(item.prospect_context_summary);\n\nconst requirement =\n  cleanText(item.requirement);\n\nconst title =\n  cleanText(item.title);\n\n// Build a useful research summary without inventing facts.\nconst summaryParts = [];\n\nif (contextSummary) {\n  summaryParts.push(contextSummary);\n}\n\nif (industry) {\n  summaryParts.push(`Relevant industry/service context: ${industry}.`);\n}\n\nif (!companyName && !companyWebsite) {\n  summaryParts.push(\n    'A reliable company identity or company website could not be established from the available source.'\n  );\n}\n\nif (personName) {\n  summaryParts.push(`Person identified from available context: ${personName}.`);\n}\n\nif (requirement) {\n  summaryParts.push(`Opportunity requirement: ${requirement}`);\n} else if (title) {\n  summaryParts.push(`Opportunity: ${title}`);\n}\n\nconst circuit = (() => {\n  try { return $('Get SerpApi Circuit (Research)').first()?.json || {}; }\n  catch (_) { return {}; }\n})();\nconst cooldown = Date.parse(circuit.cooldown_until || '');\nconst cooldownActive = circuit.provider === 'serpapi_account_2' &&\n  Number.isFinite(cooldown) && Date.now() < cooldown &&\n  Number(circuit.last_failure_code || 0) !== 0;\n// A query string alone is not proof of company identity.\nconst identityKnown = Boolean(companyName || companyWebsite);\nconst researchDetailReason =\n  item.provider_http_code != null ? 'provider_error' :\n  !identityKnown || item.can_research_company !== true ? 'company_identity_unverified' :\n  item._research_probe_authorized === false ? 'provider_recovery_denied' :\n  cooldownActive ? 'provider_cooldown' : 'source_only';\n\nreturn {\n  json: {\n    ...item,\n\n    person_name: personName || item.person_name || null,\n    company_name: companyName || item.company_name || null,\n    company_website: companyWebsite || item.company_website || null,\n    country: country || item.country || '',\n\n    budget_text:\n      cleanText(item.prospect_budget_hint) ||\n      cleanText(item.budget_text) ||\n      null,\n\n    contact_email:\n      cleanText(item.prospect_contact_email) ||\n      cleanText(item.contact_email) ||\n      null,\n\n    contact_phone:\n      cleanText(item.prospect_contact_phone) ||\n      cleanText(item.contact_phone) ||\n      null,\n\n    project_type:\n      cleanText(item.prospect_project_type) ||\n      cleanText(item.project_type) ||\n      null,\n\n    duration_text:\n      cleanText(item.prospect_duration_text) ||\n      cleanText(item.duration_text) ||\n      null,\n\n    workload_text:\n      cleanText(item.prospect_workload_text) ||\n      cleanText(item.workload_text) ||\n      null,\n\n    experience_level:\n      cleanText(item.prospect_experience_level) ||\n      cleanText(item.experience_level) ||\n      null,\n\n    location_text:\n      cleanText(item.prospect_location_text) ||\n      cleanText(item.location_text) ||\n      null,\n\n    remote_status:\n      cleanText(item.prospect_remote_status) ||\n      cleanText(item.remote_status) ||\n      null,\n\n    skills:\n      Array.isArray(item.prospect_skills)\n        ? item.prospect_skills\n        : Array.isArray(item.skills)\n          ? item.skills\n          : [],\n\n    research_summary: summaryParts.join(' '),\n\n    research_confidence: Math.min(\n      Math.max(confidence, 0),\n      0.70\n    ),\n\n    research_status: 'partial',\n    research_detail_reason: researchDetailReason,\n\n    researched_at: new Date().toISOString(),\n\n    research_method: 'partial_context_only',\n  },\n};"
+          }
+        },
+        {
+          "name": "Get SerpApi Circuit (Research)",
+          "type": "n8n-nodes-base.supabase",
+          "parameters": {
+            "operation": "getAll",
+            "tableId": "external_provider_circuits",
+            "limit": 1,
+            "matchType": "allFilters",
+            "filters": {
+              "conditions": [
+                {
+                  "keyName": "provider",
+                  "condition": "eq",
+                  "keyValue": "serpapi_account_2"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Claim Research Recovery Lease",
+          "type": "n8n-nodes-base.httpRequest",
+          "parameters": {
+            "method": "POST",
+            "url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/claim_provider_recovery_probe",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "supabaseApi",
+            "sendBody": true,
+            "contentType": "json",
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({p_provider:'serpapi_account_2',p_execution_id:String($execution.id||'n8n')+':research:'+String($json.id||'unknown'),p_lease_seconds:180}) }}",
+            "options": {
+              "timeout": 10000
+            }
+          }
+        },
+        {
+          "name": "Complete Research Recovery Success",
+          "type": "n8n-nodes-base.httpRequest",
+          "parameters": {
+            "method": "POST",
+            "url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/complete_provider_recovery_probe",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "supabaseApi",
+            "sendBody": true,
+            "contentType": "json",
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({p_provider:'serpapi_account_2',p_lease_token:$json._research_recovery_token,p_success:true}) }}",
+            "options": {
+              "timeout": 10000
+            }
+          }
+        },
+        {
+          "name": "Complete Research Recovery Failure",
+          "type": "n8n-nodes-base.httpRequest",
+          "parameters": {
+            "method": "POST",
+            "url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/complete_provider_recovery_probe",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "supabaseApi",
+            "sendBody": true,
+            "contentType": "json",
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({p_provider:'serpapi_account_2',p_lease_token:$json._research_recovery_token,p_success:false,p_failure_code:Number($json.provider_http_code)===429?429:503}) }}",
+            "options": {
+              "timeout": 10000
+            }
+          }
+        },
+        {
+          "name": "Record Normal Research Failure Safely",
+          "type": "n8n-nodes-base.httpRequest",
+          "parameters": {
+            "method": "POST",
+            "url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/record_provider_failure_if_unleased",
+            "authentication": "predefinedCredentialType",
+            "nodeCredentialType": "supabaseApi",
+            "sendBody": true,
+            "contentType": "json",
+            "specifyBody": "json",
+            "jsonBody": "={{ JSON.stringify({p_provider:'serpapi_account_2',p_failure_code:Number($json.provider_http_code)===429?429:503,p_failure_source:'research'}) }}",
+            "options": {
+              "timeout": 10000
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
