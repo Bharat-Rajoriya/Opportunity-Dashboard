@@ -1,0 +1,672 @@
+const candidate = $('Build Intent Context').item.json;
+const ai = $json.output || {};
+
+const toBoolean = (value) => value === true || value === 'true';
+
+const minIntent = Number(
+  candidate.min_intent_level ??
+  candidate.discovery_context?.search_profile?.min_intent_level ??
+  3
+);
+
+const intentLevel = Math.max(
+  0,
+  Math.min(4, Number(ai.intent_level ?? 0) || 0)
+);
+const confidence = Number(ai.confidence ?? 0);
+
+const isOpportunity = toBoolean(ai.is_opportunity);
+const rejectionTriggered = toBoolean(ai.rejection_rule_triggered);
+
+const matchedServiceId = ai.matched_service_id || '';
+const matchedServiceName = ai.matched_service_name || '';
+
+const sourceResultType = String(
+  ai.source_result_type || 'unknown'
+).trim().toLowerCase();
+
+const sourceQualityScore = Math.max(
+  0,
+  Math.min(10, Number(ai.source_quality_score ?? 0) || 0)
+);
+
+const buyerLikelihood = String(
+  ai.buyer_likelihood || 'none'
+).trim().toLowerCase();
+
+const hardNonBuyerTypes = new Set([
+  'provider_marketing',
+  'informational_content',
+  'directory_or_listing',
+  'full_time_job',
+  'closed_or_stale',
+]);
+
+const sourceQualityPass =
+  sourceQualityScore >= 4 &&
+  !hardNonBuyerTypes.has(sourceResultType) &&
+  buyerLikelihood !== 'none';
+
+// --------------------------------------------------
+// PROVIDER ELIGIBILITY
+// --------------------------------------------------
+
+const business =
+  candidate.discovery_context?.business_profile || {};
+
+const normalizeEligibilityText = (value) =>
+  String(value || '').trim().toLowerCase();
+
+const providerCountry = normalizeEligibilityText(
+  business.provider_country || ''
+);
+
+const rawWorkingLanguages = Array.isArray(
+  business.working_languages
+)
+  ? business.working_languages
+  : business.preferred_language
+    ? [business.preferred_language]
+    : [];
+
+const languageAliases = {
+  en: 'english',
+  english: 'english',
+  fr: 'french',
+  french: 'french',
+  français: 'french',
+  francais: 'french',
+  de: 'german',
+  german: 'german',
+  deutsch: 'german',
+  es: 'spanish',
+  spanish: 'spanish',
+  español: 'spanish',
+  espanol: 'spanish',
+  hi: 'hindi',
+  hindi: 'hindi',
+  pt: 'portuguese',
+  portuguese: 'portuguese',
+  português: 'portuguese',
+  it: 'italian',
+  italian: 'italian',
+  nl: 'dutch',
+  dutch: 'dutch',
+  ar: 'arabic',
+  arabic: 'arabic',
+};
+
+const normalizeLanguage = (value) => {
+  const key = normalizeEligibilityText(value);
+  return languageAliases[key] || key;
+};
+
+const displayLanguage = (value) => {
+  const normalized = normalizeLanguage(value);
+  return normalized
+    ? normalized.charAt(0).toUpperCase() + normalized.slice(1)
+    : '';
+};
+
+const workingLanguages = rawWorkingLanguages
+  .map(normalizeLanguage)
+  .filter(Boolean);
+
+const projectLanguage = normalizeLanguage(
+  candidate.project_language ||
+  candidate.source_payload?.language ||
+  ''
+);
+
+const sourceLocalOnly =
+  candidate.source_local_only === true ||
+  candidate.source_payload?.local === true;
+
+const sourceRequiredCountry = normalizeEligibilityText(
+  candidate.source_required_country ||
+  candidate.source_payload?.location?.country?.name ||
+  candidate.source_payload?.true_location?.country?.name ||
+  ''
+);
+
+const aiEligibilityMatch = String(
+  ai.eligibility_match || 'unknown'
+).trim().toLowerCase();
+
+const aiRestrictionType = String(
+  ai.eligibility_restriction_type || 'none'
+).trim().toLowerCase();
+
+let requiredCountry = String(
+  ai.required_country || ''
+).trim();
+
+let requiredLanguage = String(
+  ai.required_language || ''
+).trim();
+
+let eligibilityRestrictionType = [
+  'none',
+  'language',
+  'country',
+  'language_and_country',
+  'other',
+].includes(aiRestrictionType)
+  ? aiRestrictionType
+  : 'other';
+
+let eligibilityMatch = [
+  'match',
+  'mismatch',
+  'unknown',
+].includes(aiEligibilityMatch)
+  ? aiEligibilityMatch
+  : 'unknown';
+
+let eligibilityReason = String(
+  ai.eligibility_reason || ''
+).trim();
+
+const platformLanguageRestricted = Boolean(projectLanguage);
+
+const languageMismatch =
+  platformLanguageRestricted &&
+  workingLanguages.length > 0 &&
+  !workingLanguages.includes(projectLanguage);
+
+const languageMatch =
+  platformLanguageRestricted &&
+  workingLanguages.length > 0 &&
+  workingLanguages.includes(projectLanguage);
+
+const countryMismatch =
+  sourceLocalOnly &&
+  Boolean(sourceRequiredCountry) &&
+  Boolean(providerCountry) &&
+  sourceRequiredCountry !== providerCountry;
+
+const countryUnknown =
+  sourceLocalOnly &&
+  Boolean(sourceRequiredCountry) &&
+  !providerCountry;
+
+if (platformLanguageRestricted) {
+  requiredLanguage = displayLanguage(projectLanguage);
+
+  eligibilityRestrictionType =
+    sourceLocalOnly
+      ? 'language_and_country'
+      : 'language';
+}
+
+if (sourceLocalOnly && sourceRequiredCountry) {
+  requiredCountry =
+    candidate.source_required_country ||
+    candidate.source_payload?.location?.country?.name ||
+    candidate.source_payload?.true_location?.country?.name ||
+    requiredCountry;
+
+  eligibilityRestrictionType =
+    platformLanguageRestricted
+      ? 'language_and_country'
+      : 'country';
+}
+
+if (languageMismatch) {
+  eligibilityMatch = 'mismatch';
+  eligibilityReason =
+    `Project language is ${displayLanguage(projectLanguage)}, but the provider's working languages are ${rawWorkingLanguages.join(', ') || 'not configured'}.`;
+} else if (countryMismatch) {
+  eligibilityMatch = 'unknown';
+  eligibilityReason =
+    `This opportunity states a local-only provider requirement for ${requiredCountry}. Provider base country is ${business.provider_country}, but country mismatch is shown as a warning rather than used as a hard filter.`;
+} else if (countryUnknown) {
+  eligibilityMatch = 'unknown';
+  eligibilityReason =
+    `This opportunity states a local-only provider requirement for ${requiredCountry}. Review the requirement before pursuing it.`;
+} else if (
+  eligibilityMatch !== 'mismatch' &&
+  (
+    languageMatch ||
+    (
+      eligibilityRestrictionType === 'none' &&
+      !platformLanguageRestricted &&
+      !sourceLocalOnly
+    )
+  )
+) {
+  eligibilityMatch = 'match';
+
+  if (!eligibilityReason) {
+    eligibilityReason = platformLanguageRestricted
+      ? `Provider working languages include ${displayLanguage(projectLanguage)}.`
+      : 'No explicit provider language or location restriction was found.';
+  }
+}
+
+const eligibilityPass =
+  !languageMismatch &&
+  !(
+    eligibilityMatch === 'mismatch' &&
+    !['country', 'language_and_country'].includes(eligibilityRestrictionType)
+  );
+
+const services = Array.isArray(
+  candidate.discovery_context?.services
+)
+  ? candidate.discovery_context.services
+  : [];
+
+const normalizeText = (value) =>
+  String(value || '').trim().toLowerCase();
+
+// Never persist an AI-proposed UUID without resolving it against this workspace's services.
+// Models can return nearly-correct UUIDs, so a verified service name is the safe fallback.
+const candidateWorkspaceId = String(
+  candidate.workspace_id || candidate.discovery_context?.workspace_id || ''
+);
+const eligibleServices = services.filter((service) =>
+  service &&
+  service.active !== false &&
+  (!service.workspace_id ||
+    (candidateWorkspaceId &&
+      String(service.workspace_id) === candidateWorkspaceId))
+);
+const matchedService = eligibleServices.find((service) =>
+  matchedServiceId && String(service.id || '') === String(matchedServiceId)
+) || eligibleServices.find((service) =>
+  matchedServiceName &&
+  normalizeText(service.name) === normalizeText(matchedServiceName)
+);
+const verifiedServiceId = matchedService?.id || '';
+const verifiedServiceName = matchedService?.name || '';
+const serviceMatchPass = Boolean(verifiedServiceId);
+
+
+// Service Match Quality V2: verify relevance against the buyer's text only.
+// Do not treat the search query, AI's assigned service ID, skills or URL as proof.
+const buyerTitle = String(candidate.title || '').toLowerCase();
+const buyerText = [candidate.title || '', candidate.requirement || candidate.raw_text || candidate.snippet || '']
+  .join(' ').toLowerCase().replace(/\s+/g, ' ').slice(0,18000);
+const label = String(matchedService?.name || '').toLowerCase();
+const keywords = Array.isArray(matchedService?.keywords)
+  ? matchedService.keywords.map(x => String(x || '').toLowerCase()) : [];
+const textHas = re => re.test(buyerText);
+const findText = re => (buyerText.match(re) || [])[0] || '';
+const includesPhrase = v => {
+  const term = String(v || '').toLowerCase().trim();
+  if (term.length < 3) return false;
+  let p = buyerText.indexOf(term);
+  while (p >= 0) {
+    const l = p === 0 ? '' : buyerText[p-1];
+    const r = buyerText[p+term.length] || '';
+    if (!/[a-z0-9]/.test(l) && !/[a-z0-9]/.test(r)) return true;
+    p = buyerText.indexOf(term,p+1);
+  }
+  return false;
+};
+const platformRegex = {
+ wordpress: /\bwordpress\b|\bwp[- ](?:site|website|theme|plugin)\b/i,
+ shopify: /\bshopify\b|\bliquid theme\b/i,
+ drupal: /\bdrupal\b/i, webflow: /\bwebflow\b/i,
+ react: /\breact(?:\.js|js)?\b|\bnext\.?js\b/i,
+ angular: /\bangular\b/i, n8n: /\bn8n\b/i, moodle: /\bmoodle\b/i
+};
+const family = [
+ ['wordpress',/\bwordpress\b/i],['shopify',/\bshopify\b/i],
+ ['drupal',/\bdrupal\b/i],['webflow',/\bwebflow\b/i],
+ ['react',/\breact\b|\bnext\.?js\b/i],['angular',/\bangular\b/i],
+ ['n8n',/\bn8n\b/i],['moodle',/\bmoodle\b/i]
+].find(([, re]) => re.test(label))?.[0] || null;
+const platformEvidence = family ? findText(platformRegex[family]) : '';
+const alternateRequired = family && !platformEvidence &&
+  Object.entries(platformRegex).some(([key,re]) => key !== family && re.test(buyerText));
+const flexibleStack = textHas(/\b(for example|such as|e\.g\.|open to|recommend a stack|stack selection|technology choice|your choice|cms you(?:'re| are) comfortable with)\b/i);
+const optionalPlatform = textHas(/\bwordpress\s*(?:,|\/|or)\s*(?:ghost|webflow|wix|squarespace|any|other)\b|\bwordpress\b.{0,65}\b(?:any comparable|or similar|either|alternative)\b/i);
+const siteTask = textHas(/\b(website|web site|webpage|web page|web app|landing page|cms|online store|ecommerce|e-commerce|blog|site migration|web design|web development)\b/i);
+const siteWork = siteTask && textHas(/\b(build|develop|developer|implement|code|coding|convert|migrat\w*|rebuild|redesign|customiz\w*|integrat\w*|fix|repair|maintain|maintenance|content update|update text|reorganis\w* pages|reorganiz\w* pages|create|launch|setup|site|pages|content|navigation|layout|editor|blog)\b/i);
+const graphics = /\b(graphic designer|graphic design|logo design|branding|visual identity|banner design|website look and layout|website layout design|ui designer|ux designer)\b/i;
+const graphicOnly = graphics.test(buyerTitle) &&
+  !textHas(/\bwordpress\b|\bshopify\b|\bbuild (?:a |the )?website\b|\bdevelop (?:a |the )?website\b|\bconvert (?:to|into) (?:a )?website\b/i);
+const webFamily = ['wordpress','shopify','drupal','webflow','react','angular','moodle'].includes(family);
+const ecommerceWork = textHas(/\b(ecommerce|e-commerce|online store|checkout|product pages|cart)\b/i);
+const automationWork = textHas(/\b(automation|automate|workflow|integration|webhook|crm|lead recovery)\b/i);
+let serviceMatchLevel = 'unsupported';
+let serviceMatchEvidence = '';
+let serviceMatchReason = 'The buyer request does not demonstrate this selected service is deliverable.';
+if (matchedService) {
+  if (webFamily && graphicOnly) {
+    serviceMatchEvidence = findText(graphics);
+    serviceMatchReason = 'Buyer requests visual design only, not implementation on the selected platform.';
+  } else if (alternateRequired && !flexibleStack) {
+    serviceMatchEvidence = Object.values(platformRegex).map(findText).find(Boolean) || '';
+    serviceMatchReason = 'Buyer names a different platform and does not offer stack flexibility.';
+  } else if (platformEvidence && !optionalPlatform && !flexibleStack) {
+    serviceMatchLevel = 'exact';
+    serviceMatchEvidence = platformEvidence;
+    serviceMatchReason = 'The buyer explicitly names the service platform in the requested deliverable.';
+  } else if (platformEvidence && (optionalPlatform || flexibleStack)) {
+    serviceMatchLevel = 'related';
+    serviceMatchEvidence = platformEvidence;
+    serviceMatchReason = 'The buyer lists the platform as one option, not a mandatory requirement.';
+  } else if (family === 'n8n' && automationWork) {
+    serviceMatchLevel = 'related';
+    serviceMatchEvidence = findText(/\b(automation|automate|workflow|integration|webhook|crm|lead recovery)\b/i);
+    serviceMatchReason = 'Related automation scope, but n8n is not explicitly requested.';
+  } else if (webFamily && (siteWork || (family==='shopify' && ecommerceWork))) {
+    serviceMatchLevel = 'related';
+    serviceMatchEvidence = findText(/\b(website|web site|webpage|web page|web app|landing page|cms|online store|ecommerce|e-commerce|blog|site migration|web design|web development)\b/i) || findText(/\b(checkout|cart)\b/i);
+    serviceMatchReason = 'A related website deliverable is requested, but the service platform is unspecified.';
+  } else if (!family) {
+    // Generic service labels include multi-capability creative and technical work.
+    // Normalize punctuation in compound service names before comparing buyer text.
+    const normalizedLabel = label.replace(/[^a-z0-9+# ]+/g, ' ').replace(/\s+/g, ' ').trim();
+    const genericWords = new Set(['developer','development','business','services',
+      'support','consulting','solutions','professional','and','for','with','the']);
+    const terms = normalizedLabel.split(' ').filter(x => x.length>=3 && !genericWords.has(x));
+    const specific = keywords.filter(x => x.length>=3 && x.split(/\s+/).length<=5);
+    const direct = [normalizedLabel, ...specific].find(includesPhrase);
+    const matchingTerm = terms.find(includesPhrase);
+    const capability = [normalizedLabel, ...keywords].join(' ').toLowerCase();
+    const specialistAnchors = ['react','javascript','html','css','figma','frontend',
+      'branding','marketing','seo','ppc','copywriting','video','photography',
+      'advertising','social media','content creation','graphic design',
+      'core web vitals','pagespeed','woocommerce','angular','google ads','logo design'];
+    const specialist = specialistAnchors.find(term =>
+      includesPhrase(term) && capability.includes(term) && !flexibleStack);
+    const websiteRedesign = /\b(redesign|revamp|moderniz\w*)\b.{0,70}\b(website|web site|landing page)\b|\b(website|web site|landing page)\b.{0,70}\b(redesign|revamp|moderniz\w*)\b/i.test(buyerText)
+      && /\b(redesign|revamp|moderniz\w*)\b/i.test(normalizedLabel);
+    const devService = /\b(frontend|web development|software development|developer|react|javascript)\b/i.test(normalizedLabel);
+    if (devService && graphicOnly) {
+      serviceMatchEvidence = findText(graphics);
+      serviceMatchReason = 'Buyer seeks graphic/visual design, not a frontend implementation.';
+    } else if (websiteRedesign) {
+      serviceMatchLevel = 'exact';
+      serviceMatchEvidence = findText(/\b(redesign|revamp|moderniz\w*)\b/i);
+      serviceMatchReason = 'Buyer explicitly requests the listed website-redesign service.';
+    } else if (direct && !flexibleStack) {
+      serviceMatchLevel = 'exact';
+      serviceMatchEvidence = String(direct);
+      serviceMatchReason = 'Buyer explicitly requests the offered service or capability.';
+    } else if (specialist) {
+      serviceMatchLevel = 'exact';
+      serviceMatchEvidence = specialist;
+      serviceMatchReason = 'Buyer explicitly names a listed specialist capability.';
+    } else if (matchingTerm) {
+      serviceMatchLevel = 'related';
+      serviceMatchEvidence = matchingTerm;
+      serviceMatchReason = 'Buyer mentions a related skill, but the deliverable requires review.';
+    } else if (siteWork && /\b(web|website|frontend|ui|ux|design)\b/i.test(normalizedLabel)) {
+      serviceMatchLevel = 'related';
+      serviceMatchEvidence = findText(/\b(website|web site|web app|landing page|cms|blog)\b/i);
+      serviceMatchReason = 'Buyer describes related website work without an exact service specification.';
+    } else if (automationWork && /\b(automation|integrat|ai|crm)\b/i.test(normalizedLabel)) {
+      serviceMatchLevel = 'related';
+      serviceMatchEvidence = findText(/\b(automation|automate|workflow|integration|crm)\b/i);
+      serviceMatchReason = 'Buyer describes an adjacent automation task.';
+    }
+  }
+}
+// WordPress service must not be pitched for migration to another platform.
+if (family === 'wordpress' &&
+    /\b(?:wordpress|woocommerce)\b.{0,40}\b(?:to|into|toward)\s+(?:shopify|react|next\.?js|webflow|wix)\b/i.test(buyerText)) {
+  serviceMatchLevel = 'unsupported';
+  serviceMatchEvidence = findText(/\b(?:wordpress|woocommerce)\b.{0,40}\b(?:to|into|toward)\s+(?:shopify|react|next\.?js|webflow|wix)\b/i);
+  serviceMatchReason = 'Buyer is migrating away from WordPress to another platform.';
+}
+const serviceEvidenceVerified = serviceMatchLevel !== 'unsupported' &&
+  Boolean(serviceMatchEvidence) && Boolean(verifiedServiceId);
+
+const matchedServiceMinValue = Number(
+  matchedService?.min_project_value ?? 0
+);
+
+const matchedServiceCurrency = String(
+  matchedService?.currency || ''
+).trim().toUpperCase();
+
+const rawScopeComplexity = String(
+  ai.scope_complexity || 'unknown'
+).trim().toLowerCase();
+
+const scopeComplexity = [
+  'small',
+  'medium',
+  'large',
+  'very_large',
+  'unknown',
+].includes(rawScopeComplexity)
+  ? rawScopeComplexity
+  : 'unknown';
+
+const scopeReason = String(
+  ai.scope_reason || ''
+).trim();
+
+const scopeMultiplierMap = {
+  small: 1,
+  medium: 1.5,
+  large: 2.5,
+  very_large: 4,
+  unknown: 1,
+};
+
+const scopeMultiplier =
+  scopeMultiplierMap[scopeComplexity] || 1;
+
+const projectBudgetMax = Number(
+  candidate.estimated_value_max ?? 0
+);
+
+// Freelancer hourly budgets are RATES, not total project values.
+// Without a guaranteed duration, compare neither the hourly rate nor
+// an invented project total against the user's per-project minimum.
+const rawProjectType = String(
+  candidate.source_payload?.type ||
+  candidate.project_type ||
+  ''
+).trim().toLowerCase();
+const isHourlyBudget = /^(hourly|hourly_project|hourly-rate)$/.test(rawProjectType);
+const budgetUnit = isHourlyBudget ? 'hour' : 'project';
+const budgetReviewRequired = isHourlyBudget;
+
+const projectCurrency = String(
+  candidate.estimated_currency || ''
+).trim().toUpperCase();
+
+const valueInInr = {
+  INR: 1,
+  USD: 90,
+  EUR: 105,
+  GBP: 120,
+  AUD: 60,
+  AED: 25,
+  CAD: 65,
+};
+
+let commercialFit = 'unknown';
+let budgetFitRatio = null;
+let normalizedBudgetMax = null;
+let commercialValueReason =
+  'Budget could not be compared with the matched service minimum.';
+let commercialPass = true;
+
+const projectRate = valueInInr[projectCurrency];
+const serviceRate = valueInInr[matchedServiceCurrency];
+
+if (
+  !isHourlyBudget &&
+  matchedServiceMinValue > 0 &&
+  projectBudgetMax > 0 &&
+  projectRate &&
+  serviceRate
+) {
+  normalizedBudgetMax =
+    (projectBudgetMax * projectRate) / serviceRate;
+
+  budgetFitRatio =
+    normalizedBudgetMax / matchedServiceMinValue;
+
+  if (budgetFitRatio < 0.5) {
+    commercialFit = 'far_below_minimum';
+    commercialPass = false;
+    commercialValueReason =
+      'Explicit maximum budget is less than 50% of the matched service minimum.';
+  } else if (budgetFitRatio < 1) {
+    commercialFit = 'below_minimum';
+    commercialValueReason =
+      'Explicit maximum budget is below the matched service minimum but close enough for review.';
+  } else {
+    commercialFit = 'meets_minimum';
+    commercialValueReason =
+      'Explicit maximum budget meets or exceeds the matched service minimum.';
+  }
+}
+
+if (budgetReviewRequired) {
+  commercialFit = 'hourly_rate_review_required';
+  commercialValueReason =
+    'Marketplace pricing is hourly, not a project total. The upper hourly rate or contract duration may be missing; review total value before outreach.';
+}
+
+let scopeAdjustedMinValue = null;
+let scopeBudgetFitRatio = null;
+let scopeBudgetFit = 'unknown';
+let scopeBudgetFitReason =
+  'Scope-adjusted budget fit could not be calculated safely.';
+let scopeBudgetPass = true;
+
+if (
+  scopeComplexity !== 'unknown' &&
+  matchedServiceMinValue > 0
+) {
+  scopeAdjustedMinValue =
+    matchedServiceMinValue * scopeMultiplier;
+}
+
+if (
+  !isHourlyBudget &&
+  scopeAdjustedMinValue > 0 &&
+  normalizedBudgetMax > 0
+) {
+  scopeBudgetFitRatio =
+    normalizedBudgetMax / scopeAdjustedMinValue;
+
+  if (scopeBudgetFitRatio < 0.4) {
+    scopeBudgetFit = 'far_below_scope';
+    scopeBudgetPass = false;
+    scopeBudgetFitReason =
+      'Explicit maximum budget is less than 40% of the scope-adjusted service minimum.';
+  } else if (scopeBudgetFitRatio < 0.75) {
+    scopeBudgetFit = 'significantly_below_scope';
+    scopeBudgetFitReason =
+      'Explicit maximum budget is between 40% and 75% of the scope-adjusted service minimum.';
+  } else if (scopeBudgetFitRatio < 1) {
+    scopeBudgetFit = 'below_scope';
+    scopeBudgetFitReason =
+      'Explicit maximum budget is between 75% and 100% of the scope-adjusted service minimum.';
+  } else {
+    scopeBudgetFit = 'meets_scope';
+    scopeBudgetFitReason =
+      'Explicit maximum budget meets or exceeds the scope-adjusted service minimum.';
+  }
+}
+
+// A transient model failure is not evidence that the buyer is unsuitable.
+// Never promote an unavailable classification to a qualified opportunity.
+const classificationUnavailable = Boolean($json.error) ||
+  !$json.output || typeof $json.output !== 'object' ||
+  Array.isArray($json.output) ||
+  typeof $json.output.is_opportunity !== 'boolean';
+
+const gatePass =
+  !classificationUnavailable &&
+  isOpportunity &&
+  !rejectionTriggered &&
+  intentLevel >= minIntent &&
+  sourceQualityPass &&
+  serviceMatchPass &&
+  serviceEvidenceVerified &&
+  eligibilityPass &&
+  commercialPass &&
+  scopeBudgetPass;
+
+let gateReason = 'qualified_opportunity';
+
+if (classificationUnavailable) {
+  gateReason = 'ai_classification_unavailable';
+} else if (!isOpportunity) {
+  gateReason = 'ai_not_opportunity';
+} else if (rejectionTriggered) {
+  gateReason = 'rejection_rule_triggered';
+} else if (!serviceMatchPass) {
+  gateReason = 'matched_service_unverified';
+} else if (!serviceEvidenceVerified) {
+  gateReason = 'service_match_unsupported';
+} else if (!eligibilityPass) {
+  gateReason = `provider_eligibility_mismatch:${eligibilityRestrictionType}`;
+} else if (intentLevel < minIntent) {
+  gateReason = `intent_below_threshold_${minIntent}`;
+} else if (!sourceQualityPass) {
+  gateReason = hardNonBuyerTypes.has(sourceResultType)
+    ? `source_type_rejected:${sourceResultType}`
+    : `source_quality_below_threshold:${sourceQualityScore}`;
+} else if (!commercialPass) {
+  gateReason = 'budget_far_below_service_minimum';
+} else if (!scopeBudgetPass) {
+  gateReason = 'budget_far_below_scope_adjusted_minimum';
+}
+
+return {
+  json: {
+    ...candidate,
+    intent_classification: ai,
+    ai_classification_status: classificationUnavailable ? 'unavailable' : 'completed',
+    ai_is_opportunity: isOpportunity,
+    intent_level: intentLevel,
+    ai_confidence: confidence,
+    matched_service_id: verifiedServiceId,
+    matched_service_name: verifiedServiceName,
+    service_match_level: serviceMatchLevel,
+    service_match_evidence: serviceMatchEvidence,
+    service_match_reason: serviceMatchReason,
+    buyer_type: ai.buyer_type || 'unknown',
+    opportunity_type: ai.opportunity_type || 'unknown',
+    target_country_match: ai.target_country_match || 'unknown',
+    source_result_type: sourceResultType,
+    source_quality_score: sourceQualityScore,
+    buyer_likelihood: buyerLikelihood,
+    source_quality_reason: ai.source_quality_reason || '',
+    project_language:
+      candidate.project_language ||
+      candidate.source_payload?.language ||
+      null,
+    eligibility_match: eligibilityMatch,
+    eligibility_restriction_type: eligibilityRestrictionType,
+    required_country: requiredCountry || null,
+    required_language: requiredLanguage || null,
+    eligibility_reason: eligibilityReason || null,
+    commercial_fit: commercialFit,
+    budget_unit: budgetUnit,
+    budget_review_required: budgetReviewRequired,
+    budget_fit_ratio: budgetFitRatio,
+    matched_service_min_value:
+      matchedServiceMinValue > 0 ? matchedServiceMinValue : null,
+    matched_service_currency:
+      matchedServiceCurrency || null,
+    normalized_budget_max: normalizedBudgetMax,
+    commercial_value_reason: commercialValueReason,
+    scope_complexity: scopeComplexity,
+    scope_reason: scopeReason || null,
+    scope_multiplier: scopeMultiplier,
+    scope_adjusted_min_value: scopeAdjustedMinValue,
+    scope_budget_fit_ratio: scopeBudgetFitRatio,
+    scope_budget_fit: scopeBudgetFit,
+    scope_budget_fit_reason: scopeBudgetFitReason,
+    ai_rejection_rule_triggered: rejectionTriggered,
+    ai_rejection_reason: ai.rejection_reason || '',
+    ai_reason: ai.reason || '',
+    gate_pass: gatePass,
+    gate_reason: gateReason,
+  },
+};
