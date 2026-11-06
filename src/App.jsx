@@ -47,6 +47,8 @@ import OpportunityPlatformFilters from './components/OpportunityPlatformFilters'
 import { getOpportunityPlatformOptions, matchesOpportunityPlatforms, sortOpportunities, toggleOpportunityPlatform } from './services/opportunityPlatforms'
 import WorkspaceShell from './components/WorkspaceShell'
 import WorkspaceOverview from './components/WorkspaceOverview'
+import ProviderHealthMonitor from './components/ProviderHealthMonitor'
+import { fetchProviderHealth, fetchLastRunSourceCounts } from './services/providerHealth'
 import ProfileSnapshot from './components/ProfileSnapshot'
 import { hasUnsavedProfileChanges } from './config/profileExperience'
 import DiscoveryQueryEditor from './components/DiscoveryQueryEditor'
@@ -194,6 +196,11 @@ function App() {
   const [sourceAnalyticsLoading, setSourceAnalyticsLoading] = useState(false)
   const [sourceAnalyticsError, setSourceAnalyticsError] = useState('')
   const sourceAnalyticsRequest = useRef(0)
+  const [providerHealth, setProviderHealth] = useState(null)
+  const [providerHealthLoading, setProviderHealthLoading] = useState(false)
+  const [providerHealthError, setProviderHealthError] = useState('')
+  const [lastRunSourceCounts, setLastRunSourceCounts] = useState({})
+  const providerMonitorRequest = useRef(0)
   const [aiQueriesGenerating, setAiQueriesGenerating] = useState(false)
   const [searchSettingsLoading, setSearchSettingsLoading] = useState(true)
   const [searchSettingsSaving, setSearchSettingsSaving] = useState(false)
@@ -1311,6 +1318,30 @@ function App() {
       setServiceSaving(false)
     }
   }
+
+  const loadProviderMonitor = useCallback(async (workspaceId, masterExecutionId = null) => {
+    const requestId = ++providerMonitorRequest.current
+    setProviderHealth(null)
+    setLastRunSourceCounts({})
+    setProviderHealthError('')
+    if (!workspaceId) {
+      setProviderHealthLoading(false)
+      return
+    }
+    setProviderHealthLoading(true)
+    const [healthResult, countsResult] = await Promise.allSettled([
+      fetchProviderHealth(workspaceId),
+      fetchLastRunSourceCounts(workspaceId, masterExecutionId),
+    ])
+    if (requestId !== providerMonitorRequest.current) return
+    if (healthResult.status === 'fulfilled') setProviderHealth(healthResult.value)
+    if (countsResult.status === 'fulfilled') setLastRunSourceCounts(countsResult.value)
+    const messages = []
+    if (healthResult.status === 'rejected') messages.push('Provider availability is unknown.')
+    if (countsResult.status === 'rejected') messages.push('Latest source counts are unavailable.')
+    setProviderHealthError(messages.join(' '))
+    setProviderHealthLoading(false)
+  }, [])
 
   const loadSourceAnalytics = useCallback(async (workspaceId) => {
     const requestId = ++sourceAnalyticsRequest.current
@@ -2475,6 +2506,17 @@ function App() {
   ])
 
   useEffect(() => {
+    if (workspace?.onboarding_completed) {
+      void loadProviderMonitor(workspace.id, engineRun?.master_execution_id)
+    } else {
+      void loadProviderMonitor(null)
+    }
+    return () => {
+      providerMonitorRequest.current += 1
+    }
+  }, [workspace?.id, workspace?.onboarding_completed, engineRun?.master_execution_id, loadProviderMonitor])
+
+  useEffect(() => {
     reviewActionPendingRef.current = null
     setReviewActionId(null)
     setReviewActionError(null)
@@ -3197,6 +3239,7 @@ function App() {
     void loadReviewQueue(workspace.id)
     void loadApprovedOutreach(workspace.id)
     void loadSourceAnalytics(workspace.id)
+    void loadProviderMonitor(workspace.id, engineRun?.master_execution_id)
   }
 
   // -----------------------------------------------------
@@ -3750,6 +3793,20 @@ function App() {
               engineRun={engineRun}
               searchRunning={searchRunning}
               onNavigate={navigateWorkspaceSection}
+            />
+            <ProviderHealthMonitor
+              enabledSources={enabledSources}
+              sourceAnalytics={sourceAnalytics}
+              providerHealth={providerHealth}
+              sourceCounts={lastRunSourceCounts}
+              loading={providerHealthLoading || sourceAnalyticsLoading}
+              error={providerHealthError || sourceAnalyticsError}
+              engineRun={engineRun}
+              onRefresh={() => {
+                if (!workspace?.id) return
+                void loadProviderMonitor(workspace.id, engineRun?.master_execution_id)
+                void loadSourceAnalytics(workspace.id)
+              }}
             />
             <section id="workspace-discovery" className="engine-action-card workspace-anchor" aria-labelledby="engine-action-title">
           <div>
