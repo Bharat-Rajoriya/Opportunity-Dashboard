@@ -16,13 +16,6 @@ function SourceCard({ row }) {
       </div>
       <p className="mt-3 text-sm font-semibold text-slate-100">{row.label}</p>
       <p className="mt-1 text-xs leading-5 text-slate-400">{row.explanation}</p>
-      {row.cooldownUntil && (
-        <p className="mt-2 text-xs text-amber-200">
-          Cooldown ends: {new Date(row.cooldownUntil).toLocaleString(undefined, {
-            dateStyle: 'medium', timeStyle: 'short',
-          })}
-        </p>
-      )}
       <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-700/70 pt-3 text-xs text-slate-400">
         <div>
           <span className="block">Latest run evaluated</span>
