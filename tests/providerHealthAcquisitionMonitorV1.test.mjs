@@ -24,7 +24,7 @@ test('rate limited Google is unavailable even if it produced historical events',
 test('expired cooldown is recovery eligible, never falsely healthy', () => {
   const status=interpretSerpApiHealth({state:'cooldown',cooldown_until:'2026-11-05T00:00:00Z'},now)
   assert.equal(status.state,'recovery_eligible')
-  assert.match(status.label,/not verified/i)
+  assert.equal(status.label,'Unavailable')
 })
 
 test('no active cooldown does not prove remaining SerpApi quota', () => {
