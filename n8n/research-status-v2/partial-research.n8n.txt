@@ -1,0 +1,159 @@
+const item = $json;
+
+const cleanText = (value) => {
+  return String(value ?? '').trim();
+};
+
+const confidence = Number(
+  item.prospect_context_confidence ??
+  item.prospect_context?.confidence ??
+  0
+);
+
+const personName =
+  cleanText(item.prospect_person_name) ||
+  cleanText(item.person_name);
+
+const companyName =
+  cleanText(item.prospect_company_name) ||
+  cleanText(item.company_name);
+
+const companyWebsite =
+  cleanText(item.prospect_company_website) ||
+  cleanText(item.company_website);
+
+const country =
+  cleanText(item.prospect_country_hint) ||
+  cleanText(item.country);
+
+const industry =
+  cleanText(item.prospect_industry_hint);
+
+const contextSummary =
+  cleanText(item.prospect_context_summary);
+
+const requirement =
+  cleanText(item.requirement);
+
+const title =
+  cleanText(item.title);
+
+// Build a useful research summary without inventing facts.
+const summaryParts = [];
+
+if (contextSummary) {
+  summaryParts.push(contextSummary);
+}
+
+if (industry) {
+  summaryParts.push(`Relevant industry/service context: ${industry}.`);
+}
+
+if (!companyName && !companyWebsite) {
+  summaryParts.push(
+    'A reliable company identity or company website could not be established from the available source.'
+  );
+}
+
+if (personName) {
+  summaryParts.push(`Person identified from available context: ${personName}.`);
+}
+
+if (requirement) {
+  summaryParts.push(`Opportunity requirement: ${requirement}`);
+} else if (title) {
+  summaryParts.push(`Opportunity: ${title}`);
+}
+
+const circuit = (() => {
+  try { return $('Get SerpApi Circuit (Research)').first()?.json || {}; }
+  catch (_) { return {}; }
+})();
+const cooldown = Date.parse(circuit.cooldown_until || '');
+const cooldownActive = circuit.provider === 'serpapi' &&
+  Number.isFinite(cooldown) && Date.now() < cooldown &&
+  Number(circuit.last_failure_code || 0) !== 0;
+// A query string alone is not proof of company identity.
+const identityKnown = Boolean(companyName || companyWebsite);
+const researchDetailReason =
+  item.provider_http_code != null ? 'provider_error' :
+  !identityKnown || item.can_research_company !== true ? 'company_identity_unverified' :
+  item._research_probe_authorized === false ? 'provider_recovery_denied' :
+  cooldownActive ? 'provider_cooldown' : 'source_only';
+
+return {
+  json: {
+    ...item,
+
+    person_name: personName || item.person_name || null,
+    company_name: companyName || item.company_name || null,
+    company_website: companyWebsite || item.company_website || null,
+    country: country || item.country || '',
+
+    budget_text:
+      cleanText(item.prospect_budget_hint) ||
+      cleanText(item.budget_text) ||
+      null,
+
+    contact_email:
+      cleanText(item.prospect_contact_email) ||
+      cleanText(item.contact_email) ||
+      null,
+
+    contact_phone:
+      cleanText(item.prospect_contact_phone) ||
+      cleanText(item.contact_phone) ||
+      null,
+
+    project_type:
+      cleanText(item.prospect_project_type) ||
+      cleanText(item.project_type) ||
+      null,
+
+    duration_text:
+      cleanText(item.prospect_duration_text) ||
+      cleanText(item.duration_text) ||
+      null,
+
+    workload_text:
+      cleanText(item.prospect_workload_text) ||
+      cleanText(item.workload_text) ||
+      null,
+
+    experience_level:
+      cleanText(item.prospect_experience_level) ||
+      cleanText(item.experience_level) ||
+      null,
+
+    location_text:
+      cleanText(item.prospect_location_text) ||
+      cleanText(item.location_text) ||
+      null,
+
+    remote_status:
+      cleanText(item.prospect_remote_status) ||
+      cleanText(item.remote_status) ||
+      null,
+
+    skills:
+      Array.isArray(item.prospect_skills)
+        ? item.prospect_skills
+        : Array.isArray(item.skills)
+          ? item.skills
+          : [],
+
+    research_summary: summaryParts.join(' '),
+
+    research_confidence: Math.min(
+      Math.max(confidence, 0),
+      0.70
+    ),
+
+    research_status: 'partial',
+    research_detail_reason: researchDetailReason,
+
+    researched_at: new Date().toISOString(),
+
+    research_method: 'partial_context_only',
+  },
+};
