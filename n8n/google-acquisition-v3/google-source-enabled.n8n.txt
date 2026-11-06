@@ -1,0 +1,116 @@
+// Account 2 is independently gated by an atomic recovery lease.\n// An unverified account performs only one guarded probe before full search.
+const circuit = $('Get SerpApi Circuit (Google)').last()?.json || {};
+const until = Date.parse(circuit.cooldown_until || '');
+const SERPAPI_GOOGLE_AVAILABLE =
+  circuit.provider === 'serpapi_account_2' &&
+  Number.isFinite(until) &&
+  Date.now() >= until;
+// An expired quota cooldown authorizes exactly one low-cost probe in this run.
+// Do not fan out all selected queries until a successful provider response clears 429.
+const recoveryProbe = Number(circuit.last_failure_code || 0) !== 0;
+// Google Acquisition Quality V3: search for buyer-language evidence rather
+// than Google's tutorials about a first-person problem statement.
+const toBuyerSearch = (raw) => {
+  const original = String(raw || '').trim().replace(/\s+/g, ' ');
+  if (!original) return '';
+  // Source-constrained query syntax belongs to its upstream collector.
+  if (/^site:/i.test(original)) return original;
+
+  const technology =
+    /woocommerce/i.test(original) ? 'WooCommerce' :
+    /shopify/i.test(original) ? 'Shopify' :
+    /wordpress/i.test(original) ? 'WordPress' :
+    /react\b/i.test(original) ? 'React' :
+    /website|web design|web developer/i.test(original) ? 'website' :
+    null;
+
+  const scopeMap = [
+    [/backup|disaster recovery|restore/i, 'backup recovery'],
+    [/malware|hacked|security breach/i, 'malware cleanup'],
+    [/checkout|cart/i, 'checkout fix'],
+    [/migration|migrat|staging|production launch/i, 'migration'],
+    [/redesign|rebuild|revamp/i, 'redesign'],
+    [/speed|performance|core web vitals/i, 'performance'],
+    [/payment|subscription/i, 'payment integration'],
+    [/integration|api|crm/i, 'integration'],
+    [/website design|new website|website development/i, 'website development'],
+    [/maintenance|support|update/i, 'website support'],
+  ];
+  const matched = scopeMap.find(([pattern]) => pattern.test(original));
+  const scope = matched ? matched[1] : null;
+  // Unrecognized industries/topics should not be replaced with invented services.
+  if (!technology && !scope) return original;
+
+  const terms = [technology, scope].filter(Boolean).map(x => '"' + x + '"');
+  return terms.join(' ') +
+    ' ("looking for" OR "need a developer" OR "hire a freelancer" OR "seeking a developer")' +
+    ' -tutorial -guide -course -certification';
+};
+const limitRecovery = selected => (recoveryProbe ? selected.slice(0, 1) : selected)
+  .map(item => ({ ...item, json: {
+    ...item.json,
+    google_search_query: toBuyerSearch(item.json.search_query),
+    google_query_strategy: 'buyer_intent_v3',
+    _serpapi_recovery_needed: recoveryProbe,
+  } }));
+const items = $input.all();
+if (!SERPAPI_GOOGLE_AVAILABLE) return [];
+
+if (!items.length) return [];
+
+const profile = items[0].json?.search_profile || {};
+const configured = Array.isArray(profile.enabled_sources)
+  ? profile.enabled_sources
+      .map((value) => String(value || '').trim().toLowerCase())
+      .filter(Boolean)
+  : [];
+
+const enabledSources = configured.length > 0
+  ? configured
+  : ['google'];
+
+if (!enabledSources.includes('google')) {
+  return [];
+}
+
+const plan =
+  items[0].json?.adaptive_source_strategy
+    ?.source_plans?.google || {};
+
+const multiplier = Math.min(
+  1,
+  Math.max(
+    0.25,
+    Number(plan.traffic_multiplier ?? 1)
+  )
+);
+
+if (multiplier >= 1 || items.length === 1) {
+  return limitRecovery(items);
+}
+
+const targetCount = Math.max(
+  1,
+  Math.ceil(items.length * multiplier)
+);
+
+if (targetCount >= items.length) {
+  return limitRecovery(items);
+}
+
+const selectedIndexes = new Set();
+
+for (let i = 0; i < targetCount; i++) {
+  const index = Math.min(
+    items.length - 1,
+    Math.floor(
+      (i * items.length) / targetCount
+    )
+  );
+
+  selectedIndexes.add(index);
+}
+
+return limitRecovery(items.filter((_, index) =>
+  selectedIndexes.has(index)
+));
