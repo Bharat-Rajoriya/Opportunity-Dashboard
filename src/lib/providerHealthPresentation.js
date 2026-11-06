@@ -11,8 +11,8 @@ export function interpretSerpApiHealth(payload, now = Date.now()) {
   if (state === 'cooldown' && Number.isFinite(expires) && expires > now) {
     return {
       state: 'cooldown',
-      label: 'Temporarily unavailable',
-      detail: 'Search provider is rate-limited. Automatic recovery will be eligible after the cooldown.',
+      label: 'Unavailable',
+      detail: 'Google search is currently unavailable.',
       cooldownUntil: until,
     }
   }
