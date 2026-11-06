@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { getResearchStatusDetails } from './lib/researchStatus'
 import Onboarding from './components/Onboarding'
 import TurnstileCaptcha from './components/TurnstileCaptcha'
 import {
@@ -455,6 +456,7 @@ function App() {
           preliminary_score,
           score_stage,
           research_status,
+          research_detail_reason,
           status,
           recommended_action,
           recommended_portfolio_id,
@@ -1604,6 +1606,7 @@ function App() {
           outreach_angle,
           outreach_generated_at,
           research_status,
+          research_detail_reason,
           research_summary,
           final_scored_at
         `)
@@ -1656,6 +1659,7 @@ function App() {
           recommended_action,
           raw_payload,
           research_status,
+          research_detail_reason,
           budget_text,
           estimated_value_min,
           estimated_value_max,
@@ -6443,13 +6447,10 @@ function OpportunityCard({
 
       <OpportunityFactsStrip opportunity={opportunity} />
 
-      {(view.research.tone === 'partial' || view.research.tone === 'pending') && (
-        <p className="opp-v2-research-note">
-          {view.research.tone === 'partial'
-            ? 'Partial research — company and contact details may be unverified.'
-            : 'Research is pending. Review before using this lead for outreach.'}
-        </p>
-      )}
+      <p className="opp-v2-research-note" role="status">
+        <strong>{getResearchStatusDetails(opportunity).label}:</strong>{' '}
+        {getResearchStatusDetails(opportunity).description}
+      </p>
 
       {followUpState !== 'none' && (
         <p className={`opp-v2-followup opp-v2-followup-${followUpState}`}>
@@ -7252,6 +7253,15 @@ function OpportunityDrawer({
               </p>
             )}
           </section>
+
+          <DrawerSection title="Research status">
+            <p className="text-sm font-semibold text-slate-200">
+              {getResearchStatusDetails(opportunity).label}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              {getResearchStatusDetails(opportunity).description}
+            </p>
+          </DrawerSection>
 
           <DrawerSection title="Buyer's Requirements">
             <p className="whitespace-pre-wrap text-sm leading-7 text-slate-300">
