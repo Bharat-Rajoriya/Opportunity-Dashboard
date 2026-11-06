@@ -1,0 +1,12 @@
+const r=$json;
+const confirmed=r===true || r?.data===true || r?.body===true || r?.result===true || r?.value===true;
+let original;
+try { original=$('Validate Research Provider Response').item.json; }
+catch (_) { original=null; }
+if (!original?._research_probe_authorized || !original?._research_recovery_token) {
+  throw Error('Research recovery response missing matching lease ancestry');
+}
+if (confirmed && original._research_valid_provider_response===true)
+  return {json:{...original,_research_completion_confirmed:true}};
+const candidate=$('Attach Prospect Context').item.json;
+return {json:{...candidate,_research_completion_confirmed:false,can_research_company:false}};

@@ -1,0 +1,317 @@
+{
+  "workflow_id": "Q1MQ3Lx1C9ABAdjW",
+  "name": "Opportunity Enrichment - V1",
+  "previous_active_version": "5f59fbc1-6403-4100-b1c8-1a7a5982429e",
+  "prepared_draft_version": "0b939ac0-1a53-4d50-85be-57ae43df2130",
+  "production_enabled": false,
+  "shared_provider": "serpapi",
+  "guarded_rpc_names": [
+    "claim_provider_recovery_probe",
+    "complete_provider_recovery_probe",
+    "record_provider_failure_if_unleased"
+  ],
+  "test_executions": {
+    "recovery_success": "2648",
+    "recovery_429": "2649",
+    "lease_denied": "2650"
+  },
+  "nodes": [
+    {
+      "name": "Can Research Company?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "gate": "={{ (() => {\n  const row = $('Get SerpApi Circuit (Research)').first()?.json || {};\n  if (row.provider !== 'serpapi' || $json.can_research_company !== true ||\n      !String($json.prospect_research_query || '').trim()) return false;\n  // A provider error anywhere in this research run disables further search calls.\n  if ($('Recover Research Context').isExecuted) return false;\n  const failed = Number(row.last_failure_code || 0) !== 0;\n  if (!failed) return true;\n  const until = Date.parse(row.cooldown_until || '');\n  if (!Number.isFinite(until) || Date.now() < until) return false;\n  return !$('Claim Research Recovery Lease').isExecuted;\n})() }}",
+      "connections": [
+        [
+          "Research Recovery Required?"
+        ],
+        [
+          "Partial Research"
+        ]
+      ]
+    },
+    {
+      "name": "Research Recovery Required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "gate": "={{ Number($('Get SerpApi Circuit (Research)').first()?.json?.last_failure_code || 0) !== 0 }}",
+      "connections": [
+        [
+          "Claim Research Recovery Lease"
+        ],
+        [
+          "Research Prospect"
+        ]
+      ]
+    },
+    {
+      "name": "Claim Research Recovery Lease",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "onError": "continueRegularOutput",
+      "retryOnFail": false,
+      "credential_types": [
+        "supabaseApi"
+      ],
+      "http_url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/claim_provider_recovery_probe",
+      "request_body": "={{ JSON.stringify({p_provider:'serpapi',p_execution_id:String($execution.id||'n8n')+':research:'+String($json.id||'unknown'),p_lease_seconds:180}) }}",
+      "connections": [
+        [
+          "Authorize Research Recovery Probe"
+        ]
+      ]
+    },
+    {
+      "name": "Authorize Research Recovery Probe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "connections": [
+        [
+          "Research Probe Authorized?"
+        ]
+      ]
+    },
+    {
+      "name": "Research Probe Authorized?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "gate": "={{ $json._research_probe_authorized === true && !!$json._research_recovery_token }}",
+      "connections": [
+        [
+          "Research Prospect"
+        ],
+        [
+          "Partial Research"
+        ]
+      ]
+    },
+    {
+      "name": "Research Prospect",
+      "type": "n8n-nodes-serpapi.serpApi",
+      "typeVersion": 1,
+      "onError": "continueErrorOutput",
+      "retryOnFail": false,
+      "credential_types": [
+        "serpApi"
+      ],
+      "connections": [
+        [
+          "Validate Research Provider Response"
+        ],
+        [
+          "Recover Research Context"
+        ]
+      ]
+    },
+    {
+      "name": "Validate Research Provider Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "connections": [
+        [
+          "Research Response Valid?"
+        ]
+      ]
+    },
+    {
+      "name": "Research Response Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "gate": "={{ $json._research_valid_provider_response === true }}",
+      "connections": [
+        [
+          "Research Success Was Probe?"
+        ],
+        [
+          "Recover Research Context"
+        ]
+      ]
+    },
+    {
+      "name": "Research Success Was Probe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "gate": "={{ $json._research_probe_authorized === true && !!$json._research_recovery_token }}",
+      "connections": [
+        [
+          "Complete Research Recovery Success"
+        ],
+        [
+          "Build Research Packet"
+        ]
+      ]
+    },
+    {
+      "name": "Complete Research Recovery Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "onError": "continueRegularOutput",
+      "retryOnFail": false,
+      "credential_types": [
+        "supabaseApi"
+      ],
+      "http_url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/complete_provider_recovery_probe",
+      "request_body": "={{ JSON.stringify({p_provider:'serpapi',p_lease_token:$json._research_recovery_token,p_success:true}) }}",
+      "connections": [
+        [
+          "Restore Completed Research Response"
+        ]
+      ]
+    },
+    {
+      "name": "Restore Completed Research Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "connections": [
+        [
+          "Research Completion Confirmed?"
+        ]
+      ]
+    },
+    {
+      "name": "Research Completion Confirmed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "gate": "={{ $json._research_completion_confirmed === true }}",
+      "connections": [
+        [
+          "Build Research Packet"
+        ],
+        [
+          "Partial Research"
+        ]
+      ]
+    },
+    {
+      "name": "Recover Research Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "connections": [
+        [
+          "Research Failure Was Probe?"
+        ]
+      ]
+    },
+    {
+      "name": "Research Failure Was Probe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "gate": "={{ !!$json._research_recovery_token }}",
+      "connections": [
+        [
+          "Complete Research Recovery Failure"
+        ],
+        [
+          "Record Normal Research Failure Safely"
+        ]
+      ]
+    },
+    {
+      "name": "Complete Research Recovery Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "onError": "continueRegularOutput",
+      "retryOnFail": false,
+      "credential_types": [
+        "supabaseApi"
+      ],
+      "http_url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/complete_provider_recovery_probe",
+      "request_body": "={{ JSON.stringify({p_provider:'serpapi',p_lease_token:$json._research_recovery_token,p_success:false,p_failure_code:Number($json.provider_http_code)===429?429:503}) }}",
+      "connections": [
+        [
+          "Restore Partial Context After Provider Error"
+        ]
+      ]
+    },
+    {
+      "name": "Record Normal Research Failure Safely",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "onError": "continueRegularOutput",
+      "retryOnFail": false,
+      "credential_types": [
+        "supabaseApi"
+      ],
+      "http_url": "https://vetnjqadmajyweebmxxi.supabase.co/rest/v1/rpc/record_provider_failure_if_unleased",
+      "request_body": "={{ JSON.stringify({p_provider:'serpapi',p_failure_code:Number($json.provider_http_code)===429?429:503,p_failure_source:'research'}) }}",
+      "connections": [
+        [
+          "Restore Partial Context After Provider Error"
+        ]
+      ]
+    },
+    {
+      "name": "Restore Partial Context After Provider Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "connections": [
+        [
+          "Partial Research"
+        ]
+      ]
+    },
+    {
+      "name": "Partial Research",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "connections": [
+        [
+          "Process Research Opportunities",
+          "Update Opportunity Research"
+        ]
+      ]
+    },
+    {
+      "name": "Build Research Packet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": null,
+      "retryOnFail": false,
+      "credential_types": [],
+      "connections": [
+        [
+          "AI Research Analyzer"
+        ]
+      ]
+    }
+  ]
+}

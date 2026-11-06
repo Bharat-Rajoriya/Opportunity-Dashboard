@@ -1,0 +1,22 @@
+const response = $json || {};
+const run = $('Research Run Context').first().json || {};
+let requestedLease = false;
+let token = null;
+try {
+  const claim = $('Authorize Research Recovery Probe').item.json || {};
+  const original = $('Attach Prospect Context').item.json || {};
+  requestedLease = claim._research_probe_authorized === true &&
+    String(claim.id || '') === String(original.id || '') &&
+    String(claim.workspace_id || '') === String(run.workspace_id || '') &&
+    String(claim._research_probe_execution || '') === String($execution.id || '') &&
+    String(claim.prospect_research_query || '') === String(original.prospect_research_query || '') &&
+    Number(claim._research_probe_until || 0) > Date.now();
+  if (requestedLease) token = String(claim._research_recovery_token || '');
+} catch (_) { /* Normal healthy provider calls do not use a recovery grant. */ }
+const metadata = String(response.search_metadata?.status || '');
+const hasResults = Array.isArray(response.organic_results);
+const ok = !response.error && (!metadata || metadata.toLowerCase() === 'success') &&
+  (hasResults || metadata.toLowerCase() === 'success') &&
+  (!requestedLease || /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token));
+return {json:{...response,_research_valid_provider_response:ok,
+  _research_recovery_token:requestedLease?token:null,_research_probe_authorized:requestedLease}};

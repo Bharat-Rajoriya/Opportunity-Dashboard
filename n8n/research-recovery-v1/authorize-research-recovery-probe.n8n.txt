@@ -1,0 +1,17 @@
+const opportunity = $('Can Research Company?').item.json || {};
+const grant = $json || {};
+const token = String(grant.lease_token || '');
+const exp = Date.parse(grant.retry_after || '');
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const run = $('Research Run Context').first().json || {};
+const authorized = grant.granted === true && uuid.test(token) &&
+  Number.isFinite(exp) && exp > Date.now() + 20000 &&
+  Boolean(String(opportunity.prospect_research_query || '').trim()) &&
+  String(opportunity.workspace_id || '') === String(run.workspace_id || '') &&
+  Boolean(opportunity.id);
+return {json:{...opportunity,
+  _research_probe_authorized:authorized,
+  _research_recovery_token:authorized?token:null,
+  _research_probe_until:authorized?exp:null,
+  _research_probe_execution:String($execution.id || '')
+}};
