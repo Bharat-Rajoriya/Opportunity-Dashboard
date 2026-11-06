@@ -1,0 +1,22 @@
+const test=require('node:test')
+const assert=require('node:assert/strict')
+const fs=require('node:fs')
+const path=require('node:path')
+const read=(name)=>fs.readFileSync(path.join(__dirname,'../n8n/qualification-v3-1',name+'.n8n.txt'),'utf8')
+test('hourly pricing review applies even if no maximum hourly amount is published',()=>{
+ const s=read('attach-intent-classification')
+ assert.match(s,/const budgetReviewRequired = isHourlyBudget;/)
+ assert.match(s,/const isHourlyBudget/)
+ assert.match(s,/!isHourlyBudget &&/)
+ assert.doesNotMatch(s,/budgetReviewRequired = isHourlyBudget && projectBudgetMax > 0/)
+})
+test('missing rate is represented as null and never verified as a project total',()=>{
+ const s=read('prepare-database-record')
+ assert.match(s,/item\.estimated_value_max != null \? Number\(item\.estimated_value_max\) : null/)
+ assert.match(s,/total_project_budget_verified: item\.budget_unit !== 'hour' && Number\(item\.estimated_value_max \|\| 0\) > 0/)
+})
+test('hourly flag is kept for scoring and downstream pitch safeguards',()=>{
+ const a=read('attach-intent-classification'),p=read('prepare-database-record')
+ assert.match(a,/budget_review_required: budgetReviewRequired/)
+ assert.match(p,/required: item\.budget_review_required === true/)
+})
