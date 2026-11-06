@@ -200,6 +200,7 @@ function App() {
   const [providerHealthLoading, setProviderHealthLoading] = useState(false)
   const [providerHealthError, setProviderHealthError] = useState('')
   const [lastRunSourceCounts, setLastRunSourceCounts] = useState({})
+  const [monitorLatestRun, setMonitorLatestRun] = useState(null)
   const providerMonitorRequest = useRef(0)
   const [aiQueriesGenerating, setAiQueriesGenerating] = useState(false)
   const [searchSettingsLoading, setSearchSettingsLoading] = useState(true)
@@ -1319,9 +1320,10 @@ function App() {
     }
   }
 
-  const loadProviderMonitor = useCallback(async (workspaceId, masterExecutionId = null) => {
+  const loadProviderMonitor = useCallback(async (workspaceId) => {
     const requestId = ++providerMonitorRequest.current
     setProviderHealth(null)
+    setMonitorLatestRun(null)
     setLastRunSourceCounts({})
     setProviderHealthError('')
     if (!workspaceId) {
@@ -1329,16 +1331,38 @@ function App() {
       return
     }
     setProviderHealthLoading(true)
-    const [healthResult, countsResult] = await Promise.allSettled([
+
+    // The engineRun state only exists for searches started in this browser session.
+    // Load the last persisted run for each workspace, including after a page reload.
+    const [healthResult, latestRunResult] = await Promise.allSettled([
       fetchProviderHealth(workspaceId),
-      fetchLastRunSourceCounts(workspaceId, masterExecutionId),
+      getLatestEngineRun(workspaceId),
     ])
     if (requestId !== providerMonitorRequest.current) return
+
     if (healthResult.status === 'fulfilled') setProviderHealth(healthResult.value)
-    if (countsResult.status === 'fulfilled') setLastRunSourceCounts(countsResult.value)
     const messages = []
     if (healthResult.status === 'rejected') messages.push('Provider availability is unknown.')
-    if (countsResult.status === 'rejected') messages.push('Latest source counts are unavailable.')
+
+    if (latestRunResult.status === 'fulfilled') {
+      const latestRun = latestRunResult.value
+      setMonitorLatestRun(latestRun)
+      if (latestRun?.master_execution_id) {
+        try {
+          const counts = await fetchLastRunSourceCounts(workspaceId, latestRun.master_execution_id)
+          if (requestId !== providerMonitorRequest.current) return
+          setLastRunSourceCounts(counts)
+        } catch (error) {
+          if (requestId !== providerMonitorRequest.current) return
+          console.warn('Provider monitor latest run counts unavailable:', error)
+          messages.push('Latest source counts are unavailable.')
+        }
+      }
+    } else {
+      messages.push('Latest run could not be loaded.')
+    }
+
+    if (requestId !== providerMonitorRequest.current) return
     setProviderHealthError(messages.join(' '))
     setProviderHealthLoading(false)
   }, [])
@@ -2507,7 +2531,7 @@ function App() {
 
   useEffect(() => {
     if (workspace?.onboarding_completed) {
-      void loadProviderMonitor(workspace.id, engineRun?.master_execution_id)
+      void loadProviderMonitor(workspace.id)
     } else {
       void loadProviderMonitor(null)
     }
@@ -3239,7 +3263,7 @@ function App() {
     void loadReviewQueue(workspace.id)
     void loadApprovedOutreach(workspace.id)
     void loadSourceAnalytics(workspace.id)
-    void loadProviderMonitor(workspace.id, engineRun?.master_execution_id)
+    void loadProviderMonitor(workspace.id)
   }
 
   // -----------------------------------------------------
@@ -3801,10 +3825,10 @@ function App() {
               sourceCounts={lastRunSourceCounts}
               loading={providerHealthLoading || sourceAnalyticsLoading}
               error={providerHealthError || sourceAnalyticsError}
-              engineRun={engineRun}
+              engineRun={monitorLatestRun}
               onRefresh={() => {
                 if (!workspace?.id) return
-                void loadProviderMonitor(workspace.id, engineRun?.master_execution_id)
+                void loadProviderMonitor(workspace.id)
                 void loadSourceAnalytics(workspace.id)
               }}
             />
