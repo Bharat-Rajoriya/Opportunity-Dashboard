@@ -40,6 +40,8 @@ export default function UnifiedSearchPage({
   error = '',
   onViewDetails,
   onOpenDiscovery,
+  onManageSources,
+  enabledSources = [],
   onRefresh,
 }) {
   const [query, setQuery] = useState('')
@@ -93,10 +95,15 @@ export default function UnifiedSearchPage({
           <h2 id="unified-search-title">Search your client opportunities</h2>
           <p>Find and review previously discovered buyer requests. Filtering here never starts a paid provider search.</p>
         </div>
-        <button type="button" className="unified-search-discover" onClick={onOpenDiscovery}>
-          <Radar size={17} aria-hidden="true" /> New discovery
-        </button>
+        <div className="unified-search-header-actions">
+          <button type="button" className="unified-search-source-link" onClick={onManageSources}>Manage sources</button>
+          <button type="button" className="unified-search-discover" onClick={onOpenDiscovery}>
+            <Radar size={17} aria-hidden="true" /> New discovery
+          </button>
+        </div>
       </div>
+
+      <p className="unified-search-context">Browsing previously collected opportunities. Selected acquisition sources: {enabledSources.length ? enabledSources.join(", ") : "none"}. Selected does not mean currently available. New discovery uses your saved search profile, not this keyword filter.</p>
 
       <div className="unified-search-controls">
         <label className="unified-search-input-wrap">
