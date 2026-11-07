@@ -49,6 +49,7 @@ import WorkspaceShell from './components/WorkspaceShell'
 import WorkspaceOverview from './components/WorkspaceOverview'
 import UnifiedSearchPage from './components/UnifiedSearchPage'
 import SourcesHubPage from './components/SourcesHubPage'
+import DiscoveryJourneyNav from './components/DiscoveryJourneyNav'
 import ProviderHealthMonitor from './components/ProviderHealthMonitor'
 import { fetchProviderHealth, fetchLastRunSourceCounts } from './services/providerHealth'
 import ProfileSnapshot from './components/ProfileSnapshot'
@@ -3823,6 +3824,10 @@ function App() {
           )}
         </header>
 
+        {(activePage === 'sources' || activePage === 'search') && (
+          <DiscoveryJourneyNav active={activePage} onNavigate={navigateWorkspaceSection} />
+        )}
+
         {activePage === 'sources' && (
           <SourcesHubPage
             enabledSources={enabledSources}
@@ -3839,6 +3844,8 @@ function App() {
             }}
             onManage={() => navigateWorkspaceSection('settings')}
             onDiagnostics={() => navigateWorkspaceSection('diagnostics')}
+            onBrowseResults={() => navigateWorkspaceSection('search')}
+            onNewDiscovery={() => navigateWorkspaceSection('discovery')}
           />
         )}
 
@@ -3848,6 +3855,8 @@ function App() {
             loading={dataLoading}
             error={dataError}
             onOpenDiscovery={() => navigateWorkspaceSection('discovery')}
+            onManageSources={() => navigateWorkspaceSection('sources')}
+            enabledSources={enabledSources}
             onRefresh={refreshDashboard}
             onViewDetails={(opportunity) => {
               setSelectedOpportunity(opportunity)
@@ -3881,12 +3890,14 @@ function App() {
                 void loadSourceAnalytics(workspace.id)
               }}
             />
+            <DiscoveryJourneyNav active="discovery" onNavigate={navigateWorkspaceSection} />
             <section id="workspace-discovery" className="engine-action-card workspace-anchor" aria-labelledby="engine-action-title">
           <div>
             <span className="engine-eyebrow">OPPORTUNITY ENGINE</span>
             <h2 id="engine-action-title">Find new opportunities</h2>
             <p>
               Search for opportunities matching the services and preferences configured in your workspace.
+              Filters in Browse results do not change this saved acquisition profile.
             </p>
           </div>
 
@@ -3910,6 +3921,8 @@ function App() {
             queryBatchSize={queryBatchSize}
             enabledSources={enabledSources}
             onOpenSettings={() => navigateWorkspaceSection('settings')}
+            onBrowseResults={() => navigateWorkspaceSection('search')}
+            onManageSources={() => navigateWorkspaceSection('sources')}
             explanation={discoveryRunExplanation(discoveryDiagnostics, enabledSources)}
           />
 
