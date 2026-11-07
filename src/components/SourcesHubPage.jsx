@@ -53,6 +53,8 @@ export default function SourcesHubPage({
   onRefresh,
   onManage,
   onDiagnostics,
+  onBrowseResults,
+  onNewDiscovery,
 }) {
   const rows = buildProviderMonitorRows({
     enabledSources, providerHealth, sourceAnalytics, latestRunCounts: sourceCounts,
@@ -81,6 +83,13 @@ export default function SourcesHubPage({
           <p className="sources-hub-explanation">This concept from the reference design has no working capture endpoint yet.</p>
           <span className="sources-hub-unavailable">Planned feature</span>
         </article>
+      </div>
+      <div className="sources-hub-quick-actions" aria-label="Next discovery steps">
+        <div><strong>Ready to continue?</strong><p>Browse saved client requests or open the existing discovery engine. Neither action starts a provider request by itself.</p></div>
+        <div className="sources-hub-action-buttons">
+          <button type="button" onClick={onBrowseResults}>Browse stored results <ArrowUpRight size={15} aria-hidden="true" /></button>
+          <button type="button" onClick={onNewDiscovery}>Open new discovery <ArrowUpRight size={15} aria-hidden="true" /></button>
+        </div>
       </div>
       <footer className="sources-hub-footer">
         <div><Activity size={17} aria-hidden="true" /> {latestRunAt ? `Latest recorded run: ${new Date(latestRunAt).toLocaleString()}` : 'No recent run timestamp available'}.</div>
