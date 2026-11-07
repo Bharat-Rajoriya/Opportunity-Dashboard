@@ -6,12 +6,12 @@ const { pathToFileURL } = require('node:url')
 
 const load = import(pathToFileURL(join(__dirname, '../src/config/workspaceUi.js')).href)
 
-test('workspace navigation includes eight unique real sections', async () => {
+test('workspace navigation includes nine unique real sections', async () => {
   const { WORKSPACE_SECTIONS, getWorkspaceSection } = await load
   assert.deepEqual(WORKSPACE_SECTIONS.map(item => item.id), [
-    'overview', 'search', 'discovery', 'opportunities', 'outreach', 'followups', 'diagnostics', 'settings',
+    'overview', 'search', 'sources', 'discovery', 'opportunities', 'outreach', 'followups', 'diagnostics', 'settings',
   ])
-  assert.equal(new Set(WORKSPACE_SECTIONS.map(item => item.target)).size, 8)
+  assert.equal(new Set(WORKSPACE_SECTIONS.map(item => item.target)).size, 9)
   assert.equal(getWorkspaceSection('invalid').id, 'overview')
 })
 
@@ -58,4 +58,17 @@ test('unified search remains read-only and routes discovery explicitly', () => {
   assert(!page.includes('triggerOpportunityEngine'))
   assert(!page.includes('supabase.from('))
   assert(page.includes('Search your client opportunities'))
+})
+
+
+test('Sources Hub uses existing provider monitoring and does not claim new integrations', () => {
+  const app = readFileSync(join(__dirname, '../src/App.jsx'), 'utf8')
+  const page = readFileSync(join(__dirname, '../src/components/SourcesHubPage.jsx'), 'utf8')
+  assert(app.includes("setActivePage('sources')"))
+  assert(app.includes('<SourcesHubPage'))
+  assert(page.includes('buildProviderMonitorRows'))
+  assert(page.includes('Direct API unavailable'))
+  assert(page.includes('Not implemented'))
+  assert(!page.includes('supabase.from('))
+  assert(!page.includes('triggerOpportunityEngine'))
 })

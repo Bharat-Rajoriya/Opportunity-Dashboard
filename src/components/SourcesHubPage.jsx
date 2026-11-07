@@ -1,0 +1,92 @@
+import { Activity, ArrowUpRight, BriefcaseBusiness, Search, ShieldAlert, Plug, RefreshCw } from 'lucide-react'
+import { buildProviderMonitorRows } from '../lib/providerHealthPresentation'
+import './SourcesHubPage.css'
+
+const SOURCE_DESCRIPTIONS = {
+  google: 'Find independent client requests across the public web using the Google collector.',
+  freelancer: 'Find buyer projects through the direct Freelancer marketplace collector.',
+  upwork: 'Direct Upwork collection is not currently available. Selecting a source does not activate an API integration.',
+}
+
+const SOURCE_ICONS = { google: Search, freelancer: BriefcaseBusiness, upwork: Plug }
+
+function getSourceLabel(row, loading, error) {
+  if (error) return 'Status unavailable'
+  if (loading) return 'Checking status'
+  if (!row.enabled) return 'Not selected'
+  if (row.source === 'upwork') return 'Direct API unavailable'
+  return row.label
+}
+
+function SourceCard({ row, loading, error, onManage }) {
+  const Icon = SOURCE_ICONS[row.source] || Plug
+  const status = getSourceLabel(row, loading, error)
+  const unavailable = row.state === 'cooldown' || row.state === 'recovery_eligible' || row.state === 'recovery_in_progress' || row.source === 'upwork'
+  return (
+    <article className="sources-hub-card">
+      <div className="sources-hub-card-top">
+        <div className="sources-hub-icon"><Icon size={21} aria-hidden="true" /></div>
+        <span className={unavailable ? 'sources-hub-status is-unavailable' : 'sources-hub-status'}>{status}</span>
+      </div>
+      <h3>{row.name}</h3>
+      <p>{SOURCE_DESCRIPTIONS[row.source] || 'Configured acquisition source.'}</p>
+      <div className="sources-hub-details">
+        <div><span>Workspace preference</span><strong>{row.enabled ? 'Selected' : 'Not selected'}</strong></div>
+        <div><span>Latest run evaluated</span><strong>{row.latestEvaluated}</strong></div>
+        <div><span>Latest run created</span><strong>{row.latestCreated}</strong></div>
+        <div><span>30-day candidates evaluated</span><strong>{row.evaluated30d}</strong></div>
+      </div>
+      <p className="sources-hub-explanation">{row.explanation}</p>
+      <button type="button" className="sources-hub-manage" onClick={onManage}>Manage in Settings <ArrowUpRight size={15} aria-hidden="true" /></button>
+    </article>
+  )
+}
+
+export default function SourcesHubPage({
+  enabledSources = [],
+  providerHealth = null,
+  sourceAnalytics = {},
+  sourceCounts = {},
+  loading = false,
+  error = '',
+  engineRun = null,
+  onRefresh,
+  onManage,
+  onDiagnostics,
+}) {
+  const rows = buildProviderMonitorRows({
+    enabledSources, providerHealth, sourceAnalytics, latestRunCounts: sourceCounts,
+  }).filter(row => ['google', 'freelancer', 'upwork'].includes(row.source))
+  const latestRunAt = engineRun?.run_finished_at || engineRun?.run_started_at
+  return (
+    <section className="sources-hub" aria-labelledby="sources-hub-title">
+      <div className="sources-hub-heading">
+        <div>
+          <span className="sources-hub-eyebrow">ACQUISITION SOURCES</span>
+          <h2 id="sources-hub-title">Choose where to discover clients</h2>
+          <p>Manage source preferences and inspect recorded activity without confusing a selected source with a working provider.</p>
+        </div>
+        <button type="button" className="sources-hub-refresh" onClick={onRefresh} disabled={loading}>
+          <RefreshCw size={16} aria-hidden="true" /> {loading ? 'Refreshing…' : 'Refresh status'}
+        </button>
+      </div>
+
+      {error && <p role="alert" className="sources-hub-error"><ShieldAlert size={17} aria-hidden="true" /> Status metrics could not be refreshed: {error}</p>}
+      <div className="sources-hub-grid">
+        {rows.map(row => <SourceCard key={row.source} row={row} loading={loading} error={error} onManage={onManage} />)}
+        <article className="sources-hub-card sources-hub-proposed">
+          <div className="sources-hub-card-top"><div className="sources-hub-icon"><Plug size={21} aria-hidden="true" /></div><span className="sources-hub-status">Not implemented</span></div>
+          <h3>Quick Capture</h3>
+          <p>Future option to manually submit client-request links for qualification.</p>
+          <p className="sources-hub-explanation">This concept from the reference design has no working capture endpoint yet.</p>
+          <span className="sources-hub-unavailable">Planned feature</span>
+        </article>
+      </div>
+      <footer className="sources-hub-footer">
+        <div><Activity size={17} aria-hidden="true" /> {latestRunAt ? `Latest recorded run: ${new Date(latestRunAt).toLocaleString()}` : 'No recent run timestamp available'}.</div>
+        <p>Provider health is based on the available monitoring data. Activity counts are not proof of current API availability, and no live quota is displayed here.</p>
+        <button type="button" onClick={onDiagnostics}>Open detailed diagnostics <ArrowUpRight size={15} aria-hidden="true" /></button>
+      </footer>
+    </section>
+  )
+}
