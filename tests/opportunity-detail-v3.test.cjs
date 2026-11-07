@@ -11,7 +11,7 @@ test('detail V3 is an evidence-first two-column overview with unknown safety sta
   const css = read('src/components/OpportunityDecisionSidebar.css')
   assert(app.includes('<OpportunityDecisionSidebar opportunity={opportunity}'))
   assert(app.includes('className="opp-v3-hero"'))
-  assert(app.includes('className="opp-v3-drawer absolute'))
+  assert(app.includes('className="opp-v2-drawer opp-v3-drawer absolute'))
   assert(sidebar.includes('Not independently verified'))
   assert(sidebar.includes('No trusted payment verification result is stored'))
   assert(sidebar.includes('Off-platform payment/request'))
