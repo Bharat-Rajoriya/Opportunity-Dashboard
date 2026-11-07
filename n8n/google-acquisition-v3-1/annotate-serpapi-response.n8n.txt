@@ -1,0 +1,64 @@
+const response = $json || {};
+let token = null;
+let expectedRecovery = false;
+let activeWorkspace = null;
+let activeQuery = null;
+try {
+  const source = $('Google Source Enabled').item.json || {};
+  expectedRecovery = source._serpapi_recovery_needed === true;
+  activeWorkspace = String(source.workspace_id || '');
+  activeQuery = String(source.search_query || '');
+} catch (_) { /* No trusted source ancestry means fail-closed when validating recovery */ }
+try {
+  const claim = $('Authorize One SerpApi Probe').item.json || {};
+  if (expectedRecovery && claim._serpapi_recovery_needed === true &&
+      String(claim.workspace_id || '') === activeWorkspace &&
+      String(claim.search_query || '') === activeQuery &&
+      Number(claim._serpapi_recovery_lease_until || 0) > Date.now() &&
+      claim._serpapi_recovery_execution === String($execution.id || '') &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(claim._serpapi_recovery_lease_token || ''))) {
+    token = claim._serpapi_recovery_lease_token;
+  }
+} catch (_) { /* Regular Google requests do not have recovery ancestry */ }
+const status = Number(response.statusCode || response.error?.httpCode || response.error?.statusCode || 0);
+const providerStatus = String(response.search_metadata?.status || '').toLowerCase();
+const organic = Array.isArray(response.organic_results);
+const resultCount = response.search_information?.total_results;
+const emptyState = String(response.search_information?.organic_results_state || '').toLowerCase();
+const errorText = String(
+  typeof response.error === 'string' ? response.error : response.error?.message || ''
+).trim();
+const explicitEmptyNotice =
+  /^google hasn't returned any results for this query\.?$/i.test(errorText);
+// Accept a *documented* zero-results response only with a successful provider
+// envelope and Google's actual empty-results indicators. Other provider
+// errors, missing metadata, quota errors and HTTP failures fail closed.
+const verifiedEmpty =
+  providerStatus === 'success' &&
+  response.search_metadata?.id &&
+  (resultCount === 0 || resultCount === '0') &&
+  (emptyState === 'fully empty' || explicitEmptyNotice) &&
+  // An explicit SerpApi message about no results is the sole accepted error.
+  (response.error == null ||
+   (typeof response.error === 'string' && explicitEmptyNotice)) &&
+  !organic;
+const validEnvelope =
+  providerStatus === 'success' &&
+  (organic || verifiedEmpty);
+const failed = Boolean(
+  status >= 400 ||
+  (errorText && !verifiedEmpty) ||
+  !validEnvelope ||
+  (expectedRecovery && !token)
+);
+return {json:{...response,
+  // n8n's Split Out expects an array: a successful empty search produces
+  // zero candidates, not an API outage or a placeholder opportunity.
+  organic_results: verifiedEmpty ? [] : response.organic_results,
+  _serpapi_empty_results: Boolean(verifiedEmpty),
+  _serpapi_recovery_expected: expectedRecovery,
+  _serpapi_recovery_probe: Boolean(token),
+  _serpapi_recovery_lease_token: token,
+  _serpapi_response_valid: !failed,
+  _serpapi_response_status: status || null
+}};
