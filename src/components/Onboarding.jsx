@@ -1277,9 +1277,14 @@ function Onboarding({ user, workspace, onComplete }) {
           </h1>
 
           <p className="mt-3 max-w-2xl text-slate-400">
-            Tell us about your business so we can personalize opportunity
-            discovery, qualification and outreach.
+            Tell us what you offer and which buyers you want to reach. We'll use these answers
+            to prioritize client opportunities, not to search for employment.
           </p>
+          <div className="onboard-v3-intro-notes" role="note">
+            <div><strong>Your services come first</strong><span>Clear offers make buyer requirements easier to match.</span></div>
+            <div><strong>Choose your sources</strong><span>Source selection does not guarantee API availability.</span></div>
+            <div><strong>Review before outreach</strong><span>AI assistance drafts suggestions; it does not verify claims or send messages.</span></div>
+          </div>
         </div>
 
         <OnboardingProgress currentStep={currentStep} workspaceName={workspace?.name} />
@@ -1402,7 +1407,7 @@ function Onboarding({ user, workspace, onComplete }) {
               </Field>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-xs leading-5 text-slate-500">
-                  Add a short goal first, then let AI expand it into a buyer-focused brief.
+                  Describe the type of paid client project you want. AI can help polish your wording, but review the draft before saving.
                 </p>
                 <button
                   type="button"
