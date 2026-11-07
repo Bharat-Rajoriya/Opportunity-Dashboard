@@ -83,11 +83,11 @@ export async function fetchInAppDigest(workspaceId, saved) {
   if (!since) return { matches: [], truncated: false, since: null }
   // Limit reads; never make unbounded full-workspace scans. Incomplete windows
   // are explicitly labelled rather than pretending the count is exact.
-  const { data, error } = await supabase.from('opportunities')
-    .select('id,title,requirement,raw_text,source,country,company_name,total_score,preliminary_score,published_at,created_at,source_url')
+  const { data, error, count } = await supabase.from('opportunities')
+    .select('id,title,requirement,raw_text,source,country,company_name,total_score,preliminary_score,published_at,created_at,source_url', { count: 'exact' })
     .eq('workspace_id', workspaceId).gte('created_at', since)
-    .order('created_at', { ascending: false }).range(0, 1000)
+    .order('created_at', { ascending: false }).range(0, 999)
   if (error) throw error
   const rows = data || []
-  return { matches: rows.filter(item => matchesSavedSearchOpportunity(item, saved)), truncated: rows.length > 1000, since }
+  return { matches: rows.filter(item => matchesSavedSearchOpportunity(item, saved)), truncated: Number(count) > rows.length, since }
 }
