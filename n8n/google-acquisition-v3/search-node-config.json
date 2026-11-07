@@ -1,0 +1,9 @@
+{
+  "workflow_id": "lY5Xpce2mg5ABsy1",
+  "active_version_before_review": "d729e16a-eae4-4880-abb3-53e35cc224b3",
+  "draft_version": "be821a16-ce8f-4590-9d80-c29222fd9b17",
+  "search_node": "Google search",
+  "q_parameter": "={{ $json.google_search_query || $json.search_query }}",
+  "credential_name": "SerpApi Opportunity Dashboard 2",
+  "production_published": false
+}

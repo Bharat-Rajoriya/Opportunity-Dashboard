@@ -1,0 +1,87 @@
+const item = $json;
+
+const title = String(item.title || '').trim();
+const snippet = String(item.snippet || '').trim();
+const url = String(item.source_url || '').trim();
+
+const text = `${title} ${snippet}`.toLowerCase();
+
+const context = item.discovery_context || {};
+const profile = context.business_profile || {};
+
+const rejectionRules = Array.isArray(profile.rejection_rules)
+  ? profile.rejection_rules
+  : [];
+
+// Basic validity
+if (!title || !url) {
+  return {
+    json: {
+      ...item,
+      prefilter_pass: false,
+      prefilter_reason: 'missing_title_or_url',
+    },
+  };
+}
+
+// Extremely weak result
+if (text.length < 20) {
+  return {
+    json: {
+      ...item,
+      prefilter_pass: false,
+      prefilter_reason: 'insufficient_content',
+    },
+  };
+}
+
+// Only exclude *explicitly* editorial titles. Never reject a genuine
+// buyer request merely because its text contains "how" or "help".
+const buyerEvidence =
+  /\b(?:looking for|seeking|need someone|need a developer|hire|hiring|paid project|contractor wanted|request for proposal|rfp)\b/i.test(text);
+const editorialTitle =
+  /^(?:how to |step[- ]by[- ]step |complete guide(?: to)? |beginner(?:'s)? guide |top \d+ |\d+ (?:tips|ways|methods)\b|tutorial:|guide:|the ultimate guide)/i.test(title) ||
+  /\b(?:complete guide|step[- ]by[- ]step guide|beginner's guide)\b/i.test(title);
+if (editorialTitle && !buyerEvidence) {
+  return { json: {
+    ...item,
+    prefilter_pass: false,
+    prefilter_reason: 'editorial_not_buyer_request',
+  } };
+}
+
+// Obvious non-opportunity patterns
+const hardRejectPatterns = [
+  'salary',
+  'course',
+  'tutorial',
+  'how to become',
+  'certification',
+  'interview questions',
+  'resume',
+  'job description template',
+  'what is wordpress',
+  'what is shopify',
+];
+
+const matchedPattern = hardRejectPatterns.find(pattern =>
+  text.includes(pattern)
+);
+
+if (matchedPattern) {
+  return {
+    json: {
+      ...item,
+      prefilter_pass: false,
+      prefilter_reason: `hard_reject:${matchedPattern}`,
+    },
+  };
+}
+
+return {
+  json: {
+    ...item,
+    prefilter_pass: true,
+    prefilter_reason: 'candidate_passed_basic_filter',
+  },
+};
