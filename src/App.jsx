@@ -489,6 +489,7 @@ function App() {
       if (error) throw error
 
       setOpportunities(data ?? [])
+      return data ?? []
     } catch (error) {
       console.error('Opportunity fetch error:', error)
       setDataError(error?.message || 'Unable to load opportunities.')
@@ -3224,7 +3225,7 @@ function App() {
         opportunityId: opportunity.id,
       })
 
-      await Promise.all([
+      const [refreshedOpportunities] = await Promise.all([
         fetchOpportunities(workspace.id),
         loadReviewQueue(workspace.id),
       ])
@@ -3232,7 +3233,7 @@ function App() {
       if (selectedOpportunity?.id === opportunity.id) {
         setSelectedOpportunity((current) =>
           current?.id === opportunity.id
-            ? {
+            ? (refreshedOpportunities || []).find(row => row.id === opportunity.id) || {
                 ...current,
                 outreach_status: 'drafted',
                 outreach_review_status: 'pending_review',
@@ -4544,6 +4545,10 @@ function App() {
           onAddNote={addOpportunityNote}
           onScheduleFollowUp={scheduleOpportunityFollowUp}
           onCompleteFollowUp={completeOpportunityFollowUp}
+          onGeneratePitch={() => void handleGenerateManualPitch(selectedOpportunity)}
+          pitchGenerating={manualPitchId === selectedOpportunity?.id}
+          pitchDisabled={manualPitchId !== null && manualPitchId !== selectedOpportunity?.id}
+          pitchError={manualPitchError?.id === selectedOpportunity?.id ? manualPitchError.message : ''}
           opportunityActivity={opportunityActivity}
           activityLoading={activityLoading}
         />
@@ -6948,6 +6953,10 @@ function OpportunityDrawer({
   onAddNote,
   onScheduleFollowUp,
   onCompleteFollowUp,
+  onGeneratePitch,
+  pitchGenerating,
+  pitchDisabled,
+  pitchError,
   opportunityActivity,
   activityLoading,
 }) {
@@ -7400,7 +7409,8 @@ function OpportunityDrawer({
             )}
           </section>
             </div>
-            <OpportunityDecisionSidebar opportunity={opportunity} />
+            <OpportunityDecisionSidebar opportunity={opportunity} onGeneratePitch={onGeneratePitch}
+              pitchGenerating={pitchGenerating} pitchDisabled={pitchDisabled} pitchError={pitchError} />
           </div>
 
           <DrawerSection title="Research status">
