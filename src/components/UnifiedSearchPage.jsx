@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { ExternalLink, Search, SlidersHorizontal, X, Radar } from 'lucide-react'
-import { getOpportunityPlatform } from '../services/opportunityPlatforms'
 import './UnifiedSearchPage.css'
 
 const AGE_OPTIONS = [
