@@ -48,6 +48,7 @@ export default function UnifiedSearchPage({
   const [minScore, setMinScore] = useState('all')
   const [country, setCountry] = useState('all')
   const [sort, setSort] = useState('score')
+  const [searchNow, setSearchNow] = useState(() => Date.now())
 
   const sources = useMemo(() => [...new Set(opportunities
     .map(item => String(item.source || '').trim().toLowerCase())
@@ -60,7 +61,7 @@ export default function UnifiedSearchPage({
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
     const threshold = minScore === 'all' ? null : Number(minScore)
-    const cutoff = recency === 'all' ? null : Date.now() - Number(recency) * 60 * 60 * 1000
+    const cutoff = recency === 'all' ? null : searchNow - Number(recency) * 60 * 60 * 1000
     const rows = opportunities.filter((item) => {
       const text = [item.title, item.requirement, item.raw_text, item.source, item.company_name, item.country]
         .filter(Boolean).join(' ').toLowerCase()
@@ -78,7 +79,7 @@ export default function UnifiedSearchPage({
       if (sort === 'recent') return (getTimestamp(b) || 0) - (getTimestamp(a) || 0)
       return Number(b.total_score ?? b.preliminary_score ?? 0) - Number(a.total_score ?? a.preliminary_score ?? 0)
     })
-  }, [opportunities, query, source, recency, minScore, country, sort])
+  }, [opportunities, query, source, recency, minScore, country, sort, searchNow])
 
   const qualifiedCount = filtered.filter(item => Number(item.total_score ?? item.preliminary_score ?? 0) >= 70).length
   const hasFilters = Boolean(query.trim() || source !== 'all' || recency !== 'all' || minScore !== 'all' || country !== 'all')
@@ -113,7 +114,7 @@ export default function UnifiedSearchPage({
             </select>
           </label>
           <label>Posted
-            <select value={recency} onChange={e => setRecency(e.target.value)}>
+            <select value={recency} onChange={e => { setRecency(e.target.value); setSearchNow(Date.now()) }}>
               {AGE_OPTIONS.map(item => <option value={item.value} key={item.value}>{item.label}</option>)}
             </select>
           </label>
@@ -181,7 +182,7 @@ export default function UnifiedSearchPage({
           <div><strong>{filtered.length}</strong><span>Matching filters</span></div>
           <div><strong>{qualifiedCount}</strong><span>Results scoring 70+</span></div>
           <p>These totals reflect your workspace records, not live external provider results.</p>
-          <button type="button" onClick={onRefresh} disabled={loading}>Refresh stored results</button>
+          <button type="button" onClick={() => { setSearchNow(Date.now()); onRefresh() }} disabled={loading}>Refresh stored results</button>
         </aside>
       </div>
     </section>
