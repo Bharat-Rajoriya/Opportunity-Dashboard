@@ -12,10 +12,11 @@ function CheckRow({ label, value, note, warning = false }) {
   )
 }
 
-export default function OpportunityDecisionSidebar({ opportunity }) {
+export default function OpportunityDecisionSidebar({ opportunity, onGeneratePitch, pitchGenerating = false, pitchDisabled = false, pitchError = "" }) {
   const view = getOpportunityPresentation(opportunity)
   const research = getResearchStatusDetails(opportunity)
   const hasDraft = Boolean(String(opportunity?.outreach_message || '').trim())
+  const canGenerate = !hasDraft && (!opportunity?.outreach_status || opportunity.outreach_status === 'not_generated')
   const hasBudgetEvidence = view.budget.kind === 'listed'
   const riskyBudget = ['far_below_minimum', 'below_minimum'].includes(
     String(opportunity?.commercial_fit || '').toLowerCase()
@@ -38,8 +39,11 @@ export default function OpportunityDecisionSidebar({ opportunity }) {
       <section className="opp-v3-side-section">
         <div className="opp-v3-side-title"><FileText size={18} aria-hidden="true" /><h3>Proposal readiness</h3></div>
         <span className={hasDraft ? 'opp-v3-draft is-ready' : 'opp-v3-draft'}>{hasDraft ? 'Draft available for review' : 'No draft generated'}</span>
-        <p>{hasDraft ? 'Review and edit the existing AI draft before approving outreach. Nothing is sent automatically.' : 'Use Generate Pitch from the opportunity card when the service match and buyer evidence justify it.'}</p>
+        <p>{hasDraft ? 'Review and edit the existing AI draft before approving outreach. Nothing is sent automatically.' : 'Generate a draft only after reviewing the buyer requirement and service match.'}</p>
         {hasDraft && <a className="opp-v3-side-link" href="#opp-v3-outreach-draft">Review existing draft <ArrowUpRight size={14} aria-hidden="true" /></a>}
+        {canGenerate && <button type="button" className="opp-v3-side-button" onClick={onGeneratePitch} disabled={pitchGenerating || pitchDisabled}>{pitchGenerating ? "Generating draft…" : "Generate pitch draft"}</button>}
+        {pitchError && <p role="alert" className="opp-v3-pitch-error">{pitchError}</p>}
+        {!canGenerate && !hasDraft && <p>Outreach draft is already queued or undergoing review. Check the Outreach section.</p>}
       </section>
       <section className="opp-v3-side-section">
         <div className="opp-v3-side-title"><CircleHelp size={18} aria-hidden="true" /><h3>Research confidence</h3></div>
