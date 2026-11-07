@@ -48,6 +48,7 @@ import { getOpportunityPlatformOptions, matchesOpportunityPlatforms, sortOpportu
 import WorkspaceShell from './components/WorkspaceShell'
 import WorkspaceOverview from './components/WorkspaceOverview'
 import UnifiedSearchPage from './components/UnifiedSearchPage'
+import SavedSearchesPage from './components/SavedSearchesPage'
 import SourcesHubPage from './components/SourcesHubPage'
 import DiscoveryJourneyNav from './components/DiscoveryJourneyNav'
 import ProviderHealthMonitor from './components/ProviderHealthMonitor'
@@ -213,6 +214,7 @@ function App() {
   const [searchSettingsMessage, setSearchSettingsMessage] = useState('')
   const searchSettingsRequest = useRef(0)
   const searchSettingsSavePendingRef = useRef(false)
+  const [savedSearchPreset, setSavedSearchPreset] = useState(null)
   const [businessProfile, setBusinessProfile] = useState(null)
   const [businessProfileLoading, setBusinessProfileLoading] = useState(false)
   const [businessProfileSaving, setBusinessProfileSaving] = useState(false)
@@ -3403,6 +3405,11 @@ function App() {
   const navigateWorkspaceSection = (sectionId) => {
     const section = getWorkspaceSection(sectionId)
     setActiveWorkspaceSection(section.id)
+    if (section.id === 'saved-searches') {
+      setActivePage('saved-searches')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     if (section.id === 'sources') {
       setActivePage('sources')
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -3783,7 +3790,7 @@ function App() {
     <WorkspaceShell
       workspaceName={workspace?.name}
       userEmail={user?.email}
-      activeSection={activePage === 'settings' ? 'settings' : activePage === 'diagnostics' ? 'diagnostics' : activePage === 'search' ? 'search' : activePage === 'sources' ? 'sources' : activeWorkspaceSection}
+      activeSection={activePage === 'settings' ? 'settings' : activePage === 'diagnostics' ? 'diagnostics' : activePage === 'search' ? 'search' : activePage === 'sources' ? 'sources' : activePage === 'saved-searches' ? 'saved-searches' : activeWorkspaceSection}
       onNavigate={navigateWorkspaceSection}
       onSignOut={handleSignOut}
     >
@@ -3791,19 +3798,21 @@ function App() {
         <header className="workspace-page-header">
           <div>
             <div className="workspace-header-eyebrow">
-              WORKSPACE / {activePage === 'settings' ? 'SETTINGS' : activePage === 'diagnostics' ? 'DIAGNOSTICS' : activePage === 'search' ? 'SEARCH' : activePage === 'sources' ? 'SOURCES' : activeWorkspaceSection.toUpperCase()}
+              WORKSPACE / {activePage === 'settings' ? 'SETTINGS' : activePage === 'diagnostics' ? 'DIAGNOSTICS' : activePage === 'search' ? 'SEARCH' : activePage === 'sources' ? 'SOURCES' : activePage === 'saved-searches' ? 'SAVED SEARCHES' : activeWorkspaceSection.toUpperCase()}
             </div>
             <h1>{activePage === 'settings'
               ? 'Workspace settings'
               : activePage === 'diagnostics' ? 'Acquisition diagnostics'
                : activePage === 'search' ? 'Unified Search'
                : activePage === 'sources' ? 'Sources Hub'
+               : activePage === 'saved-searches' ? 'Saved Searches'
               : getWorkspaceSection(activeWorkspaceSection).label}</h1>
             <p>{activePage === 'settings'
               ? 'Manage the services, proof, and search settings behind your results.'
               : activePage === 'diagnostics' ? 'Inspect source performance and recorded qualification outcomes.'
                : activePage === 'search' ? 'Find and review client opportunities already discovered in your workspace.'
                : activePage === 'sources' ? 'Understand enabled providers, source performance, and collection availability.'
+               : activePage === 'saved-searches' ? 'Reuse search filters on already discovered client opportunities.'
               : 'An organized view of your discovery, prospects, and next actions.'}</p>
           </div>
           {activePage === 'dashboard' && (
@@ -3849,9 +3858,18 @@ function App() {
           />
         )}
 
+        {activePage === 'saved-searches' && (
+          <SavedSearchesPage workspaceId={workspace.id}
+            onOpenSearch={() => { setSavedSearchPreset(null); navigateWorkspaceSection('search') }}
+            onApply={(saved) => { setSavedSearchPreset(saved); navigateWorkspaceSection('search') }} />
+        )}
+
         {activePage === 'search' && (
           <UnifiedSearchPage
             opportunities={opportunities}
+            workspaceId={workspace.id}
+            initialPreset={savedSearchPreset}
+            onOpenSavedSearches={() => navigateWorkspaceSection('saved-searches')}
             loading={dataLoading}
             error={dataError}
             onOpenDiscovery={() => navigateWorkspaceSection('discovery')}
