@@ -1,4 +1,21 @@
 /**
+ * Visual milestones only. Five saved onboarding steps and their completion gates remain unchanged.
+ * These labels describe client discovery, rather than a job-seeker CV workflow.
+ */
+export const ONBOARDING_MILESTONES = Object.freeze([
+  { id: 'identity', title: 'Define your business', stepIds: [1, 2],
+    description: 'Business identity, offer and service minimums' },
+  { id: 'buyers', title: 'Find the right buyers', stepIds: [3, 4],
+    description: 'Client preferences, exclusions and discovery sources' },
+  { id: 'trust', title: 'Build trust', stepIds: [5],
+    description: 'Optional work samples and final review' },
+])
+
+export function getOnboardingMilestone(step) {
+  return ONBOARDING_MILESTONES.find(item => item.stepIds.includes(step)) || ONBOARDING_MILESTONES[0]
+}
+
+/**
  * Presentation-only onboarding and business profile helpers.
  * This UI does not score leads, verify claims, or change saved profile data.
  */
