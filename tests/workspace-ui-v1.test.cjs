@@ -6,12 +6,12 @@ const { pathToFileURL } = require('node:url')
 
 const load = import(pathToFileURL(join(__dirname, '../src/config/workspaceUi.js')).href)
 
-test('workspace navigation includes nine unique real sections', async () => {
+test('workspace navigation includes ten unique real sections', async () => {
   const { WORKSPACE_SECTIONS, getWorkspaceSection } = await load
   assert.deepEqual(WORKSPACE_SECTIONS.map(item => item.id), [
-    'overview', 'search', 'sources', 'discovery', 'opportunities', 'outreach', 'followups', 'diagnostics', 'settings',
+    'overview', 'search', 'saved-searches', 'sources', 'discovery', 'opportunities', 'outreach', 'followups', 'diagnostics', 'settings',
   ])
-  assert.equal(new Set(WORKSPACE_SECTIONS.map(item => item.target)).size, 9)
+  assert.equal(new Set(WORKSPACE_SECTIONS.map(item => item.target)).size, 10)
   assert.equal(getWorkspaceSection('invalid').id, 'overview')
 })
 
@@ -93,4 +93,17 @@ test('Search, Sources and Discovery link through a shared non-triggering journey
   assert(discovery.includes('Browse stored results'))
   assert(search.includes('New discovery uses your saved search profile'))
   assert(sources.includes('Neither action starts a provider request'))
+})
+
+
+test('saved search navigation is read-only and remains separate from acquisition', () => {
+  const app = readFileSync(join(__dirname, '../src/App.jsx'), 'utf8')
+  const saved = readFileSync(join(__dirname, '../src/components/SavedSearchesPage.jsx'), 'utf8')
+  const service = readFileSync(join(__dirname, '../src/services/savedOpportunitySearches.js'), 'utf8')
+  assert(app.includes('<SavedSearchesPage'))
+  assert(app.includes('setSavedSearchPreset(saved)'))
+  assert(saved.includes('No scheduled alerts or paid searches'))
+  assert(!saved.includes('triggerOpportunityEngine'))
+  assert(service.includes(".from('saved_opportunity_searches')"))
+  assert(!service.includes(".from('search_profiles')"))
 })
