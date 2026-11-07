@@ -5757,7 +5757,17 @@ function App() {
                       void saveBusinessProfile()
                     }}
                   >
-                    <div className="profile-v2-editor-section">
+                    <div className="profile-v3-editor-map" role="navigation" aria-label="Business profile form sections">
+                      <div>
+                        <strong>Update your client discovery profile</strong>
+                        <p>Both sections save together. You can switch sections without losing the edits in this form.</p>
+                      </div>
+                      <div className="profile-v3-editor-links">
+                        <button type="button" onClick={() => document.getElementById('profile-v3-essentials')?.scrollIntoView({ block: 'start', behavior: 'smooth' })}>Business essentials</button>
+                        <button type="button" onClick={() => document.getElementById('profile-v3-targeting')?.scrollIntoView({ block: 'start', behavior: 'smooth' })}>Buyer targeting</button>
+                      </div>
+                    </div>
+                    <div id="profile-v3-essentials" className="profile-v2-editor-section">
                       <span className="profile-v2-eyebrow">01 / BUSINESS ESSENTIALS</span>
                       <h3>Tell buyers who you are</h3>
                       <p>Update your identity and working location. Your base country provides context and does not restrict you to local buyers.</p>
@@ -5869,7 +5879,7 @@ function App() {
                       </span>
                     </label>
 
-                    <div className="profile-v2-editor-section">
+                    <div id="profile-v3-targeting" className="profile-v2-editor-section">
                       <span className="profile-v2-eyebrow">02 / BUYER TARGETING</span>
                       <h3>Describe the opportunities you want</h3>
                       <p>Use your goal, ideal client types and rejection rules to guide discovery. Review any AI-written suggestions before saving.</p>
@@ -6097,7 +6107,9 @@ function App() {
                     )}
 
                     <p className="profile-v2-editor-footnote">
-                      Saving refreshes the business context used for matching and may trigger AI search-query regeneration. Changes are not saved until you select Save Profile.
+                      <strong>Review before saving:</strong> Your business identity and buyer preferences are saved together.
+                      This may refresh the context used for opportunity matching and AI search-query generation.
+                      Nothing changes until you select Save Profile; closing with unsaved edits will ask for confirmation.
                     </p>
                     <button
                       type="submit"
