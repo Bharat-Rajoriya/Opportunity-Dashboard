@@ -47,6 +47,7 @@ import OpportunityPlatformFilters from './components/OpportunityPlatformFilters'
 import { getOpportunityPlatformOptions, matchesOpportunityPlatforms, sortOpportunities, toggleOpportunityPlatform } from './services/opportunityPlatforms'
 import WorkspaceShell from './components/WorkspaceShell'
 import WorkspaceOverview from './components/WorkspaceOverview'
+import UnifiedSearchPage from './components/UnifiedSearchPage'
 import ProviderHealthMonitor from './components/ProviderHealthMonitor'
 import { fetchProviderHealth, fetchLastRunSourceCounts } from './services/providerHealth'
 import ProfileSnapshot from './components/ProfileSnapshot'
@@ -3400,6 +3401,11 @@ function App() {
   const navigateWorkspaceSection = (sectionId) => {
     const section = getWorkspaceSection(sectionId)
     setActiveWorkspaceSection(section.id)
+    if (section.id === 'search') {
+      setActivePage('search')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     if (section.id === 'diagnostics') {
       setActivePage('diagnostics')
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -3770,7 +3776,7 @@ function App() {
     <WorkspaceShell
       workspaceName={workspace?.name}
       userEmail={user?.email}
-      activeSection={activePage === 'settings' ? 'settings' : activePage === 'diagnostics' ? 'diagnostics' : activeWorkspaceSection}
+      activeSection={activePage === 'settings' ? 'settings' : activePage === 'diagnostics' ? 'diagnostics' : activePage === 'search' ? 'search' : activeWorkspaceSection}
       onNavigate={navigateWorkspaceSection}
       onSignOut={handleSignOut}
     >
@@ -3778,15 +3784,17 @@ function App() {
         <header className="workspace-page-header">
           <div>
             <div className="workspace-header-eyebrow">
-              WORKSPACE / {activePage === 'settings' ? 'SETTINGS' : activePage === 'diagnostics' ? 'DIAGNOSTICS' : activeWorkspaceSection.toUpperCase()}
+              WORKSPACE / {activePage === 'settings' ? 'SETTINGS' : activePage === 'diagnostics' ? 'DIAGNOSTICS' : activePage === 'search' ? 'SEARCH' : activeWorkspaceSection.toUpperCase()}
             </div>
             <h1>{activePage === 'settings'
               ? 'Workspace settings'
               : activePage === 'diagnostics' ? 'Acquisition diagnostics'
+               : activePage === 'search' ? 'Unified Search'
               : getWorkspaceSection(activeWorkspaceSection).label}</h1>
             <p>{activePage === 'settings'
               ? 'Manage the services, proof, and search settings behind your results.'
               : activePage === 'diagnostics' ? 'Inspect source performance and recorded qualification outcomes.'
+               : activePage === 'search' ? 'Find and review client opportunities already discovered in your workspace.'
               : 'An organized view of your discovery, prospects, and next actions.'}</p>
           </div>
           {activePage === 'dashboard' && (
@@ -3806,6 +3814,20 @@ function App() {
             </button>
           )}
         </header>
+
+        {activePage === 'search' && (
+          <UnifiedSearchPage
+            opportunities={opportunities}
+            loading={dataLoading}
+            error={dataError}
+            onOpenDiscovery={() => navigateWorkspaceSection('discovery')}
+            onRefresh={refreshDashboard}
+            onViewDetails={(opportunity) => {
+              setSelectedOpportunity(opportunity)
+              navigateWorkspaceSection('opportunities')
+            }}
+          />
+        )}
 
         {activePage === 'dashboard' && (
           <>
