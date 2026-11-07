@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { ExternalLink, Search, SlidersHorizontal, X, Radar } from 'lucide-react'
+import { ExternalLink, Search, SlidersHorizontal, X, Radar, BookmarkPlus } from 'lucide-react'
+import { createSavedSearch } from '../services/savedOpportunitySearches'
 import './UnifiedSearchPage.css'
 
 const AGE_OPTIONS = [
@@ -43,12 +44,19 @@ export default function UnifiedSearchPage({
   onManageSources,
   enabledSources = [],
   onRefresh,
+  workspaceId,
+  initialPreset = null,
+  onOpenSavedSearches,
 }) {
-  const [query, setQuery] = useState('')
-  const [source, setSource] = useState('all')
-  const [recency, setRecency] = useState('all')
-  const [minScore, setMinScore] = useState('all')
-  const [country, setCountry] = useState('all')
+  const [query, setQuery] = useState(initialPreset?.query || '')
+  const [saveName, setSaveName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveFeedback, setSaveFeedback] = useState('')
+  const [saveError, setSaveError] = useState('')
+  const [source, setSource] = useState(initialPreset?.source || 'all')
+  const [recency, setRecency] = useState(initialPreset?.recency || 'all')
+  const [minScore, setMinScore] = useState(initialPreset?.min_score || 'all')
+  const [country, setCountry] = useState(initialPreset?.country || 'all')
   const [sort, setSort] = useState('score')
   const [searchNow, setSearchNow] = useState(() => Date.now())
 
@@ -86,6 +94,22 @@ export default function UnifiedSearchPage({
   const qualifiedCount = filtered.filter(item => Number(item.total_score ?? item.preliminary_score ?? 0) >= 70).length
   const hasFilters = Boolean(query.trim() || source !== 'all' || recency !== 'all' || minScore !== 'all' || country !== 'all')
   const clear = () => { setQuery(''); setSource('all'); setRecency('all'); setMinScore('all'); setCountry('all') }
+
+  const saveCurrentFilters = async () => {
+    if (saving || !saveName.trim()) return
+    setSaving(true)
+    setSaveError('')
+    setSaveFeedback('')
+    try {
+      await createSavedSearch(workspaceId, { name: saveName, query, source, recency, min_score: minScore, country })
+      setSaveName('')
+      setSaveFeedback('Saved successfully. Open Saved searches to reuse these filters.')
+    } catch (error) {
+      setSaveError(error?.code === '23505' ? 'This workspace already has a saved search with that name.' : error?.message || 'Unable to save search.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <section className="unified-search" aria-labelledby="unified-search-title">
@@ -141,6 +165,15 @@ export default function UnifiedSearchPage({
           </label>
           {hasFilters && <button type="button" className="unified-search-clear" onClick={clear}><X size={14} aria-hidden="true" /> Clear filters</button>}
         </div>
+        <div className="unified-search-save">
+          <label>Save these filters
+            <input type="text" maxLength={80} value={saveName} onChange={event => setSaveName(event.target.value)} placeholder="e.g. WordPress projects in the US" />
+          </label>
+          <button type="button" disabled={saving || !saveName.trim() || !workspaceId} onClick={() => void saveCurrentFilters()}><BookmarkPlus size={16} aria-hidden="true" /> {saving ? 'Saving…' : 'Save search'}</button>
+          <button type="button" className="unified-search-saved-link" onClick={onOpenSavedSearches}>View saved searches</button>
+        </div>
+        {saveFeedback && <p role="status" className="unified-search-save-success">{saveFeedback}</p>}
+        {saveError && <p role="alert" className="unified-search-save-error">{saveError}</p>}
       </div>
 
       <div className="unified-search-layout">
