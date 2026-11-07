@@ -22,7 +22,7 @@ V3 incorrectly treated any `response.error` as a provider failure and the recove
 Manual n8n replay workflow `JTTTl9CtJMf9yJjn`, execution **#2704**: passed shortened query assertions; 1 valid empty result; 1 valid nonempty result; 6 failure cases rejected; no provider credentials, external requests or DB writes. Repository regression tests independently exercise the same production node scripts, including 429/quota, missing metadata, error objects, and recovery without a lease.
 
 ## Rollout and measurement
-- Repo PR merges only code snapshots/regressions; n8n draft must be published separately after merge. Version `3ac7d658-4dc5-409d-9133-ddf3b94d8b46`; prior active `be821a16-ce8f-4590-9d80-c29222fd9b17`.
+- Repo PR merges only code snapshots/regressions; n8n draft must be published separately after merge. Version `a4e4f97b-43b2-42a8-8ce2-262b3fc86864`; prior active `be821a16-ce8f-4590-9d80-c29222fd9b17`.
 - After publication, verify Account 2 credential/circuit and run one workspace-scoped Find Opportunities from the dashboard (not a scheduled all-workspaces run). Inspect the actual SerpApi envelope, Google evaluated/qualified/created, and account_2 circuit.
 - Account 2 was placed in a **false 503 cooldown** by prior V3 run. Do not reset or bypass the active lease/cooldown without a targeted, conditional and separately validated correction; the 15-min cooldown will naturally expire. Browser status can remain Unavailable until real availability is verified.
 - A successful zero-results API call is not improved acquisition quality. Compare buyer yield over multiple diverse low-volume searches; do not infer precision from one zero-result test.
