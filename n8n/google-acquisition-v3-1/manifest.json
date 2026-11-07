@@ -1,0 +1,14 @@
+{
+  "workflow_id": "lY5Xpce2mg5ABsy1",
+  "previous_active_version": "be821a16-ce8f-4590-9d80-c29222fd9b17",
+  "prepared_draft_version": "a4e4f97b-43b2-42a8-8ce2-262b3fc86864",
+  "query_node": "Google search",
+  "query_parameter": "={{ $json.google_search_query || $json.search_query }}",
+  "response_node": "Annotate SerpApi Response With Lease",
+  "source_node": "Google Source Enabled",
+  "credential": "SerpApi Opportunity Dashboard 2",
+  "provider_circuit": "serpapi_account_2",
+  "published": false,
+  "offline_test_workflow": "JTTTl9CtJMf9yJjn",
+  "offline_test_execution": "2704"
+}
