@@ -64,3 +64,33 @@
 @media(max-width:750px){.onboard-v2-content{padding:30px 17px 55px}.onboard-v2-progress{padding:18px}.onboard-v2-workspace{max-width:130px}.onboard-v2-step-list{display:flex;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin}.onboard-v2-step{flex:0 0 135px}.onboard-v2-guide{gap:7px}.profile-v2-identity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-v2-checks,.profile-v2-summary.is-compact .profile-v2-checks{grid-template-columns:1fr}.profile-v2-summary{padding:17px}.profile-v2-progress-count{min-width:72px;padding:9px}.profile-v2-summary-header h3{font-size:18px}}
 @media(max-width:480px){.onboard-v2-progress-top{flex-direction:column}.onboard-v2-workspace{max-width:100%}.profile-v2-summary-header{align-items:flex-start}.profile-v2-progress-count strong{font-size:18px}.profile-v2-identity-grid{grid-template-columns:1fr 1fr}}
 @media(prefers-reduced-motion:reduce){.onboard-v2-shell *, .onboard-v2-shell *::before,.onboard-v2-shell *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+
+/* V3: present existing five gated setup steps as three understandable milestones. */
+.onboard-v3-milestones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:22px}
+.onboard-v3-milestone{min-width:0;display:flex;gap:11px;padding:14px;border:1px solid #374761;border-radius:12px;background:#111d31;align-items:flex-start}
+.onboard-v3-milestone.is-current{background:#302852;border-color:#9983ec}
+.onboard-v3-milestone.is-previous{background:#162c2c;border-color:#3c7364}
+.onboard-v3-milestone-number{display:grid;place-items:center;flex:0 0 29px;height:29px;border:1px solid #667397;background:#202b45;border-radius:9px;font-size:12px;font-weight:750;color:#d8e1f9}
+.onboard-v3-milestone.is-current .onboard-v3-milestone-number{background:#7459cc;border-color:#b8a0ff;color:#fff}
+.onboard-v3-milestone.is-previous .onboard-v3-milestone-number{background:#245d4e;color:#a8efd0;border-color:#448571}
+.onboard-v3-milestone>div{min-width:0;display:grid;gap:6px}
+.onboard-v3-milestone strong{font-size:12px;line-height:1.4;color:#eef0ff}
+.onboard-v3-milestone small{font-size:10.5px;line-height:1.5;color:#acbad3}
+.onboard-v3-progress-caption{margin-top:9px;color:#9caed0;font-size:11px}
+.onboard-v3-progress .onboard-v2-step-list{margin-top:16px}
+.onboard-v3-intro-notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:20px}
+.onboard-v3-intro-notes>div{padding:13px;border:1px solid #354662;border-radius:11px;background:#121f34;display:grid;gap:5px}
+.onboard-v3-intro-notes strong{color:#ded3ff;font-size:12px}
+.onboard-v3-intro-notes span{color:#a7b9d1;font-size:11px;line-height:1.5}
+.workspace-shell .profile-v3-editor-map{padding:15px;border:1px solid #4b4872;background:#1b213e;border-radius:12px;display:grid;gap:12px}
+.workspace-shell .profile-v3-editor-map strong{display:block;color:#f3eeff;font-size:14px;font-weight:750}
+.workspace-shell .profile-v3-editor-map p{margin-top:5px;font-size:11.5px;line-height:1.6;color:#b8c4e0}
+.workspace-shell .profile-v3-editor-links{display:flex;gap:9px;flex-wrap:wrap}
+.workspace-shell .profile-v3-editor-links button{padding:9px 12px;border-radius:9px;border:1px solid #745fa8;background:#29234b;color:#e5ddff;font-size:12px;font-weight:700}
+.workspace-shell .profile-v3-editor-links button:hover{background:#393162}
+.workspace-shell .profile-v3-editor-links button:focus-visible{outline:2px solid #c6b7ff;outline-offset:3px}
+.workspace-shell #profile-v3-essentials,.workspace-shell #profile-v3-targeting{scroll-margin-top:25px}
+.workspace-shell .profile-v2-editor-footnote strong{color:#f3ddbb}
+@media(max-width:850px){.onboard-v3-milestones{grid-template-columns:1fr}.onboard-v3-milestone{align-items:center}.onboard-v3-intro-notes{grid-template-columns:1fr}}
+@media(max-width:550px){.workspace-shell .profile-v3-editor-links{display:grid;grid-template-columns:1fr 1fr}.workspace-shell .profile-v3-editor-links button{padding:11px 8px}.onboard-v3-milestone{padding:11px}}
