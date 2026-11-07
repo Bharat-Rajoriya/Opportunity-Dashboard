@@ -1,14 +1,20 @@
 import { Check, Sparkles } from 'lucide-react'
-import { ONBOARDING_STEPS, getOnboardingStepMeta } from '../config/profileExperience'
+import {
+  ONBOARDING_STEPS, ONBOARDING_MILESTONES,
+  getOnboardingStepMeta, getOnboardingMilestone,
+} from '../config/profileExperience'
 
-/** Informational progress; navigation remains gated by each step's save action. */
+/**
+ * Presentation-only: milestone navigation never bypasses the step-level persistence guards.
+ */
 export default function OnboardingProgress({ currentStep, workspaceName }) {
   const step = getOnboardingStepMeta(currentStep)
+  const milestone = getOnboardingMilestone(currentStep)
   return (
-    <section className="onboard-v2-progress" aria-label="Onboarding progress">
+    <section className="onboard-v2-progress onboard-v3-progress" aria-label="Onboarding progress">
       <div className="onboard-v2-progress-top">
         <div className="onboard-v2-progress-heading">
-          <span className="onboard-v2-eyebrow"><Sparkles size={14} aria-hidden="true" /> WORKSPACE SETUP</span>
+          <span className="onboard-v2-eyebrow"><Sparkles size={14} aria-hidden="true" /> CLIENT DISCOVERY SETUP</span>
           <h2>{step.title} <span>— Step {step.id} of {ONBOARDING_STEPS.length}</span></h2>
           <p>{step.description}</p>
         </div>
@@ -16,6 +22,21 @@ export default function OnboardingProgress({ currentStep, workspaceName }) {
           {workspaceName || 'Your workspace'}
         </span>
       </div>
+      <div className="onboard-v3-milestones" role="list" aria-label="Three setup milestones">
+        {ONBOARDING_MILESTONES.map((item, index) => {
+          const isCurrent = item.id === milestone.id
+          const previous = item.stepIds[item.stepIds.length - 1] < currentStep
+          return (
+            <div role="listitem" key={item.id}
+              className={`onboard-v3-milestone${isCurrent ? ' is-current' : ''}${previous ? ' is-previous' : ''}`}
+              aria-current={isCurrent ? 'step' : undefined}>
+              <span className="onboard-v3-milestone-number" aria-hidden="true">{previous ? <Check size={15} /> : index + 1}</span>
+              <div><strong>{item.title}</strong><small>{item.description}</small></div>
+            </div>
+          )
+        })}
+      </div>
+      <p className="onboard-v3-progress-caption">Three simple milestones, with five saved steps to protect your answers.</p>
       <ol className="onboard-v2-step-list">
         {ONBOARDING_STEPS.map(item => {
           const current = item.id === currentStep
@@ -32,10 +53,13 @@ export default function OnboardingProgress({ currentStep, workspaceName }) {
         })}
       </ol>
       <div className="onboard-v2-guide">
-        <span>TIP FOR THIS STEP</span>
+        <span>WHAT MATTERS HERE</span>
         <p>{step.tip}</p>
       </div>
-      <p className="onboard-v2-progress-note">Use Save &amp; Continue to move forward. Earlier steps can be revisited using Back; later steps stay protected by their existing save checks.</p>
+      <p className="onboard-v2-progress-note">
+        The progress display is informational. Save &amp; Continue stores each step before proceeding.
+        Proof of work is optional and can be added later.
+      </p>
     </section>
   )
 }
