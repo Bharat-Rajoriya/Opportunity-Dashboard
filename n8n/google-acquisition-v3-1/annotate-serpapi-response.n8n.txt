@@ -34,6 +34,7 @@ const explicitEmptyNotice =
 // envelope and Google's actual empty-results indicators. Other provider
 // errors, missing metadata, quota errors and HTTP failures fail closed.
 const verifiedEmpty =
+  status < 400 &&
   providerStatus === 'success' &&
   response.search_metadata?.id &&
   (resultCount === 0 || resultCount === '0') &&
