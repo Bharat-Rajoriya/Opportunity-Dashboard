@@ -14,7 +14,7 @@ const STAGES = [
 export default function DiscoveryRunPanel({
   run, running, diagnostics, diagnosticsError,
   customQueries, aiQueries, aiEnabled, queryBatchSize,
-  enabledSources, onOpenSettings, explanation,
+  enabledSources, onOpenSettings, onBrowseResults, onManageSources, explanation,
 }) {
   const state = getDiscoveryRunState(run, running)
   const summary = getDiscoveryQuerySummary({
@@ -47,6 +47,10 @@ export default function DiscoveryRunPanel({
           <small>{summary.aiIncluded ? 'Included in query pool' : 'Excluded from query pool'}</small></div>
         <div><span>Phrase batch limit</span><strong>{summary.batchLimit || '—'}</strong>
           <small>Maximum configured preference</small></div>
+      </div>
+      <div className="flex flex-wrap gap-2 mt-3 mb-4">
+        <button className="discovery-v2-settings-link" type="button" onClick={onBrowseResults}>Browse stored results</button>
+        <button className="discovery-v2-settings-link" type="button" onClick={onManageSources}>Manage sources</button>
       </div>
       <p className="discovery-v2-config-note"><Info size={15} aria-hidden="true" />
         {summary.estimate} Selected sources are not necessarily online or within quota.
