@@ -6,3 +6,23 @@
 .unified-search-date-note{font-size:12px;color:#ebd2a0;line-height:1.6;padding:9px 12px;border-left:3px solid #9a8053;background:#282437;border-radius:0 8px 8px 0}
 
 .unified-search-evidence-note{border-left:3px solid #a78b56;background:#28253a;padding:10px 13px;border-radius:0 9px 9px 0;color:#e9d5ad;font-size:12px;line-height:1.6}.unified-search-filter-help{font-size:12px;line-height:1.6;color:#aebbd3}.unified-search-filters label{min-width:145px}.unified-search-filters label select{max-width:245px}.unified-search-filters label select:focus-visible{outline:2px solid #c6b7ff;outline-offset:3px}@media(max-width:600px){.unified-search-filters label select{max-width:none}}
+
+/* Progressive disclosure: keep everyday search short and advanced fields opt-in. */
+.unified-search-advanced-toggle-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.unified-search-advanced-toggle{display:inline-flex;align-items:center;gap:8px;color:#dccfff;font-size:13px;font-weight:700;padding:9px 12px;background:#202342;border:1px solid #58567e;border-radius:9px}
+.unified-search-advanced-toggle svg:last-child{transition:transform .15s ease}
+.unified-search-advanced-toggle svg.is-open{transform:rotate(180deg)}
+.unified-search-advanced-count{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:99px;background:#7155ca;color:white;font-size:11px;padding:0 5px}
+.unified-search-advanced-panel{border:1px solid #364767;background:#101b31;padding:15px;border-radius:11px;align-items:flex-end}
+.unified-search-active-chips{display:flex;gap:8px;flex-wrap:wrap}
+.unified-search-active-chips:empty{display:none}
+.unified-search-active-chips button{background:#2a264a;border:1px solid #685594;border-radius:99px;color:#e4d9ff;font-size:12px;padding:7px 10px;display:flex;align-items:center;gap:7px;max-width:100%}
+.unified-search-save-shortcuts{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #34415c;padding-top:13px}
+.unified-search-save-shortcuts button{display:flex;align-items:center;gap:7px;background:#272347;border:1px solid #63539c;border-radius:9px;color:#e9ddff;font-size:12px;font-weight:700;padding:9px 12px}
+.unified-search-save{border-top:0;padding-top:0}
+.unified-search-empty-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:15px}
+.unified-search-empty-actions button{margin-top:0}
+.unified-search-empty-actions button:first-child{background:#4f3885}
+.unified-search :is(.unified-search-advanced-toggle,.unified-search-active-chips button,.unified-search-save-shortcuts button,.unified-search-empty-actions button):focus-visible{outline:2px solid #c6b7ff;outline-offset:3px}
+@media(max-width:600px){.unified-search-advanced-panel{display:grid;grid-template-columns:1fr 1fr}.unified-search-advanced-panel label{min-width:0}.unified-search-save-shortcuts button{flex:1;justify-content:center}}
+@media(max-width:420px){.unified-search-advanced-panel{grid-template-columns:1fr}}
