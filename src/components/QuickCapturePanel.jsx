@@ -1,0 +1,121 @@
+import { useCallback, useEffect, useState } from 'react'
+import { ClipboardPlus, ExternalLink, ShieldAlert } from 'lucide-react'
+import { validateCaptureDraft } from '../lib/manualCaptureValidation'
+import { listManualCaptures, saveManualCapture, setManualCaptureStatus } from '../services/manualCaptures'
+import './QuickCapturePanel.css'
+
+export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
+  const [open, setOpen] = useState(false)
+  const [url, setUrl] = useState('')
+  const [title, setTitle] = useState('')
+  const [requirement, setRequirement] = useState('')
+  const [preview, setPreview] = useState(null)
+  const [records, setRecords] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try { setRecords(await listManualCaptures(workspaceId)) }
+    catch (err) { setError(err?.message || 'Could not load manual captures.') }
+    finally { setLoading(false) }
+  }, [workspaceId])
+
+  useEffect(() => { void load() }, [load])
+
+  const reviewDraft = event => {
+    event.preventDefault()
+    setError('')
+    setNotice('')
+    try {
+      const result = validateCaptureDraft({ url, title, requirement })
+      setPreview(result)
+    } catch (err) { setPreview(null); setError(err?.message || 'Please review your inputs.') }
+  }
+
+  const save = async () => {
+    if (!preview || saving) return
+    setSaving(true); setError(''); setNotice('')
+    try {
+      // Revalidate on confirm: never assume an earlier preview is proof of a real buyer.
+      const created = await saveManualCapture(workspaceId, previewToDraft(preview), opportunities)
+      setRecords(existing => [created, ...existing])
+      setPreview(null); setUrl(''); setTitle(''); setRequirement(''); setOpen(false)
+      setNotice('Saved for manual review. This is not yet a scored opportunity.')
+    } catch (err) { setError(err?.message || 'Could not save this link.') }
+    finally { setSaving(false) }
+  }
+
+  const changeStatus = async (id, status) => {
+    setSaving(true); setError(''); setNotice('')
+    try {
+      const updated = await setManualCaptureStatus(workspaceId, id, status)
+      setRecords(rows => rows.map(row => row.id === id ? updated : row))
+    } catch (err) { setError(err?.message || 'Unable to update capture status.') }
+    finally { setSaving(false) }
+  }
+
+  return <section className="quick-capture" aria-label="Quick Capture manual review">
+    <div className="quick-capture-head">
+      <div>
+        <h3><ClipboardPlus size={18} aria-hidden="true" /> Quick Capture</h3>
+        <p>Found a client project elsewhere? Save a public URL and your notes to a private review queue.</p>
+      </div>
+      <button type="button" onClick={() => { setOpen(value => !value); setPreview(null); setError('') }} aria-expanded={open}>
+        {open ? 'Close form' : 'Add a project link'}
+      </button>
+    </div>
+    <p className="quick-capture-explain"><ShieldAlert size={15} aria-hidden="true" />
+      Manual capture does not scrape URLs, verify the buyer, score a lead, or trigger a provider search.
+      Saved items stay in the review queue until a separate qualification workflow is available.
+    </p>
+    {open && <form className="quick-capture-form" onSubmit={reviewDraft}>
+      <label>Public project link
+        <input type="url" required maxLength={2000} value={url} onChange={e => { setUrl(e.target.value); setPreview(null) }}
+          placeholder="https://www.freelancer.com/projects/..." autoComplete="url" />
+      </label>
+      <label>Project title
+        <input type="text" required minLength={4} maxLength={180} value={title} onChange={e => { setTitle(e.target.value); setPreview(null) }}
+          placeholder="e.g. WordPress website maintenance" />
+      </label>
+      <label>Buyer requirement / why it matters
+        <textarea required minLength={20} maxLength={5000} rows={3} value={requirement}
+          onChange={e => { setRequirement(e.target.value); setPreview(null) }}
+          placeholder="Paste a brief public project description. Do not include private contact information." />
+      </label>
+      <button type="submit">Review capture</button>
+    </form>}
+    {preview && open && <div className="quick-capture-preview">
+      <strong>Confirm before saving</strong>
+      <p><b>Project:</b> {preview.title}</p>
+      <p><b>Source:</b> {preview.source_platform}</p>
+      <p><b>Description:</b> {preview.requirement}</p>
+      <a href={preview.source_url} target="_blank" rel="noopener noreferrer">Inspect original link <ExternalLink size={14} aria-hidden="true" /></a>
+      <button type="button" disabled={saving} onClick={() => void save()}>{saving ? 'Saving…' : 'Save to review queue'}</button>
+    </div>}
+    {error && <p className="quick-capture-error" role="alert">{error}</p>}
+    {notice && <p className="quick-capture-success" role="status">{notice}</p>}
+    <div className="quick-capture-list">
+      <div className="quick-capture-list-title"><strong>Review queue</strong><span>{records.filter(r => r.status === 'needs_review').length} awaiting review</span></div>
+      {loading ? <p role="status">Loading captured links…</p> : records.length === 0
+        ? <p>No captured links yet.</p>
+        : records.map(record => <article key={record.id}>
+          <div><strong>{record.title}</strong>
+            <span>{record.source_platform} · {record.status === 'dismissed' ? 'Dismissed' : 'Needs review'}</span>
+            <p>{record.requirement}</p>
+            <a href={record.source_url} target="_blank" rel="noopener noreferrer">Open source <ExternalLink size={13} aria-hidden="true" /></a>
+          </div>
+          <button type="button" disabled={saving} onClick={() => void changeStatus(record.id,record.status === 'dismissed' ? 'needs_review' : 'dismissed')}>
+            {record.status === 'dismissed' ? 'Restore' : 'Dismiss'}
+          </button>
+        </article>)}
+    </div>
+  </section>
+}
+
+function previewToDraft(preview) {
+  return { url: preview.source_url, title: preview.title, requirement: preview.requirement }
+}
