@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase'
 import { validateCaptureDraft, normalizeCaptureUrl } from '../lib/manualCaptureValidation'
 
-const FIELDS = 'id,workspace_id,source_url,title,requirement,source_platform,status,created_at,submitted_for_qualification_at,qualification_started_at,qualification_finished_at,qualification_attempts,qualification_reason,qualified_opportunity_id,source_review_status,source_review_note,source_reviewed_at'
+const FIELDS = 'id,workspace_id,source_url,title,requirement,source_platform,status,created_at,submitted_for_qualification_at,qualification_started_at,qualification_finished_at,qualification_attempts,qualification_reason,qualified_opportunity_id,source_review_status,source_review_note,source_reviewed_at,provider_check_status,provider_checked_at,provider_check_evidence'
 
 export async function listManualCaptures(workspaceId) {
   if (!workspaceId) throw new Error('Choose a workspace first.')
@@ -109,6 +109,27 @@ export async function recordManualSourceReview(workspaceId, captureId, status, n
   if (error) throw error
   if (!data || data.id !== captureId || data.workspace_id !== workspaceId) {
     throw new Error('Source observation was not confirmed.')
+  }
+  return data
+}
+
+/**
+ * Explicit read-only official provider lookup for eligible Freelancer captures.
+ * Confirms a listing was returned, not the buyer identity or payment.
+ */
+export async function verifyManualFreelancerSource(workspaceId, captureId) {
+  if (!workspaceId || !captureId) throw new Error('Select a capture and workspace.')
+  const { data, error } = await supabase.functions.invoke('verify-manual-freelancer-source', {
+    body: { workspace_id: workspaceId, capture_id: captureId },
+  })
+  if (error) {
+    let message = ''
+    try { message = (await error.context?.json?.())?.message || '' } catch { /* network failure */ }
+    throw new Error(message || 'Freelancer verification could not be completed.')
+  }
+  if (!data?.success || data.status !== 'listing_confirmed' ||
+    data.buyer_identity_verified !== false || data.payment_verified !== false) {
+    throw new Error(data?.message || 'Provider confirmation was not validated.')
   }
   return data
 }
