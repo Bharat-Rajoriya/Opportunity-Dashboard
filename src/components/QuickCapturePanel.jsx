@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ClipboardPlus, ExternalLink, ShieldAlert } from 'lucide-react'
 import { validateCaptureDraft } from '../lib/manualCaptureValidation'
-import { listManualCaptures, saveManualCapture, setManualCaptureStatus, submitManualCaptureForQualification, qualifyManualCapture, recordManualSourceReview, verifyManualFreelancerSource } from '../services/manualCaptures'
+import { listManualCaptures, saveManualCapture, setManualCaptureStatus, submitManualCaptureForQualification, qualifyManualCapture, recordManualSourceReview, verifyManualFreelancerSource, recoverStalledManualCapture } from '../services/manualCaptures'
 import './QuickCapturePanel.css'
 
 export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
@@ -126,6 +126,20 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     } finally { setSaving(false) }
   }
 
+  const resolveStalledCapture = async record => {
+    if (saving || record.status !== 'qualifying') return
+    if (!window.confirm('Mark this expired AI qualification as failed? This does not retry AI, create an opportunity, or send outreach.')) return
+    setSaving(true); setError(''); setNotice('')
+    try {
+      const result = await recoverStalledManualCapture(workspaceId, record.id)
+      await load()
+      setNotice(result.message)
+    } catch (err) {
+      await load()
+      setError(err?.message || 'Unable to resolve stalled qualification.')
+    } finally { setSaving(false) }
+  }
+
   const changeStatus = async (id, status) => {
     if (saving) return
     setSaving(true); setError(''); setNotice('')
@@ -219,6 +233,11 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
               {saving ? 'Processing…' : 'Run AI qualification'}
             </button>}
             {record.status === 'qualifying' && <small>AI processing started. Refresh the queue to see the result.</small>}
+            {record.status === 'qualifying' && record.qualification_started_at &&
+              Date.now() - new Date(record.qualification_started_at).getTime() > 180000 &&
+              <button type="button" disabled={saving} onClick={() => void resolveStalledCapture(record)}>
+                Resolve stalled run
+              </button>}
             {record.status === 'qualified' && <small>Added to Opportunities for source verification and review. No outreach was sent.</small>}
             {record.status === 'qualified' && record.source_platform === 'freelancer' &&
               <button type="button" disabled={saving} onClick={() => void verifyFreelancerListing(record)}>
