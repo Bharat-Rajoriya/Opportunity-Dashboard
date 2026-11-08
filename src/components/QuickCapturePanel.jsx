@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ClipboardPlus, ExternalLink, ShieldAlert } from 'lucide-react'
 import { validateCaptureDraft } from '../lib/manualCaptureValidation'
-import { listManualCaptures, saveManualCapture, setManualCaptureStatus } from '../services/manualCaptures'
+import { listManualCaptures, saveManualCapture, setManualCaptureStatus, submitManualCaptureForQualification } from '../services/manualCaptures'
 import './QuickCapturePanel.css'
 
 export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
@@ -49,6 +49,24 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     finally { setSaving(false) }
   }
 
+  const submitForQualification = async record => {
+    if (saving || record.status !== 'needs_review') return
+    const approved = window.confirm(
+      'Submit this reviewed link for future qualification? The system will NOT score it, contact the buyer, or add it to Opportunities yet.'
+    )
+    if (!approved) return
+    setSaving(true); setError(''); setNotice('')
+    try {
+      const updated = await submitManualCaptureForQualification(workspaceId, record.id)
+      setRecords(rows => rows.map(row => row.id === record.id ? updated : row))
+      setNotice('Handoff recorded. Automated qualification is not yet connected; this item remains in the queue.')
+    } catch (err) {
+      setError(err?.message || 'Unable to submit this capture.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const changeStatus = async (id, status) => {
     setSaving(true); setError(''); setNotice('')
     try {
@@ -70,7 +88,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     </div>
     <p className="quick-capture-explain"><ShieldAlert size={15} aria-hidden="true" />
       Manual capture does not scrape URLs, verify the buyer, score a lead, or trigger a provider search.
-      Saved items stay in the review queue until a separate qualification workflow is available.
+      Confirmed items can be marked for qualification, but scoring and automatic promotion are not connected yet.
     </p>
     {open && <form className="quick-capture-form" onSubmit={reviewDraft}>
       <label>Public project link
@@ -99,18 +117,26 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     {error && <p className="quick-capture-error" role="alert">{error}</p>}
     {notice && <p className="quick-capture-success" role="status">{notice}</p>}
     <div className="quick-capture-list">
-      <div className="quick-capture-list-title"><strong>Review queue</strong><span>{records.filter(r => r.status === 'needs_review').length} awaiting review</span></div>
+      <div className="quick-capture-list-title"><strong>Review queue</strong>
+        <span>{records.filter(r => r.status === 'needs_review').length} awaiting review · {records.filter(r => r.status === 'pending_qualification').length} queued for qualification</span>
+      </div>
       {loading ? <p role="status">Loading captured links…</p> : records.length === 0
         ? <p>No captured links yet.</p>
         : records.map(record => <article key={record.id}>
           <div><strong>{record.title}</strong>
-            <span>{record.source_platform} · {record.status === 'dismissed' ? 'Dismissed' : 'Needs review'}</span>
+            <span>{record.source_platform} · {record.status === 'dismissed' ? 'Dismissed' : record.status === 'pending_qualification' ? 'Queued for future qualification' : 'Needs review'}</span>
             <p>{record.requirement}</p>
             <a href={record.source_url} target="_blank" rel="noopener noreferrer">Open source <ExternalLink size={13} aria-hidden="true" /></a>
           </div>
-          <button type="button" disabled={saving} onClick={() => void changeStatus(record.id,record.status === 'dismissed' ? 'needs_review' : 'dismissed')}>
-            {record.status === 'dismissed' ? 'Restore' : 'Dismiss'}
-          </button>
+          <div className="quick-capture-row-actions">
+            {record.status === 'needs_review' && <button type="button" disabled={saving}
+              onClick={() => void submitForQualification(record)}>Submit for qualification</button>}
+            {record.status !== 'pending_qualification' && <button type="button" disabled={saving}
+              onClick={() => void changeStatus(record.id,record.status === 'dismissed' ? 'needs_review' : 'dismissed')}>
+              {record.status === 'dismissed' ? 'Restore' : 'Dismiss'}
+            </button>}
+            {record.status === 'pending_qualification' && <small>Awaiting qualification integration. No score assigned.</small>}
+          </div>
         </article>)}
     </div>
   </section>
