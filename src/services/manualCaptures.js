@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase'
 import { validateCaptureDraft, normalizeCaptureUrl } from '../lib/manualCaptureValidation'
 
-const FIELDS = 'id,workspace_id,source_url,title,requirement,source_platform,status,created_at,submitted_for_qualification_at,qualification_started_at,qualification_finished_at,qualification_attempts,qualification_reason,qualified_opportunity_id'
+const FIELDS = 'id,workspace_id,source_url,title,requirement,source_platform,status,created_at,submitted_for_qualification_at,qualification_started_at,qualification_finished_at,qualification_attempts,qualification_reason,qualified_opportunity_id,source_review_status,source_review_note,source_reviewed_at'
 
 export async function listManualCaptures(workspaceId) {
   if (!workspaceId) throw new Error('Choose a workspace first.')
@@ -86,6 +86,29 @@ export async function qualifyManualCapture(workspaceId, captureId) {
   }
   if (!data?.success || !['qualified','rejected','duplicate'].includes(data?.status)) {
     throw new Error(data?.message || 'AI qualification outcome was not confirmed.')
+  }
+  return data
+}
+
+/**
+ * Stores only what the signed-in workspace owner observed when opening a
+ * source URL. This is NOT independent provider verification.
+ */
+export async function recordManualSourceReview(workspaceId, captureId, status, note = '') {
+  if (!workspaceId || !captureId || !['appears_open', 'unavailable', 'unclear'].includes(status)) {
+    throw new Error('Choose a valid source review outcome.')
+  }
+  const trimmed = note.trim()
+  if (trimmed.length > 1000 || (status === 'unclear' && trimmed.length < 10)) {
+    throw new Error('For unclear sources, add a note of at least 10 characters (maximum 1000).')
+  }
+  const { data, error } = await supabase.rpc('record_manual_capture_source_review', {
+    p_workspace_id: workspaceId, p_capture_id: captureId,
+    p_status: status, p_note: trimmed || null,
+  })
+  if (error) throw error
+  if (!data || data.id !== captureId || data.workspace_id !== workspaceId) {
+    throw new Error('Source observation was not confirmed.')
   }
   return data
 }
