@@ -34,3 +34,5 @@ coverage
 # OS
 .DS_Store
 Thumbs.db
+# Local quality audit exports (may contain client source URLs)
+audit-private/
