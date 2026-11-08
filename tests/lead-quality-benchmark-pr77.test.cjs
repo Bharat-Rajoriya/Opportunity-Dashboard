@@ -44,8 +44,8 @@ test('unknown publication and incomplete research are warning signals, not fake 
 test('review metrics exclude uncertain labels and show conservative fraction separately', async () => {
   const { summarizeReviews } = await load()
   const dimensions={
-    buyer_intent:'yes', service_fit:'yes',source_authenticity:'unknown',
-    freshness:'unknown',eligibility:'yes',commercial_fit:'unknown'
+    buyer_intent:'yes', service_fit:'yes',source_authenticity:'yes',
+    freshness:'yes',eligibility:'yes',commercial_fit:'unknown'
   }
   const rows=[
     {id:'one',source:'google',score_band:'high',review_label:'valid',review_evidence:'Posting explicitly requests a paid vendor',...dimensions},
@@ -71,6 +71,8 @@ test('review requires evidence and refuses duplicate labels or fabricated dimens
   assert.throws(()=>summarizeReviews([base,base]),/Duplicate review ID/)
   assert.throws(()=>summarizeReviews([{...base,review_evidence:'nice'}]),/at least 15/)
   assert.throws(()=>summarizeReviews([{...base,service_fit:'probably'}]),/Invalid dimension/)
+  assert.throws(()=>summarizeReviews([{...base,freshness:'unknown'}]),/Valid leads require evidence-backed yes/)
+  assert.throws(()=>summarizeReviews([{...base,review_label:'invalid'}]),/Invalid leads require at least one documented no/)
   assert.throws(()=>summarizeReviews([{...base,review_label:'pass'}]),/valid\/invalid\/uncertain/)
 })
 
