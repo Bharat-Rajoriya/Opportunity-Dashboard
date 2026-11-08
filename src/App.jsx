@@ -423,6 +423,7 @@ function App() {
           title,
           source,
           source_url,
+          published_at,
           country,
           raw_payload,
           source_result_type,

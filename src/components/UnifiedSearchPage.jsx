@@ -91,6 +91,13 @@ export default function UnifiedSearchPage({
     })
   }, [opportunities, query, source, recency, minScore, country, sort, searchNow])
 
+  // When a publication timestamp is missing, we cannot truthfully treat the record
+  // as posted within a selected date window. Explain its exclusion instead.
+  const undatedRecordsForSelection = recency === 'all' ? 0 : opportunities.filter(item =>
+    (source === 'all' || String(item.source || '').toLowerCase() === source) &&
+    (country === 'all' || String(item.country || '') === country) &&
+    !Number.isFinite(getTimestamp(item))
+  ).length
   const qualifiedCount = filtered.filter(item => Number(item.total_score ?? item.preliminary_score ?? 0) >= 70).length
   const hasFilters = Boolean(query.trim() || source !== 'all' || recency !== 'all' || minScore !== 'all' || country !== 'all')
   const clear = () => { setQuery(''); setSource('all'); setRecency('all'); setMinScore('all'); setCountry('all') }
@@ -165,6 +172,11 @@ export default function UnifiedSearchPage({
           </label>
           {hasFilters && <button type="button" className="unified-search-clear" onClick={clear}><X size={14} aria-hidden="true" /> Clear filters</button>}
         </div>
+        {recency !== 'all' && undatedRecordsForSelection > 0 && (
+          <p className="unified-search-date-note" role="note">
+            {undatedRecordsForSelection} {undatedRecordsForSelection === 1 ? 'record has' : 'records have'} no verified posting date and {undatedRecordsForSelection === 1 ? 'is' : 'are'} excluded from the Posted filter. Use Any time to include undated opportunities.
+          </p>
+        )}
         <div className="unified-search-save">
           <label>Save these filters
             <input type="text" maxLength={80} value={saveName} onChange={event => setSaveName(event.target.value)} placeholder="e.g. WordPress projects in the US" />
