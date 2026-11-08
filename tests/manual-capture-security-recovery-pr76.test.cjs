@@ -43,7 +43,7 @@ test('recovery UI requires explicit confirmation and expired worker start', () =
   const ui = read('src/components/QuickCapturePanel.jsx')
   const svc = read('src/services/manualCaptures.js')
   assert.match(ui, /Resolve stalled run/)
-  assert.match(ui, /Date.now\(\) - new Date\(record.qualification_started_at\).getTime\(\) > 180000/)
+  assert.match(ui, /queueCheckedAt - new Date\(record.qualification_started_at\).getTime\(\) > 180000/)
   assert.match(ui, /window.confirm\('Mark this expired AI qualification as failed/)
   assert.match(svc, /supabase.functions.invoke\('recover-stalled-manual-capture'/)
   assert.match(svc, /data.retry_scheduled !== false/)
