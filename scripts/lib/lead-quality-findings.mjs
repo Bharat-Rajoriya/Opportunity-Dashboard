@@ -50,7 +50,16 @@ const severity = flags => flags.some(x => x.startsWith('source_url_')) ? 0
   : flags.includes('high_score_without_complete_research') ? 2 : 3
 
 export function prepareValidationQueue(rows, perStratum = 6) {
-  const selected = stratifiedSample(rows, perStratum)
+  const sampled = stratifiedSample(rows, perStratum)
+  // Force review of severe source-link or provider-promotion warnings even
+  // when deterministic stratification would otherwise miss them. Bounded to
+  // 25 extra records; this is purposeful oversampling, NOT population precision.
+  const critical = rows.filter(row => clean(row?.id) && clean(row?.source) &&
+    (sourceUrlStatus(row.source_url) !== 'https' || potentialPromotion(row)))
+    .sort((a,b) => a.id.localeCompare(b.id))
+    .slice(0,25)
+    .flatMap(row => stratifiedSample([row],1))
+  const selected = [...new Map([...sampled,...critical].map(row => [row.id,row])).values()]
   const byId = new Map(rows.map(row => [row.id, row]))
   return selected.map(item => {
     const row = byId.get(item.id)
