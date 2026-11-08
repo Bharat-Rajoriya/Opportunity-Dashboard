@@ -37,6 +37,7 @@ export function reviewFlags(row) {
   if (base.research_incomplete) flags.push('research_incomplete')
   if (base.source_type_unknown) flags.push('source_type_unknown')
   if (base.service_unmatched) flags.push('service_unmatched')
+  if (!clean(row.source_quality_reason)) flags.push('source_quality_reason_missing')
   if (base.budget_not_recorded) flags.push('budget_not_recorded')
   if (potentialPromotion(row)) flags.push('title_may_be_provider_promotion')
   if (safeScore(row) !== null && safeScore(row) >= 75 && base.research_incomplete)
