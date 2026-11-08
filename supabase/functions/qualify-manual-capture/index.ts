@@ -3,6 +3,54 @@ import { withSupabase } from 'npm:@supabase/server@^1'
 const CLASSIFIER_WEBHOOK = 'https://bharat-2304.app.n8n.cloud/webhook/opportunity-manual-capture-qualification'
 const clean = (x: unknown) => typeof x === 'string' ? x.trim() : ''
 
+// The classifier is a model, not a source verifier. Its response is untrusted
+// even when the n8n webhook returns HTTP 200. Fail closed on malformed data.
+export function validateManualClassification(
+  analysis: unknown,
+  captureId: string,
+  workspaceId: string,
+  activeServiceIds: string[]
+): Record<string, unknown> {
+  if (!analysis || typeof analysis !== 'object' || Array.isArray(analysis))
+    throw new Error('invalid_classifier_response')
+  const a = analysis as Record<string, unknown>
+  const oneOf = (value: unknown, choices: string[]) =>
+    typeof value === 'string' && choices.includes(value)
+  if (
+    a.capture_id !== captureId || a.workspace_id !== workspaceId ||
+    typeof a.is_buyer_request !== 'boolean' ||
+    typeof a.confidence !== 'number' || !Number.isFinite(a.confidence) ||
+    a.confidence < 0 || a.confidence > 1 ||
+    !Number.isInteger(a.intent_level) || (a.intent_level as number) < 1 || (a.intent_level as number) > 4 ||
+    typeof a.reason !== 'string' || !a.reason.trim() || a.reason.length > 500 ||
+    typeof a.rejection_rule_triggered !== 'boolean' ||
+    !oneOf(a.service_match, ['exact', 'related', 'none']) ||
+    !oneOf(a.buyer_likelihood, ['strong', 'moderate', 'weak', 'none']) ||
+    !oneOf(a.eligibility, ['match', 'mismatch', 'unknown']) ||
+    !oneOf(a.source_result_type, [
+      'buyer_request', 'marketplace_post', 'full_time_job', 'provider_marketing',
+      'informational_content', 'directory_or_listing', 'unknown'
+    ]) ||
+    a.source_verified !== false ||
+    a.provenance !== 'unverified_manual_text'
+  ) throw new Error('invalid_classifier_response')
+
+  const serviceId = a.matched_service_id
+  if (typeof serviceId !== 'string' ||
+    (serviceId !== '' && !activeServiceIds.includes(serviceId)) ||
+    (a.service_match === 'none' && serviceId !== '') ||
+    (a.service_match !== 'none' && serviceId === '')
+  ) throw new Error('invalid_classifier_service_match')
+
+  // A classifier may disagree with itself. Such outputs must be treated as
+  // technical failures, not silently converted into accepted opportunities.
+  if (a.is_buyer_request === true &&
+    !['buyer_request', 'marketplace_post'].includes(a.source_result_type as string))
+    throw new Error('inconsistent_classifier_buyer_type')
+
+  return a
+}
+
 export default {
   fetch: withSupabase({ auth: 'user' }, async (req, ctx) => {
     if (req.method !== 'POST') return Response.json({ error: 'method_not_allowed' }, { status: 405 })
@@ -78,19 +126,10 @@ export default {
         signal: controller.signal
       })
       if (!aiResponse.ok) throw new Error('model_service_unavailable')
-      const classification = await aiResponse.json()
-      if (!classification || typeof classification !== 'object' || Array.isArray(classification) ||
-        classification.capture_id !== captureId || classification.workspace_id !== workspaceId ||
-        typeof classification.is_buyer_request !== 'boolean' ||
-        typeof classification.confidence !== 'number' || !Number.isFinite(classification.confidence) ||
-        !Number.isInteger(classification.intent_level) ||
-        typeof classification.reason !== 'string' ||
-        !['exact','related','none'].includes(classification.service_match) ||
-        !['strong','moderate','weak','none'].includes(classification.buyer_likelihood) ||
-        !['match','mismatch','unknown'].includes(classification.eligibility) ||
-        typeof classification.rejection_rule_triggered !== 'boolean' ||
-        classification.source_verified !== false)
-        throw new Error('invalid_classifier_response')
+      const classification = validateManualClassification(
+        await aiResponse.json(), captureId, workspaceId,
+        servicesResult.data.map((service: { id: string }) => service.id)
+      )
 
       const { data: outcome, error: finishError } = await ctx.supabaseAdmin.rpc(
         'finish_manual_capture_qualification', {
