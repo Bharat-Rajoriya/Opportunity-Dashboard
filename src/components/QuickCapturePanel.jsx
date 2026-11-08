@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ClipboardPlus, ExternalLink, ShieldAlert } from 'lucide-react'
 import { validateCaptureDraft } from '../lib/manualCaptureValidation'
-import { listManualCaptures, saveManualCapture, setManualCaptureStatus, submitManualCaptureForQualification, qualifyManualCapture } from '../services/manualCaptures'
+import { listManualCaptures, saveManualCapture, setManualCaptureStatus, submitManualCaptureForQualification, qualifyManualCapture, recordManualSourceReview } from '../services/manualCaptures'
 import './QuickCapturePanel.css'
 
 export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
@@ -90,6 +90,28 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     }
   }
 
+  const reviewSource = async (record, status) => {
+    if (saving || record.status !== 'qualified') return
+    const note = window.prompt(
+      status === 'unclear'
+        ? 'Why is the project status unclear? Add at least 10 characters.'
+        : 'Optional note about what you observed on the original page (no private contact details):',
+      record.source_review_note || ''
+    )
+    if (note === null) return
+    const approved = window.confirm(
+      'Record only what you personally observed? This does NOT independently verify the buyer or project and will NOT change the lead score or start outreach.'
+    )
+    if (!approved) return
+    setSaving(true); setError(''); setNotice('')
+    try {
+      const updated = await recordManualSourceReview(workspaceId, record.id, status, note)
+      setRecords(rows => rows.map(row => row.id === record.id ? updated : row))
+      setNotice('Your observation was saved. The project remains unverified and requires further research.')
+    } catch (err) { setError(err?.message || 'Unable to save source observation.') }
+    finally { setSaving(false) }
+  }
+
   const changeStatus = async (id, status) => {
     setSaving(true); setError(''); setNotice('')
     try {
@@ -150,6 +172,15 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
             <span>{record.source_platform} · {({ dismissed: 'Dismissed', pending_qualification: 'Ready for AI triage', qualifying: 'AI triage in progress', qualified: 'Accepted — manual review needed', rejected: 'Rejected by AI triage', duplicate: 'Already in Opportunities', failed: 'AI triage failed' })[record.status] || 'Needs review'}</span>
             <p>{record.requirement}</p>
             {record.qualification_reason && <p className="quick-capture-qualification-reason">Qualification: {record.qualification_reason}</p>}
+            {record.status === 'qualified' && <p className="quick-capture-qualification-reason">
+              Source review: {({
+                not_reviewed: 'Not reviewed', appears_open: 'Appeared open when checked',
+                unavailable: 'Unavailable when checked', unclear: 'Unclear — needs research',
+              })[record.source_review_status] || 'Not reviewed'}.
+              {record.source_reviewed_at && <> Checked {new Date(record.source_reviewed_at).toLocaleString()}.</>}
+              {record.source_review_note && <> Note: {record.source_review_note}</>}
+              {' '}Human observation only — buyer and authenticity still unverified.
+            </p>}
             <a href={record.source_url} target="_blank" rel="noopener noreferrer">Open source <ExternalLink size={13} aria-hidden="true" /></a>
           </div>
           <div className="quick-capture-row-actions">
@@ -165,6 +196,11 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
             </button>}
             {record.status === 'qualifying' && <small>AI processing started. Refresh the queue to see the result.</small>}
             {record.status === 'qualified' && <small>Added to Opportunities for source verification and review. No outreach was sent.</small>}
+            {record.status === 'qualified' && <div className="quick-capture-row-actions" aria-label="Record what you observed on original source">
+              <button type="button" disabled={saving} onClick={() => void reviewSource(record, 'appears_open')}>Appeared open</button>
+              <button type="button" disabled={saving} onClick={() => void reviewSource(record, 'unavailable')}>Unavailable</button>
+              <button type="button" disabled={saving} onClick={() => void reviewSource(record, 'unclear')}>Unclear</button>
+            </div>}
             {record.status === 'rejected' && <small>No opportunity was created.</small>}
             {record.status === 'duplicate' && <small>Existing opportunity retained. No duplicate was created.</small>}
             {record.status === 'failed' && <small>AI processing failed. No automatic retry is scheduled.</small>}
