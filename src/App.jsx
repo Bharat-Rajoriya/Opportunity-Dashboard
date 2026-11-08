@@ -3874,6 +3874,8 @@ function App() {
             onDiagnostics={() => navigateWorkspaceSection('diagnostics')}
             onBrowseResults={() => navigateWorkspaceSection('search')}
             onNewDiscovery={() => navigateWorkspaceSection('discovery')}
+            workspaceId={workspace.id}
+            opportunities={opportunities}
           />
         )}
 
