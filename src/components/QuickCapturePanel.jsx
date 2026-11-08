@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ClipboardPlus, ExternalLink, ShieldAlert } from 'lucide-react'
 import { validateCaptureDraft } from '../lib/manualCaptureValidation'
-import { listManualCaptures, saveManualCapture, setManualCaptureStatus, submitManualCaptureForQualification } from '../services/manualCaptures'
+import { listManualCaptures, saveManualCapture, setManualCaptureStatus, submitManualCaptureForQualification, qualifyManualCapture } from '../services/manualCaptures'
 import './QuickCapturePanel.css'
 
 export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
@@ -67,6 +67,29 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     }
   }
 
+  const runAiQualification = async record => {
+    if (saving || record.status !== 'pending_qualification') return
+    const approved = window.confirm(
+      'Run AI qualification for this unverified public project? This uses AI processing. Source identity and project freshness are NOT independently verified. Any accepted lead will require manual review, and no outreach is sent.'
+    )
+    if (!approved) return
+    setSaving(true); setError(''); setNotice('')
+    try {
+      const outcome = await qualifyManualCapture(workspaceId, record.id)
+      await load()
+      setNotice(outcome.status === 'qualified'
+        ? 'AI triage accepted the request for manual review. The lead is marked unverified in Opportunities; no outreach was started.'
+        : outcome.status === 'duplicate'
+          ? 'This project is already in Opportunities. No duplicate was created.'
+          : 'AI triage rejected this request. Review the recorded reason below.')
+    } catch (err) {
+      await load()
+      setError(err?.message || 'AI qualification did not complete. Check the saved status.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const changeStatus = async (id, status) => {
     setSaving(true); setError(''); setNotice('')
     try {
@@ -88,7 +111,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     </div>
     <p className="quick-capture-explain"><ShieldAlert size={15} aria-hidden="true" />
       Manual capture does not scrape URLs, verify the buyer, score a lead, or trigger a provider search.
-      Confirmed items can be marked for qualification, but scoring and automatic promotion are not connected yet.
+      Submitted links can be assessed on demand by AI using your business services. Source content is not fetched or independently verified. Accepted leads require manual review; no automated outreach.
     </p>
     {open && <form className="quick-capture-form" onSubmit={reviewDraft}>
       <label>Public project link
@@ -118,14 +141,15 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     {notice && <p className="quick-capture-success" role="status">{notice}</p>}
     <div className="quick-capture-list">
       <div className="quick-capture-list-title"><strong>Review queue</strong>
-        <span>{records.filter(r => r.status === 'needs_review').length} awaiting review · {records.filter(r => r.status === 'pending_qualification').length} queued for qualification</span>
+        <span>{records.filter(r => r.status === 'needs_review').length} awaiting review · {records.filter(r => r.status === 'pending_qualification').length} ready for AI triage</span>
       </div>
       {loading ? <p role="status">Loading captured links…</p> : records.length === 0
         ? <p>No captured links yet.</p>
         : records.map(record => <article key={record.id}>
           <div><strong>{record.title}</strong>
-            <span>{record.source_platform} · {record.status === 'dismissed' ? 'Dismissed' : record.status === 'pending_qualification' ? 'Queued for future qualification' : 'Needs review'}</span>
+            <span>{record.source_platform} · {({ dismissed: 'Dismissed', pending_qualification: 'Ready for AI triage', qualifying: 'AI triage in progress', qualified: 'Accepted — manual review needed', rejected: 'Rejected by AI triage', duplicate: 'Already in Opportunities', failed: 'AI triage failed' })[record.status] || 'Needs review'}</span>
             <p>{record.requirement}</p>
+            {record.qualification_reason && <p className="quick-capture-qualification-reason">Qualification: {record.qualification_reason}</p>}
             <a href={record.source_url} target="_blank" rel="noopener noreferrer">Open source <ExternalLink size={13} aria-hidden="true" /></a>
           </div>
           <div className="quick-capture-row-actions">
@@ -135,7 +159,15 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
               onClick={() => void changeStatus(record.id,record.status === 'dismissed' ? 'needs_review' : 'dismissed')}>
               {record.status === 'dismissed' ? 'Restore' : 'Dismiss'}
             </button>}
-            {record.status === 'pending_qualification' && <small>Awaiting qualification integration. No score assigned.</small>}
+            {record.status === 'pending_qualification' && <button type="button" disabled={saving}
+              onClick={() => void runAiQualification(record)}>
+              {saving ? 'Processing…' : 'Run AI qualification'}
+            </button>}
+            {record.status === 'qualifying' && <small>AI processing started. Refresh the queue to see the result.</small>}
+            {record.status === 'qualified' && <small>Added to Opportunities for source verification and review. No outreach was sent.</small>}
+            {record.status === 'rejected' && <small>No opportunity was created.</small>}
+            {record.status === 'duplicate' && <small>Existing opportunity retained. No duplicate was created.</small>}
+            {record.status === 'failed' && <small>AI processing failed. No automatic retry is scheduled.</small>}
           </div>
         </article>)}
     </div>
