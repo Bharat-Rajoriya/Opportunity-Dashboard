@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ExternalLink, Search, SlidersHorizontal, X, Radar, BookmarkPlus } from 'lucide-react'
+import { ExternalLink, Search, SlidersHorizontal, X, Radar, BookmarkPlus, ChevronDown } from 'lucide-react'
 import { createSavedSearch } from '../services/savedOpportunitySearches'
 import { getBudgetEvidence, getProjectKind, getWorkMode, matchesAdvancedFilters } from '../lib/opportunityAdvancedFilters'
 import './UnifiedSearchPage.css'
@@ -52,6 +52,7 @@ export default function UnifiedSearchPage({
   const [query, setQuery] = useState(initialPreset?.query || '')
   const [saveName, setSaveName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveOpen, setSaveOpen] = useState(false)
   const [saveFeedback, setSaveFeedback] = useState('')
   const [saveError, setSaveError] = useState('')
   const [source, setSource] = useState(initialPreset?.source || 'all')
@@ -61,6 +62,7 @@ export default function UnifiedSearchPage({
   const [budgetEvidence, setBudgetEvidence] = useState(initialPreset?.budget_evidence || 'all')
   const [projectKind, setProjectKind] = useState(initialPreset?.project_kind || 'all')
   const [workMode, setWorkMode] = useState(initialPreset?.work_mode || 'all')
+  const [advancedOpen, setAdvancedOpen] = useState(() => Boolean(initialPreset && (['country', 'budget_evidence', 'project_kind', 'work_mode'].some(key => (initialPreset[key] || 'all') !== 'all'))))
   const [sort, setSort] = useState('score')
   const [searchNow, setSearchNow] = useState(() => Date.now())
 
@@ -112,6 +114,27 @@ export default function UnifiedSearchPage({
   const hasFilters = Boolean(query.trim() || source !== 'all' || recency !== 'all' || minScore !== 'all' || country !== 'all' || budgetEvidence !== 'all' || projectKind !== 'all' || workMode !== 'all')
   const clear = () => { setQuery(''); setSource('all'); setRecency('all'); setMinScore('all'); setCountry('all'); setBudgetEvidence('all'); setProjectKind('all'); setWorkMode('all') }
 
+  const activeFilters = [
+    { key: 'source', label: 'Source', value: source, clear: () => setSource('all') },
+    { key: 'recency', label: 'Posted', value: AGE_OPTIONS.find(item => item.value === recency)?.label || recency, clear: () => setRecency('all'), active: recency !== 'all' },
+    { key: 'score', label: 'Score', value: minScore + '+', clear: () => setMinScore('all'), active: minScore !== 'all' },
+    { key: 'country', label: 'Country', value: country, clear: () => setCountry('all') },
+    { key: 'budget', label: 'Budget', value: ({ listed: 'Listed', estimated: 'Estimated', unknown: 'Unspecified' })[budgetEvidence], clear: () => setBudgetEvidence('all'), active: budgetEvidence !== 'all' },
+    { key: 'kind', label: 'Project', value: ({ fixed: 'Fixed / milestone', hourly: 'Hourly', ongoing: 'Ongoing', other: 'Other', unknown: 'Unspecified' })[projectKind], clear: () => setProjectKind('all'), active: projectKind !== 'all' },
+    { key: 'work', label: 'Work', value: ({ remote: 'Remote', onsite: 'Onsite', hybrid: 'Hybrid', unknown: 'Unconfirmed' })[workMode], clear: () => setWorkMode('all'), active: workMode !== 'all' },
+  ].filter(item => item.active ?? item.value !== 'all')
+
+  const clearMostRestrictive = () => {
+    if (workMode !== 'all') return setWorkMode('all')
+    if (projectKind !== 'all') return setProjectKind('all')
+    if (budgetEvidence !== 'all') return setBudgetEvidence('all')
+    if (country !== 'all') return setCountry('all')
+    if (minScore !== 'all') return setMinScore('all')
+    if (recency !== 'all') return setRecency('all')
+    if (source !== 'all') return setSource('all')
+    if (query.trim()) return setQuery('')
+  }
+
   const saveCurrentFilters = async () => {
     if (saving || !saveName.trim()) return
     setSaving(true)
@@ -120,6 +143,7 @@ export default function UnifiedSearchPage({
     try {
       await createSavedSearch(workspaceId, { name: saveName, query, source, recency, min_score: minScore, country, budget_evidence: budgetEvidence, project_kind: projectKind, work_mode: workMode })
       setSaveName('')
+      setSaveOpen(false)
       setSaveFeedback('Saved successfully. Open Saved searches to reuse these filters.')
     } catch (error) {
       setSaveError(error?.code === '23505' ? 'This workspace already has a saved search with that name.' : error?.message || 'Unable to save search.')
@@ -174,6 +198,18 @@ export default function UnifiedSearchPage({
               <option value="60">60+</option>
             </select>
           </label>
+        </div>
+        <div className="unified-search-advanced-toggle-row">
+          <button type="button" className="unified-search-advanced-toggle" aria-expanded={advancedOpen}
+            aria-controls="unified-search-advanced-filters" onClick={() => setAdvancedOpen(current => !current)}>
+            <SlidersHorizontal size={15} aria-hidden="true" /> Advanced filters
+            {([country, budgetEvidence, projectKind, workMode].filter(value => value !== 'all').length > 0) &&
+              <span className="unified-search-advanced-count">{[country, budgetEvidence, projectKind, workMode].filter(value => value !== 'all').length}</span>}
+            <ChevronDown size={15} aria-hidden="true" className={advancedOpen ? 'is-open' : ''} />
+          </button>
+          {hasFilters && <button type="button" className="unified-search-clear" onClick={clear}><X size={14} aria-hidden="true" /> Clear all</button>}
+        </div>
+        {advancedOpen && <div className="unified-search-filters unified-search-advanced-panel" id="unified-search-advanced-filters">
           <label>Country
             <select value={country} onChange={e => setCountry(e.target.value)}>
               <option value="all">All countries</option>
@@ -207,28 +243,37 @@ export default function UnifiedSearchPage({
               <option value="unknown">Not confirmed</option>
             </select>
           </label>
-          {hasFilters && <button type="button" className="unified-search-clear" onClick={clear}><X size={14} aria-hidden="true" /> Clear filters</button>}
+        </div>}
+        <div className="unified-search-active-chips" aria-label="Active search filters">
+          {activeFilters.map(item => (
+            <button key={item.key} type="button" onClick={item.clear} title={`Remove ${item.label} filter`}>
+              {item.label}: {item.value} <X size={13} aria-hidden="true"/>
+            </button>
+          ))}
         </div>
+        {/* Filter controls end */}
         {recency !== 'all' && undatedRecordsForSelection > 0 && (
           <p className="unified-search-date-note" role="note">
             {undatedRecordsForSelection} {undatedRecordsForSelection === 1 ? 'record has' : 'records have'} no verified posting date and {undatedRecordsForSelection === 1 ? 'is' : 'are'} excluded from the Posted filter. Use Any time to include undated opportunities.
           </p>
         )}
-        {(uncertainCounts.budget > 0 || uncertainCounts.project > 0 || uncertainCounts.work > 0) && (
-          <p className="unified-search-evidence-note" role="note">
-            Missing data is excluded from specific evidence filters. Unknown budget: {uncertainCounts.budget};
-            unspecified project type: {uncertainCounts.project}; unconfirmed work arrangement: {uncertainCounts.work}.
-            “Remote / unspecified” is never treated as confirmed remote.
-          </p>
+        {workMode === 'remote' && uncertainCounts.work > 0 && filtered.length === 0 && (
+          <p className="unified-search-evidence-note" role="note">No listings have explicitly confirmed remote status in these results. “Remote / unspecified” means unverified—not remote.</p>
         )}
-        <p className="unified-search-filter-help">Budget evidence distinguishes source-listed amounts from model estimates. Hourly rates and project budgets are not compared across currencies.</p>
-        <div className="unified-search-save">
-          <label>Save these filters
-            <input type="text" maxLength={80} value={saveName} onChange={event => setSaveName(event.target.value)} placeholder="e.g. WordPress projects in the US" />
-          </label>
-          <button type="button" disabled={saving || !saveName.trim() || !workspaceId} onClick={() => void saveCurrentFilters()}><BookmarkPlus size={16} aria-hidden="true" /> {saving ? 'Saving…' : 'Save search'}</button>
+        <div className="unified-search-save-shortcuts">
+          <button type="button" className="unified-search-save-reveal" aria-expanded={saveOpen}
+            onClick={() => setSaveOpen(current => !current)}>
+            <BookmarkPlus size={15} aria-hidden="true" /> {saveOpen ? 'Hide save form' : 'Save current search'}
+          </button>
           <button type="button" className="unified-search-saved-link" onClick={onOpenSavedSearches}>View saved searches</button>
         </div>
+        {saveOpen && <div className="unified-search-save">
+          <label>Name this filter combination
+            <input type="text" maxLength={80} value={saveName} onChange={event => setSaveName(event.target.value)} placeholder="e.g. New WordPress opportunities" />
+          </label>
+          <button type="button" disabled={saving || !saveName.trim() || !workspaceId}
+            onClick={() => void saveCurrentFilters()}><BookmarkPlus size={16} aria-hidden="true" /> {saving ? 'Saving…' : 'Save search'}</button>
+        </div>}
         {saveFeedback && <p role="status" className="unified-search-save-success">{saveFeedback}</p>}
         {saveError && <p role="alert" className="unified-search-save-error">{saveError}</p>}
       </div>
@@ -246,8 +291,13 @@ export default function UnifiedSearchPage({
           {loading ? <p className="unified-search-feedback" role="status">Loading opportunities…</p> :
             filtered.length === 0 ? <div className="unified-search-empty">
               <strong>{opportunities.length === 0 ? 'No opportunities discovered yet' : 'No opportunities match these filters'}</strong>
-              <p>{opportunities.length === 0 ? 'Use New discovery to run the existing acquisition engine.' : 'Try broader keywords or clear your filters.'}</p>
-              {hasFilters && <button type="button" onClick={clear}>Clear filters</button>}
+              <p>{opportunities.length === 0 ? 'Use New discovery to run the existing acquisition engine.' :
+                workMode === 'remote' ? 'These listings do not confirm remote work. Try including unconfirmed arrangements.' :
+                'One or more selected filters may be too restrictive. Try removing a filter.'}</p>
+              {hasFilters && <div className="unified-search-empty-actions">
+                <button type="button" onClick={clearMostRestrictive}>Remove a restrictive filter</button>
+                <button type="button" onClick={clear}>Clear all filters</button>
+              </div>}
             </div> :
             <div className="unified-search-result-list">
               {filtered.map(item => {
