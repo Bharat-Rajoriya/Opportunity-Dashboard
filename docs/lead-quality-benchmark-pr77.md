@@ -49,11 +49,11 @@ as `{"data":[...]}`, the CLI also accepts that form.
 
 ```sh
 node scripts/lead-quality-benchmark.mjs baseline audit-private/opportunity-export.json > audit-private/baseline.json
-node scripts/lead-quality-benchmark.mjs sample audit-private/opportunity-export.json 4 > audit-private/review-sample.json
+node scripts/lead-quality-benchmark.mjs sample audit-private/opportunity-export.json 6 > audit-private/review-sample.json
 ```
 
 Sampling uses SHA-256 ordering over record IDs for repeatability, capped at
-four records in every **source × score band**: high (≥75), medium (50–74.999),
+six records in every **source × score band**: high (≥75), medium (50–74.999),
 low (<50), or unknown. With sparse strata it selects the available count.
 This is a *stratified convenience sample*, not a population-random
 statistical sample. It favors coverage across sources, not proportionality;
