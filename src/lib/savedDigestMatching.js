@@ -1,3 +1,4 @@
+import { matchesAdvancedFilters } from './opportunityAdvancedFilters.js'
 // Pure matching logic shared with read-only saved-search digest queries.
 export function matchesSavedSearchOpportunity(row, saved, now = Date.now()) {
   const needle = String(saved.query || '').trim().toLowerCase()
@@ -9,6 +10,7 @@ export function matchesSavedSearchOpportunity(row, saved, now = Date.now()) {
   if (saved.source !== 'all' && String(row.source || '').toLowerCase() !== String(saved.source || '').toLowerCase()) return false
   if (saved.country !== 'all' && String(row.country || '') !== saved.country) return false
   if (saved.min_score !== 'all' && Number(row.total_score ?? row.preliminary_score ?? 0) < Number(saved.min_score)) return false
+  if (!matchesAdvancedFilters(row, saved)) return false
   if (saved.recency !== 'all') {
     const posted = row.published_at ? Date.parse(row.published_at) : NaN
     if (!Number.isFinite(posted) || posted < now - Number(saved.recency) * 3600000) return false

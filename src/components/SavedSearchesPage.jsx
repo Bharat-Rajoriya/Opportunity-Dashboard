@@ -130,7 +130,10 @@ export default function SavedSearchesPage({ workspaceId, onApply, onOpenSearch }
             <div className="saved-searches-item-main"><h3>{item.name}</h3>
               <p>{[item.query && `Keywords: ${item.query}`,item.source !== 'all' && `Source: ${item.source}`,
                 item.country !== 'all' && `Country: ${item.country}`,item.min_score !== 'all' && `Score: ${item.min_score}+`,
-                item.recency !== 'all' && `Posted in last ${item.recency} hours`].filter(Boolean).join(' · ') || 'All stored opportunities'}</p>
+                item.recency !== 'all' && `Posted in last ${item.recency} hours`,
+                item.budget_evidence && item.budget_evidence !== 'all' && `Budget: ${item.budget_evidence}`,
+                item.project_kind && item.project_kind !== 'all' && `Project type: ${item.project_kind}`,
+                item.work_mode && item.work_mode !== 'all' && `Work: ${item.work_mode}`].filter(Boolean).join(' · ') || 'All stored opportunities'}</p>
               <InAppDigest item={item} workspaceId={workspaceId} onUpdate={updated => setItems(current => current.map(row => row.id === updated.id ? updated : row))} />
             </div>
             <div className="saved-searches-actions">

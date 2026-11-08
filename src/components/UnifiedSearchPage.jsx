@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ExternalLink, Search, SlidersHorizontal, X, Radar, BookmarkPlus } from 'lucide-react'
 import { createSavedSearch } from '../services/savedOpportunitySearches'
+import { getBudgetEvidence, getProjectKind, getWorkMode, matchesAdvancedFilters } from '../lib/opportunityAdvancedFilters'
 import './UnifiedSearchPage.css'
 
 const AGE_OPTIONS = [
@@ -57,6 +58,9 @@ export default function UnifiedSearchPage({
   const [recency, setRecency] = useState(initialPreset?.recency || 'all')
   const [minScore, setMinScore] = useState(initialPreset?.min_score || 'all')
   const [country, setCountry] = useState(initialPreset?.country || 'all')
+  const [budgetEvidence, setBudgetEvidence] = useState(initialPreset?.budget_evidence || 'all')
+  const [projectKind, setProjectKind] = useState(initialPreset?.project_kind || 'all')
+  const [workMode, setWorkMode] = useState(initialPreset?.work_mode || 'all')
   const [sort, setSort] = useState('score')
   const [searchNow, setSearchNow] = useState(() => Date.now())
 
@@ -78,6 +82,7 @@ export default function UnifiedSearchPage({
       if (needle && !text.includes(needle)) return false
       if (source !== 'all' && String(item.source || '').toLowerCase() !== source) return false
       if (country !== 'all' && String(item.country || '') !== country) return false
+      if (!matchesAdvancedFilters(item, { budget_evidence: budgetEvidence, project_kind: projectKind, work_mode: workMode })) return false
       if (threshold !== null && Number(item.total_score ?? item.preliminary_score ?? 0) < threshold) return false
       if (cutoff !== null) {
         const posted = getTimestamp(item)
@@ -89,7 +94,7 @@ export default function UnifiedSearchPage({
       if (sort === 'recent') return (getTimestamp(b) || 0) - (getTimestamp(a) || 0)
       return Number(b.total_score ?? b.preliminary_score ?? 0) - Number(a.total_score ?? a.preliminary_score ?? 0)
     })
-  }, [opportunities, query, source, recency, minScore, country, sort, searchNow])
+  }, [opportunities, query, source, recency, minScore, country, budgetEvidence, projectKind, workMode, sort, searchNow])
 
   // When a publication timestamp is missing, we cannot truthfully treat the record
   // as posted within a selected date window. Explain its exclusion instead.
@@ -98,9 +103,14 @@ export default function UnifiedSearchPage({
     (country === 'all' || String(item.country || '') === country) &&
     !Number.isFinite(getTimestamp(item))
   ).length
+  const uncertainCounts = {
+    budget: budgetEvidence !== 'all' && budgetEvidence !== 'unknown' ? opportunities.filter(item => getBudgetEvidence(item) === 'unknown').length : 0,
+    project: projectKind !== 'all' && projectKind !== 'unknown' ? opportunities.filter(item => getProjectKind(item) === 'unknown').length : 0,
+    work: workMode !== 'all' && workMode !== 'unknown' ? opportunities.filter(item => getWorkMode(item) === 'unknown').length : 0,
+  }
   const qualifiedCount = filtered.filter(item => Number(item.total_score ?? item.preliminary_score ?? 0) >= 70).length
-  const hasFilters = Boolean(query.trim() || source !== 'all' || recency !== 'all' || minScore !== 'all' || country !== 'all')
-  const clear = () => { setQuery(''); setSource('all'); setRecency('all'); setMinScore('all'); setCountry('all') }
+  const hasFilters = Boolean(query.trim() || source !== 'all' || recency !== 'all' || minScore !== 'all' || country !== 'all' || budgetEvidence !== 'all' || projectKind !== 'all' || workMode !== 'all')
+  const clear = () => { setQuery(''); setSource('all'); setRecency('all'); setMinScore('all'); setCountry('all'); setBudgetEvidence('all'); setProjectKind('all'); setWorkMode('all') }
 
   const saveCurrentFilters = async () => {
     if (saving || !saveName.trim()) return
@@ -108,7 +118,7 @@ export default function UnifiedSearchPage({
     setSaveError('')
     setSaveFeedback('')
     try {
-      await createSavedSearch(workspaceId, { name: saveName, query, source, recency, min_score: minScore, country })
+      await createSavedSearch(workspaceId, { name: saveName, query, source, recency, min_score: minScore, country, budget_evidence: budgetEvidence, project_kind: projectKind, work_mode: workMode })
       setSaveName('')
       setSaveFeedback('Saved successfully. Open Saved searches to reuse these filters.')
     } catch (error) {
@@ -170,6 +180,33 @@ export default function UnifiedSearchPage({
               {countries.map(item => <option value={item} key={item}>{item}</option>)}
             </select>
           </label>
+          <label>Budget evidence
+            <select value={budgetEvidence} onChange={e => setBudgetEvidence(e.target.value)}>
+              <option value="all">Any budget</option>
+              <option value="listed">Listed budget / rate</option>
+              <option value="estimated">Estimate only</option>
+              <option value="unknown">Not specified</option>
+            </select>
+          </label>
+          <label>Project type
+            <select value={projectKind} onChange={e => setProjectKind(e.target.value)}>
+              <option value="all">All project types</option>
+              <option value="fixed">Fixed / milestone</option>
+              <option value="hourly">Hourly</option>
+              <option value="ongoing">Ongoing / retainer</option>
+              <option value="other">Other specified</option>
+              <option value="unknown">Unspecified</option>
+            </select>
+          </label>
+          <label>Work arrangement
+            <select value={workMode} onChange={e => setWorkMode(e.target.value)}>
+              <option value="all">Any arrangement</option>
+              <option value="remote">Explicitly remote</option>
+              <option value="onsite">Explicitly onsite</option>
+              <option value="hybrid">Hybrid</option>
+              <option value="unknown">Not confirmed</option>
+            </select>
+          </label>
           {hasFilters && <button type="button" className="unified-search-clear" onClick={clear}><X size={14} aria-hidden="true" /> Clear filters</button>}
         </div>
         {recency !== 'all' && undatedRecordsForSelection > 0 && (
@@ -177,6 +214,14 @@ export default function UnifiedSearchPage({
             {undatedRecordsForSelection} {undatedRecordsForSelection === 1 ? 'record has' : 'records have'} no verified posting date and {undatedRecordsForSelection === 1 ? 'is' : 'are'} excluded from the Posted filter. Use Any time to include undated opportunities.
           </p>
         )}
+        {(uncertainCounts.budget > 0 || uncertainCounts.project > 0 || uncertainCounts.work > 0) && (
+          <p className="unified-search-evidence-note" role="note">
+            Missing data is excluded from specific evidence filters. Unknown budget: {uncertainCounts.budget};
+            unspecified project type: {uncertainCounts.project}; unconfirmed work arrangement: {uncertainCounts.work}.
+            “Remote / unspecified” is never treated as confirmed remote.
+          </p>
+        )}
+        <p className="unified-search-filter-help">Budget evidence distinguishes source-listed amounts from model estimates. Hourly rates and project budgets are not compared across currencies.</p>
         <div className="unified-search-save">
           <label>Save these filters
             <input type="text" maxLength={80} value={saveName} onChange={event => setSaveName(event.target.value)} placeholder="e.g. WordPress projects in the US" />
