@@ -14,7 +14,7 @@ try {
   const rows = Array.isArray(input) ? input : input?.data
   if (!Array.isArray(rows)) throw new Error('Input must be a JSON array or {data:[...]}')
   const output = mode === 'baseline' ? summarizeUnlabeled(rows)
-    : mode === 'sample' ? stratifiedSample(rows, n === undefined ? 4 : Number(n))
+    : mode === 'sample' ? stratifiedSample(rows, n === undefined ? 6 : Number(n))
     : summarizeReviews(rows)
   process.stdout.write(JSON.stringify(output,null,2) + '\n')
 } catch (error) {
