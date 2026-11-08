@@ -1,5 +1,6 @@
 import { Activity, ArrowUpRight, BriefcaseBusiness, Search, ShieldAlert, Plug, RefreshCw } from 'lucide-react'
 import { buildProviderMonitorRows } from '../lib/providerHealthPresentation'
+import QuickCapturePanel from './QuickCapturePanel'
 import './SourcesHubPage.css'
 
 const SOURCE_DESCRIPTIONS = {
@@ -55,6 +56,8 @@ export default function SourcesHubPage({
   onDiagnostics,
   onBrowseResults,
   onNewDiscovery,
+  workspaceId,
+  opportunities = [],
 }) {
   const rows = buildProviderMonitorRows({
     enabledSources, providerHealth, sourceAnalytics, latestRunCounts: sourceCounts,
@@ -76,14 +79,9 @@ export default function SourcesHubPage({
       {error && <p role="alert" className="sources-hub-error"><ShieldAlert size={17} aria-hidden="true" /> Status metrics could not be refreshed: {error}</p>}
       <div className="sources-hub-grid">
         {rows.map(row => <SourceCard key={row.source} row={row} loading={loading} error={error} onManage={onManage} />)}
-        <article className="sources-hub-card sources-hub-proposed">
-          <div className="sources-hub-card-top"><div className="sources-hub-icon"><Plug size={21} aria-hidden="true" /></div><span className="sources-hub-status">Not implemented</span></div>
-          <h3>Quick Capture</h3>
-          <p>Future option to manually submit client-request links for qualification.</p>
-          <p className="sources-hub-explanation">This concept from the reference design has no working capture endpoint yet.</p>
-          <span className="sources-hub-unavailable">Planned feature</span>
-        </article>
+
       </div>
+      <QuickCapturePanel workspaceId={workspaceId} opportunities={opportunities} />
       <div className="sources-hub-quick-actions" aria-label="Next discovery steps">
         <div><strong>Ready to continue?</strong><p>Browse saved client requests or open the existing discovery engine. Neither action starts a provider request by itself.</p></div>
         <div className="sources-hub-action-buttons">
