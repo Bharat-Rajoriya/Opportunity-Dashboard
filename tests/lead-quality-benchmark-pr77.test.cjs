@@ -67,7 +67,7 @@ test('review requires evidence and refuses duplicate labels or fabricated dimens
   const { summarizeReviews } = await load()
   const base={
     id:'one',source:'freelancer',score_band:'high',review_label:'valid',review_evidence:'Evidence in posting describes a paid project.',
-    buyer_intent:'yes',service_fit:'yes',source_authenticity:'yes',freshness:'unknown',eligibility:'unknown',commercial_fit:'unknown'
+    buyer_intent:'yes',service_fit:'yes',source_authenticity:'yes',freshness:'yes',eligibility:'yes',commercial_fit:'unknown'
   }
   assert.throws(()=>summarizeReviews([base,base]),/Duplicate review ID/)
   assert.throws(()=>summarizeReviews([{...base,review_evidence:'nice'}]),/at least 15/)
