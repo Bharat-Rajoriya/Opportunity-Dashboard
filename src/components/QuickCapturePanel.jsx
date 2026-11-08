@@ -12,6 +12,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
   const [preview, setPreview] = useState(null)
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
+  const [queueCheckedAt, setQueueCheckedAt] = useState(0)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -21,7 +22,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     setError('')
     try { setRecords(await listManualCaptures(workspaceId)) }
     catch (err) { setError(err?.message || 'Could not load manual captures.') }
-    finally { setLoading(false) }
+    finally { setQueueCheckedAt(Date.now()); setLoading(false) }
   }, [workspaceId])
 
   useEffect(() => { void load() }, [load])
@@ -234,7 +235,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
             </button>}
             {record.status === 'qualifying' && <small>AI processing started. Refresh the queue to see the result.</small>}
             {record.status === 'qualifying' && record.qualification_started_at &&
-              Date.now() - new Date(record.qualification_started_at).getTime() > 180000 &&
+              queueCheckedAt - new Date(record.qualification_started_at).getTime() > 180000 &&
               <button type="button" disabled={saving} onClick={() => void resolveStalledCapture(record)}>
                 Resolve stalled run
               </button>}
