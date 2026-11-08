@@ -177,6 +177,7 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true)
   const [authActionLoading, setAuthActionLoading] = useState(false)
   const [captchaToken, setCaptchaToken] = useState('')
+  const [captchaWidgetError, setCaptchaWidgetError] = useState('')
   const [captchaResetKey, setCaptchaResetKey] = useState(0)
   const [message, setMessage] = useState('')
   const [authMessageType, setAuthMessageType] = useState('error')
@@ -2605,6 +2606,7 @@ function App() {
   const captchaEnabled = Boolean(TURNSTILE_SITE_KEY)
 
   const resetCaptcha = () => {
+    setCaptchaWidgetError('')
     setCaptchaToken('')
     setCaptchaResetKey((current) => current + 1)
   }
@@ -2613,7 +2615,11 @@ function App() {
     if (!captchaEnabled || captchaToken) return true
 
     setAuthMessageType('error')
-    setMessage('Complete the security check before continuing.')
+    setMessage(captchaWidgetError === '110200'
+      ? 'Security check is not authorized for this preview address. Add this exact hostname in Cloudflare Turnstile Hostname Management.'
+      : captchaWidgetError
+        ? 'Security verification could not load. Check your Turnstile configuration and retry.'
+        : 'Complete the security check before continuing.')
     return false
   }
 
@@ -3662,8 +3668,17 @@ function App() {
                   siteKey={TURNSTILE_SITE_KEY}
                   resetKey={captchaResetKey}
                   onTokenChange={setCaptchaToken}
+                  onError={setCaptchaWidgetError}
                 />
               )}
+
+            {captchaWidgetError && authMode !== 'reset-password' && (
+              <p role="alert" className="rounded-lg border border-amber-600/40 bg-amber-950/30 p-3 text-xs text-amber-200">
+                {captchaWidgetError === '110200'
+                  ? 'This preview hostname is not authorized by Cloudflare Turnstile. Add this exact preview hostname in Cloudflare Turnstile settings.'
+                  : 'Security verification is temporarily unavailable. Please retry or check the CAPTCHA setup.'}
+              </p>
+            )}
 
             {message && (
               <div
