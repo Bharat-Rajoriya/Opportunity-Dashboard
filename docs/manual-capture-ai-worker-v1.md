@@ -40,3 +40,42 @@ A captured listing must be an explicit buyer request, have intent >=3/4, confide
 ## Rollback
 
 Remove the frontend Run AI qualification action and disable the Edge Function; the queue and existing opportunities remain readable. The new classifier is isolated from master collector and can be unpublished independently. Do not drop database columns without preserving audit data.
+
+
+## PR #72 — Qualification reliability and source provenance contract
+
+This change hardens the boundary between the private n8n classifier and the
+Supabase finalization RPC. HTTP 200 from n8n is **not** evidence that the
+classifier output is valid or that the linked source is genuine.
+
+- Validate the entire classifier envelope, including exact capture/workspace
+  correlation, 1–4 integer intent, 0–1 confidence, bounded nonempty reason,
+  known categorical values, and explicit `source_verified=false`.
+- Require `provenance='unverified_manual_text'`; never substitute a page
+  verification claim for manually supplied text.
+- Match any returned service identifier against the active services loaded
+  server-side for this workspace; check that the service-fit label and ID agree.
+- Reject contradictory `is_buyer_request=true` with non-buyer source type.
+- Invalid or inconsistent results follow the existing worker failure path:
+  fail the claimed capture, show a technical failure, create no opportunity,
+  and never trigger outreach. There is no hidden retry or extra model call.
+- Keep the SQL gate, atomic finalization, deduplication and preliminary score
+  unchanged.
+
+### Source verification boundary
+
+PR #72 **does not fetch the linked page**, validate the publisher or prove
+current availability. It strengthens provenance enforcement but is not a
+source verification implementation. A future source-specific provider adapter
+should use official API evidence or safely fetched public content, record
+separate evidence and freshness timestamps, and only then consider promotion
+from `source_verified=false`. Avoid generic URL fetches from user input
+without SSRF, redirect, content-size and host protections.
+
+### Validation checklist
+
+Run `npm run check`; manually submit a real buyer request and a promotional
+page; verify malformed classifier responses are marked as technical failures;
+verify a cross-workspace or nonexistent service ID cannot create an
+opportunity; confirm accepted items retain score 45 and are unverified.
+No production environment changes are made by the GitHub branch itself.

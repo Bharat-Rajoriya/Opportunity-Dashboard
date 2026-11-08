@@ -18,7 +18,12 @@ test('manual capture worker uses authenticated user context and private server c
   assert(edge.includes("x-opportunity-engine-key"))
   assert(!edge.includes('VITE_N8N'))
   assert(!edge.includes('OPENAI_API_KEY'))
-  assert(edge.includes('classification.source_verified !== false'))
+  assert(edge.includes('a.source_verified !== false'))
+  assert(edge.includes('validateManualClassification('))
+  assert(edge.includes('!activeServiceIds.includes(serviceId)'))
+  assert(edge.includes("a.provenance !== 'unverified_manual_text'"))
+  assert(edge.includes("a.confidence < 0 || a.confidence > 1"))
+  assert(edge.includes("'inconsistent_classifier_buyer_type'"))
   assert(edge.includes('controller.abort()'))
 })
 
