@@ -41,6 +41,9 @@ import { SEARCH_COUNTRIES, normalizeTargetMarkets, isTargetMarketSelected, toggl
 import { getServiceMatchDetails } from './services/serviceMatch'
 import { getOpportunityPresentation } from './services/opportunityPresentation'
 import OpportunityFactsStrip from './components/OpportunityFactsStrip'
+import OpportunityDecisionSidebar from './components/OpportunityDecisionSidebar'
+import OpportunityDrawerErrorBoundary from './components/OpportunityDrawerErrorBoundary'
+import { getOpportunityPitchError } from './lib/opportunityDetailSafety'
 import ModalFocusScope from './components/ModalFocusScope'
 import { useModalFocus } from './hooks/useModalFocus'
 import OpportunityPlatformFilters from './components/OpportunityPlatformFilters'
@@ -4555,6 +4558,7 @@ function App() {
             </div>
           )}
         </div>
+        <OpportunityDrawerErrorBoundary opportunityId={selectedOpportunity?.id} onClose={() => setSelectedOpportunity(null)}>
         <OpportunityDrawer
           opportunity={selectedOpportunity}
           onClose={() => setSelectedOpportunity(null)}
@@ -4562,9 +4566,14 @@ function App() {
           onAddNote={addOpportunityNote}
           onScheduleFollowUp={scheduleOpportunityFollowUp}
           onCompleteFollowUp={completeOpportunityFollowUp}
+          onGeneratePitch={() => { if (selectedOpportunity?.id) void handleGenerateManualPitch(selectedOpportunity) }}
+          pitchGenerating={Boolean(selectedOpportunity?.id && manualPitchId === selectedOpportunity.id)}
+          pitchDisabled={manualPitchId !== null && manualPitchId !== selectedOpportunity?.id}
+          pitchError={getOpportunityPitchError(manualPitchError, selectedOpportunity?.id)}
           opportunityActivity={opportunityActivity}
           activityLoading={activityLoading}
         />
+        </OpportunityDrawerErrorBoundary>
           </>
         )}
 
@@ -6978,6 +6987,10 @@ function OpportunityDrawer({
   onAddNote,
   onScheduleFollowUp,
   onCompleteFollowUp,
+  onGeneratePitch,
+  pitchGenerating,
+  pitchDisabled,
+  pitchError,
   opportunityActivity,
   activityLoading,
 }) {
@@ -7388,7 +7401,7 @@ function OpportunityDrawer({
 
       {/* Drawer */}
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="opportunity-drawer-title" tabIndex={-1}
-        className="opp-v2-drawer absolute right-0 top-0 h-full w-full max-w-2xl bg-slate-900 border-l border-slate-800 shadow-2xl overflow-y-auto">
+        className="opp-v2-drawer opp-v31-drawer absolute right-0 top-0 h-full w-full max-w-2xl bg-slate-900 border-l border-slate-800 shadow-2xl overflow-y-auto">
 
         <div className="p-6 space-y-6">
 
@@ -7406,6 +7419,8 @@ function OpportunityDrawer({
             </button>
           </header>
 
+          <div className="opp-v31-overview">
+            <div className="opp-v31-overview-main">
           <section className="opp-v2-drawer-summary" aria-label="Opportunity decision summary">
             <div className={`opp-v2-next-action${view.action.caution ? ' is-caution' : ''}`}>
               <div>
@@ -7427,6 +7442,10 @@ function OpportunityDrawer({
               </p>
             )}
           </section>
+            </div>
+            <OpportunityDecisionSidebar opportunity={opportunity} onGeneratePitch={onGeneratePitch}
+              pitchGenerating={pitchGenerating} pitchDisabled={pitchDisabled} pitchError={pitchError} />
+          </div>
 
           <DrawerSection title="Research status">
             <p className="text-sm font-semibold text-slate-200">
@@ -7631,6 +7650,7 @@ function OpportunityDrawer({
 
 
           {/* Outreach */}
+          <div id="opp-v31-outreach-draft">
           <DrawerSection title="AI Outreach Draft">
 
             {opportunity.outreach_message ? (
@@ -7711,6 +7731,7 @@ function OpportunityDrawer({
             )}
 
           </DrawerSection>
+          </div>
 
           <DrawerSection title="Opportunity Status">
             <div className="space-y-4">
