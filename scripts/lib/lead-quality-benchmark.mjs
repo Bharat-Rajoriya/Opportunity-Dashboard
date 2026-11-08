@@ -22,7 +22,7 @@ export function auditIndicators(row) {
     service_unmatched: !row.matched_service_id,
     budget_not_recorded: !clean(row.budget_text) && row.estimated_value_max == null,
     source_type_unknown: !clean(row.source_result_type) || row.source_result_type === 'unknown',
-    buyer_identity_not_verified: !(row.raw_payload?.buyer_identity_verified === true),
+    buyer_identity_not_verified: true, // no trustworthy buyer-identity verification in current persisted schema
   }
 }
 
@@ -87,6 +87,11 @@ export function summarizeReviews(reviewRows) {
     }
     if (item.review_label !== 'uncertain' && clean(item.review_evidence).length < 15)
       throw new Error('Decisive labels require at least 15 characters of evidence')
+    if (item.review_label === 'valid' &&
+      ['buyer_intent','service_fit','source_authenticity','freshness','eligibility'].some(k => item[k] !== 'yes'))
+      throw new Error('Valid leads require evidence-backed yes for buyer intent, service fit, source authenticity, freshness and eligibility')
+    if (item.review_label === 'invalid' && !QUALITY_DIMENSIONS.some(k => item[k] === 'no'))
+      throw new Error('Invalid leads require at least one documented no dimension')
   }
   const overall = tally(reviewRows)
   const decided = overall.valid + overall.invalid
