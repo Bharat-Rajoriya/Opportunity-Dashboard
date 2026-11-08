@@ -6,7 +6,8 @@ const make = (id, source, score, extra = {}) => ({
   id, source, total_score:score, source_url:'https://example.com/post/'+id,
   title:'WordPress development project', published_at:'2026-11-08T00:00:00Z',
   research_status:'complete', source_result_type:'marketplace_post',
-  matched_service_id:'a-valid-id', budget_text:'Fixed $400', ...extra
+  matched_service_id:'a-valid-id', budget_text:'Fixed $400',
+  source_quality_reason:'Detailed public source posted with a clear requirement', ...extra
 })
 
 test('relative redirects and unsafe protocols are not accepted as original source links', async () => {
