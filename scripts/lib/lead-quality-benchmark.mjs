@@ -4,7 +4,8 @@ export const REVIEW_LABELS = new Set(['valid', 'invalid', 'uncertain'])
 export const QUALITY_DIMENSIONS = ['buyer_intent', 'service_fit', 'source_authenticity', 'freshness', 'eligibility', 'commercial_fit']
 const ANSWERS = new Set(['yes', 'no', 'unknown'])
 const clean = x => typeof x === 'string' ? x.trim() : ''
-const score = row => Number.isFinite(Number(row.total_score)) ? Number(row.total_score) : null
+const score = row => row.total_score === null || row.total_score === undefined || row.total_score === ''
+  ? null : Number.isFinite(Number(row.total_score)) ? Number(row.total_score) : null
 
 export function scoreBand(row) {
   const n = score(row)
