@@ -7,7 +7,7 @@ const read = path => readFileSync(join(__dirname,'..',path),'utf8')
 test('Search V2 keeps three primary selectors and progressively discloses advanced filters', () => {
   const page = read('src/components/UnifiedSearchPage.jsx')
   const primary = page.slice(page.indexOf('className="unified-search-filters"'), page.indexOf('className="unified-search-advanced-toggle-row"'))
-  const advanced = page.slice(page.indexOf('className="unified-search-advanced-panel"'),page.indexOf('className="unified-search-active-chips"'))
+  const advanced = page.slice(page.indexOf('className="unified-search-filters unified-search-advanced-panel"'),page.indexOf('className="unified-search-active-chips"'))
   for (const label of ['Source','Posted','Score']) assert(primary.includes('>'+label+'\n'))
   for (const label of ['Country','Budget evidence','Project type','Work arrangement']) assert(advanced.includes('>'+label+'\n'))
   assert(!primary.includes('>Budget evidence'))
