@@ -1,0 +1,37 @@
+const test = require('node:test')
+const assert = require('node:assert/strict')
+const { readFileSync } = require('node:fs')
+const { join } = require('node:path')
+const read = path => readFileSync(join(__dirname, '..', path), 'utf8')
+
+test('qualifier source enforces PR72 provenance and service identity before persistence', () => {
+  const edge = read('supabase/functions/qualify-manual-capture/index.ts')
+  assert.match(edge, /validateManualClassification\([\s\S]*await aiResponse\.json\(\)/)
+  assert.match(edge, /a\.provenance !== 'unverified_manual_text'/)
+  assert.match(edge, /a\.source_verified !== false/)
+  assert.match(edge, /!activeServiceIds\.includes\(serviceId\)/)
+  assert.match(edge, /a\.confidence < 0 \|\| a\.confidence > 1/)
+  assert.match(edge, /inconsistent_classifier_buyer_type/)
+  assert.match(edge, /withSupabase\(\{ auth: 'user' \}/)
+  assert.match(edge, /'fail_manual_capture_qualification'/)
+  assert.doesNotMatch(edge, /Deno\.env\.get\('VITE_/)
+})
+
+test('review queue offers only valid user-side status transitions', () => {
+  const panel = read('src/components/QuickCapturePanel.jsx')
+  assert.match(panel, /\['needs_review', 'dismissed'\]\.includes\(record\.status\) && <button/)
+  assert.match(panel, /record\.status === 'pending_qualification' && <button/)
+  assert.match(panel, /Run AI qualification/)
+  assert.match(panel, /Saved to the qualification queue/)
+  assert.doesNotMatch(panel, /Automated qualification is not yet connected/)
+  assert.match(panel, /No outreach will be sent/)
+})
+
+test('manual source and Freelancer verification remain non-promoting', () => {
+  const verifier = read('supabase/functions/verify-manual-freelancer-source/index.ts')
+  const recorder = read('supabase/migrations/20261108232000_manual_freelancer_provider_check_v1.sql')
+  assert.match(verifier, /buyer_identity_verified:false/)
+  assert.match(verifier, /payment_verified:false/)
+  assert.match(recorder, /No updates to opportunities, source_verified, score, or outreach/)
+  assert.doesNotMatch(verifier, /sendApprovedOutreach/)
+})
