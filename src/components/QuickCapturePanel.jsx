@@ -52,14 +52,14 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
   const submitForQualification = async record => {
     if (saving || record.status !== 'needs_review') return
     const approved = window.confirm(
-      'Submit this reviewed link for future qualification? The system will NOT score it, contact the buyer, or add it to Opportunities yet.'
+      'Queue this reviewed link for optional AI qualification? Nothing is scored or added to Opportunities until you explicitly run AI qualification. No outreach will be sent.'
     )
     if (!approved) return
     setSaving(true); setError(''); setNotice('')
     try {
       const updated = await submitManualCaptureForQualification(workspaceId, record.id)
       setRecords(rows => rows.map(row => row.id === record.id ? updated : row))
-      setNotice('Handoff recorded. Automated qualification is not yet connected; this item remains in the queue.')
+      setNotice('Saved to the qualification queue. Select Run AI qualification when you want to assess this capture.')
     } catch (err) {
       setError(err?.message || 'Unable to submit this capture.')
     } finally {
@@ -127,6 +127,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
   }
 
   const changeStatus = async (id, status) => {
+    if (saving) return
     setSaving(true); setError(''); setNotice('')
     try {
       const updated = await setManualCaptureStatus(workspaceId, id, status)
@@ -209,7 +210,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
           <div className="quick-capture-row-actions">
             {record.status === 'needs_review' && <button type="button" disabled={saving}
               onClick={() => void submitForQualification(record)}>Submit for qualification</button>}
-            {record.status !== 'pending_qualification' && <button type="button" disabled={saving}
+            {['needs_review', 'dismissed'].includes(record.status) && <button type="button" disabled={saving}
               onClick={() => void changeStatus(record.id,record.status === 'dismissed' ? 'needs_review' : 'dismissed')}>
               {record.status === 'dismissed' ? 'Restore' : 'Dismiss'}
             </button>}
