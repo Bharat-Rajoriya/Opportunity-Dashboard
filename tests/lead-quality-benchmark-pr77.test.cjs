@@ -38,6 +38,7 @@ test('unknown publication and incomplete research are warning signals, not fake 
   assert.equal(report.by_source.google.indicators.publication_date_missing,1)
   assert.equal(report.by_source.google.indicators.research_incomplete,1)
   assert.equal(report.by_source.google.score_75_plus,2)
+  assert.equal((await load()).scoreBand(make('missing','google',null)),'unknown')
   assert(!Object.hasOwn(report,'precision_among_decided'))
 })
 
