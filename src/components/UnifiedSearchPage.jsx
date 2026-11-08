@@ -52,6 +52,7 @@ export default function UnifiedSearchPage({
   const [query, setQuery] = useState(initialPreset?.query || '')
   const [saveName, setSaveName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveOpen, setSaveOpen] = useState(false)
   const [saveFeedback, setSaveFeedback] = useState('')
   const [saveError, setSaveError] = useState('')
   const [source, setSource] = useState(initialPreset?.source || 'all')
@@ -61,7 +62,7 @@ export default function UnifiedSearchPage({
   const [budgetEvidence, setBudgetEvidence] = useState(initialPreset?.budget_evidence || 'all')
   const [projectKind, setProjectKind] = useState(initialPreset?.project_kind || 'all')
   const [workMode, setWorkMode] = useState(initialPreset?.work_mode || 'all')
-  const [advancedOpen, setAdvancedOpen] = useState(() => Boolean(initialPreset && (initialPreset.country !== 'all' || initialPreset.budget_evidence !== 'all' || initialPreset.project_kind !== 'all' || initialPreset.work_mode !== 'all')))
+  const [advancedOpen, setAdvancedOpen] = useState(() => Boolean(initialPreset && (['country', 'budget_evidence', 'project_kind', 'work_mode'].some(key => (initialPreset[key] || 'all') !== 'all'))))
   const [sort, setSort] = useState('score')
   const [searchNow, setSearchNow] = useState(() => Date.now())
 
@@ -142,6 +143,7 @@ export default function UnifiedSearchPage({
     try {
       await createSavedSearch(workspaceId, { name: saveName, query, source, recency, min_score: minScore, country, budget_evidence: budgetEvidence, project_kind: projectKind, work_mode: workMode })
       setSaveName('')
+      setSaveOpen(false)
       setSaveFeedback('Saved successfully. Open Saved searches to reuse these filters.')
     } catch (error) {
       setSaveError(error?.code === '23505' ? 'This workspace already has a saved search with that name.' : error?.message || 'Unable to save search.')
@@ -258,13 +260,20 @@ export default function UnifiedSearchPage({
         {workMode === 'remote' && uncertainCounts.work > 0 && filtered.length === 0 && (
           <p className="unified-search-evidence-note" role="note">No listings have explicitly confirmed remote status in these results. “Remote / unspecified” means unverified—not remote.</p>
         )}
-        <div className="unified-search-save">
-          <label>Save these filters
-            <input type="text" maxLength={80} value={saveName} onChange={event => setSaveName(event.target.value)} placeholder="e.g. WordPress projects in the US" />
-          </label>
-          <button type="button" disabled={saving || !saveName.trim() || !workspaceId} onClick={() => void saveCurrentFilters()}><BookmarkPlus size={16} aria-hidden="true" /> {saving ? 'Saving…' : 'Save search'}</button>
+        <div className="unified-search-save-shortcuts">
+          <button type="button" className="unified-search-save-reveal" aria-expanded={saveOpen}
+            onClick={() => setSaveOpen(current => !current)}>
+            <BookmarkPlus size={15} aria-hidden="true" /> {saveOpen ? 'Hide save form' : 'Save current search'}
+          </button>
           <button type="button" className="unified-search-saved-link" onClick={onOpenSavedSearches}>View saved searches</button>
         </div>
+        {saveOpen && <div className="unified-search-save">
+          <label>Name this filter combination
+            <input type="text" maxLength={80} value={saveName} onChange={event => setSaveName(event.target.value)} placeholder="e.g. New WordPress opportunities" />
+          </label>
+          <button type="button" disabled={saving || !saveName.trim() || !workspaceId}
+            onClick={() => void saveCurrentFilters()}><BookmarkPlus size={16} aria-hidden="true" /> {saving ? 'Saving…' : 'Save search'}</button>
+        </div>}
         {saveFeedback && <p role="status" className="unified-search-save-success">{saveFeedback}</p>}
         {saveError && <p role="alert" className="unified-search-save-error">{saveError}</p>}
       </div>
