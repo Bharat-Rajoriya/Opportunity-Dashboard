@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase'
 import { validateCaptureDraft, normalizeCaptureUrl } from '../lib/manualCaptureValidation'
 
-const FIELDS = 'id,workspace_id,source_url,title,requirement,source_platform,status,created_at,submitted_for_qualification_at'
+const FIELDS = 'id,workspace_id,source_url,title,requirement,source_platform,status,created_at,submitted_for_qualification_at,qualification_started_at,qualification_finished_at,qualification_attempts,qualification_reason,qualified_opportunity_id'
 
 export async function listManualCaptures(workspaceId) {
   if (!workspaceId) throw new Error('Choose a workspace first.')
@@ -66,6 +66,26 @@ export async function submitManualCaptureForQualification(workspaceId, captureId
   }
   if (!data || data.status !== 'pending_qualification' || data.workspace_id !== workspaceId || data.id !== captureId) {
     throw new Error('Qualification handoff was not confirmed. Refresh before retrying.')
+  }
+  return data
+}
+
+/**
+ * Starts one explicitly approved manual capture's AI triage through the
+ * authenticated Edge Function. The returned score never implies source verification.
+ */
+export async function qualifyManualCapture(workspaceId, captureId) {
+  if (!workspaceId || !captureId) throw new Error('Select a workspace and capture first.')
+  const { data, error } = await supabase.functions.invoke('qualify-manual-capture', {
+    body: { workspace_id: workspaceId, capture_id: captureId },
+  })
+  if (error) {
+    let message = ''
+    try { message = (await error.context?.json?.())?.message || '' } catch { /* network error */ }
+    throw new Error(message || 'AI qualification did not finish. Check the review queue before retrying.')
+  }
+  if (!data?.success || !['qualified','rejected','duplicate'].includes(data?.status)) {
+    throw new Error(data?.message || 'AI qualification outcome was not confirmed.')
   }
   return data
 }

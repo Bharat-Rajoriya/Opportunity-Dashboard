@@ -40,5 +40,7 @@ test('status cannot be treated as scored or active processing', () => {
   const panel = read('src/components/QuickCapturePanel.jsx')
   assert(notes.includes('qualification worker has not been wired'))
   assert(notes.includes('not presently processing'))
-  assert(panel.includes('Awaiting qualification integration. No score assigned.'))
+  assert(panel.includes('Run AI qualification'))
+  assert(panel.includes('Accepted — manual review needed'))
+  assert(panel.includes('No opportunity was created.'))
 })
