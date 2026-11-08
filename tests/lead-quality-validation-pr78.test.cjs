@@ -84,3 +84,13 @@ test('findings report flags incomplete evidence without inventing precision', as
   assert.equal(report.malformed_url_examples.length,1)
   assert(!('precision' in report))
 })
+
+test('critical source URL defects are included even when omitted from sample', async () => {
+  const {prepareValidationQueue} = await load()
+  const rows=Array.from({length:25},(_,i)=>make('normal-'+i,'google',80))
+  rows.push(make('must-review','google',80,{source_url:'/goto?url=opaque'}))
+  const queue=prepareValidationQueue(rows,1)
+  assert(queue.some(item=>item.id==='must-review'))
+  assert.equal(queue.filter(item=>item.id==='must-review').length,1)
+  assert(queue.some(item=>item.id==='must-review' && item.review_label==='uncertain'))
+})
