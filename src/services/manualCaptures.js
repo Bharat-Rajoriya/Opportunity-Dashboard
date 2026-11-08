@@ -133,3 +133,19 @@ export async function verifyManualFreelancerSource(workspaceId, captureId) {
   }
   return data
 }
+
+/** Explicitly closes a stale worker lease; never retries a paid model call. */
+export async function recoverStalledManualCapture(workspaceId, captureId) {
+  if (!workspaceId || !captureId) throw new Error('Choose a workspace and capture.')
+  const { data, error } = await supabase.functions.invoke('recover-stalled-manual-capture', {
+    body: { workspace_id: workspaceId, capture_id: captureId },
+  })
+  if (error) {
+    let message = ''
+    try { message = (await error.context?.json?.())?.message || '' } catch { /* network error */ }
+    throw new Error(message || 'Stalled qualification could not be resolved. Refresh the queue.')
+  }
+  if (!data?.success || data.status !== 'failed' || data.retry_scheduled !== false)
+    throw new Error('Recovery outcome was not confirmed.')
+  return data
+}
