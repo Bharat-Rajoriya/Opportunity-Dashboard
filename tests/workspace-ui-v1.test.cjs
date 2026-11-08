@@ -107,3 +107,17 @@ test('saved search navigation is read-only and remains separate from acquisition
   assert(service.includes(".from('saved_opportunity_searches')"))
   assert(!service.includes(".from('search_profiles')"))
 })
+
+
+test('Unified Search fetches real posting dates and explains unknown dates', () => {
+  const app = readFileSync(join(__dirname, '../src/App.jsx'), 'utf8')
+  const search = readFileSync(join(__dirname, '../src/components/UnifiedSearchPage.jsx'), 'utf8')
+  // The opportunity loader must select the same timestamp used by the recency filter.
+  const fetchBlock = app.slice(app.indexOf('const fetchOpportunities = async'), app.indexOf('const loadBusinessProfile ='))
+  assert(fetchBlock.includes('published_at,'))
+  assert(search.includes('const date = opportunity.published_at'))
+  assert(search.includes('posted === null || posted < cutoff'))
+  assert(search.includes('no verified posting date'))
+  assert(search.includes('Use Any time to include undated opportunities'))
+  assert(!search.includes('triggerOpportunityEngine'))
+})
