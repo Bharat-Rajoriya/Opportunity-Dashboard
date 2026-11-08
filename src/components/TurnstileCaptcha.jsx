@@ -51,13 +51,19 @@ export default function TurnstileCaptcha({
   siteKey,
   resetKey,
   onTokenChange,
+  onError,
 }) {
   const containerRef = useRef(null)
   const onTokenChangeRef = useRef(onTokenChange)
+  const onErrorRef = useRef(onError)
 
   useEffect(() => {
     onTokenChangeRef.current = onTokenChange
   }, [onTokenChange])
+
+  useEffect(() => {
+    onErrorRef.current = onError
+  }, [onError])
 
   useEffect(() => {
     if (!siteKey || !containerRef.current) return undefined
@@ -73,19 +79,24 @@ export default function TurnstileCaptcha({
           sitekey: siteKey,
           theme: 'dark',
           callback: (token) => {
+            if (token) onErrorRef.current?.('')
             onTokenChangeRef.current?.(token || '')
           },
           'expired-callback': () => {
             onTokenChangeRef.current?.('')
           },
-          'error-callback': () => {
+          'error-callback': (code) => {
             onTokenChangeRef.current?.('')
+            onErrorRef.current?.(String(code || 'verification-failed'))
             return true
           },
         })
       })
       .catch(() => {
-        if (!cancelled) onTokenChangeRef.current?.('')
+        if (!cancelled) {
+          onTokenChangeRef.current?.('')
+          onErrorRef.current?.('script-unavailable')
+        }
       })
 
     return () => {
