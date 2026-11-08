@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ClipboardPlus, ExternalLink, ShieldAlert } from 'lucide-react'
 import { validateCaptureDraft } from '../lib/manualCaptureValidation'
-import { listManualCaptures, saveManualCapture, setManualCaptureStatus, submitManualCaptureForQualification, qualifyManualCapture, recordManualSourceReview } from '../services/manualCaptures'
+import { listManualCaptures, saveManualCapture, setManualCaptureStatus, submitManualCaptureForQualification, qualifyManualCapture, recordManualSourceReview, verifyManualFreelancerSource } from '../services/manualCaptures'
 import './QuickCapturePanel.css'
 
 export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
@@ -112,6 +112,20 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     finally { setSaving(false) }
   }
 
+  const verifyFreelancerListing = async record => {
+    if (saving || record.status !== 'qualified' || record.source_platform !== 'freelancer') return
+    if (!window.confirm('Check this listing through the official Freelancer API? This confirms only listing existence, not buyer identity, payment, or project availability. No outreach will start.')) return
+    setSaving(true); setError(''); setNotice('')
+    try {
+      const result = await verifyManualFreelancerSource(workspaceId, record.id)
+      await load()
+      setNotice(result.message || 'Freelancer listing returned by the official provider API.')
+    } catch (err) {
+      await load()
+      setError(err?.message || 'Could not verify this Freelancer listing.')
+    } finally { setSaving(false) }
+  }
+
   const changeStatus = async (id, status) => {
     setSaving(true); setError(''); setNotice('')
     try {
@@ -172,6 +186,15 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
             <span>{record.source_platform} · {({ dismissed: 'Dismissed', pending_qualification: 'Ready for AI triage', qualifying: 'AI triage in progress', qualified: 'Accepted — manual review needed', rejected: 'Rejected by AI triage', duplicate: 'Already in Opportunities', failed: 'AI triage failed' })[record.status] || 'Needs review'}</span>
             <p>{record.requirement}</p>
             {record.qualification_reason && <p className="quick-capture-qualification-reason">Qualification: {record.qualification_reason}</p>}
+            {record.status === 'qualified' && record.source_platform === 'freelancer' &&
+              <p className="quick-capture-qualification-reason">
+                Freelancer API: {record.provider_check_status === 'listing_confirmed'
+                  ? 'Listing returned by official provider API'
+                  : 'Not independently checked'}.
+                {record.provider_checked_at && <> Checked {new Date(record.provider_checked_at).toLocaleString()}.</>}
+                {record.provider_check_evidence?.provider_status && <> Provider status: {record.provider_check_evidence.provider_status}.</>}
+                {' '}Buyer identity, payment and current availability are not verified.
+              </p>}
             {record.status === 'qualified' && <p className="quick-capture-qualification-reason">
               Source review: {({
                 not_reviewed: 'Not reviewed', appears_open: 'Appeared open when checked',
@@ -196,6 +219,10 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
             </button>}
             {record.status === 'qualifying' && <small>AI processing started. Refresh the queue to see the result.</small>}
             {record.status === 'qualified' && <small>Added to Opportunities for source verification and review. No outreach was sent.</small>}
+            {record.status === 'qualified' && record.source_platform === 'freelancer' &&
+              <button type="button" disabled={saving} onClick={() => void verifyFreelancerListing(record)}>
+                {saving ? 'Checking…' : 'Check via Freelancer API'}
+              </button>}
             {record.status === 'qualified' && <div className="quick-capture-row-actions" aria-label="Record what you observed on original source">
               <button type="button" disabled={saving} onClick={() => void reviewSource(record, 'appears_open')}>Appeared open</button>
               <button type="button" disabled={saving} onClick={() => void reviewSource(record, 'unavailable')}>Unavailable</button>
