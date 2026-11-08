@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase'
 import { matchesSavedSearchOpportunity, digestWindowStart } from '../lib/savedDigestMatching'
+import { normalizeAdvancedFilters } from '../lib/opportunityAdvancedFilters'
 
-export const SAVED_SEARCH_FIELDS = 'id,workspace_id,name,query,source,recency,min_score,country,created_at,updated_at,in_app_digest_frequency,digest_started_at,last_reviewed_at'
+export const SAVED_SEARCH_FIELDS = 'id,workspace_id,name,query,source,recency,min_score,country,created_at,updated_at,in_app_digest_frequency,digest_started_at,last_reviewed_at,budget_evidence,project_kind,work_mode'
 
 export function normalizeSavedSearch(input = {}) {
   const name = String(input.name || '').trim().slice(0, 80)
@@ -10,7 +11,7 @@ export function normalizeSavedSearch(input = {}) {
   const country = String(input.country || 'all').slice(0, 120)
   const recency = ['all', '24', '168', '720'].includes(String(input.recency)) ? String(input.recency) : 'all'
   const min_score = ['all', '60', '70', '80'].includes(String(input.min_score)) ? String(input.min_score) : 'all'
-  return { name, query, source, recency, min_score, country }
+  return { name, query, source, recency, min_score, country, ...normalizeAdvancedFilters(input) }
 }
 
 export async function loadSavedSearches(workspaceId) {
@@ -84,7 +85,7 @@ export async function fetchInAppDigest(workspaceId, saved) {
   // Limit reads; never make unbounded full-workspace scans. Incomplete windows
   // are explicitly labelled rather than pretending the count is exact.
   const { data, error, count } = await supabase.from('opportunities')
-    .select('id,title,requirement,raw_text,source,country,company_name,total_score,preliminary_score,published_at,created_at,source_url', { count: 'exact' })
+    .select('id,title,requirement,raw_text,source,country,company_name,total_score,preliminary_score,published_at,created_at,source_url,budget_text,estimated_value_min,estimated_value_max,project_type,remote_status', { count: 'exact' })
     .eq('workspace_id', workspaceId).gte('created_at', since)
     .order('created_at', { ascending: false }).range(0, 999)
   if (error) throw error
