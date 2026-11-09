@@ -86,6 +86,7 @@ import './ui-refresh-v2.css'
 import './theme-preference.css'
 import './button-contrast-v1.css'
 import './ui-quickcapture-review-pr83.css'
+import './opportunity-detail-theme-pr84.css'
 
 const REJECTION_REASONS = [
   ['not_relevant', 'Not relevant'],
@@ -8287,7 +8288,7 @@ function OpportunityStatusActions({
 
 function DrawerSection({ title, children }) {
   return (
-    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5">
+    <div className="opportunity-detail-section bg-slate-950/60 border border-slate-800 rounded-xl p-5">
 
       <h3 className="text-sm font-medium text-slate-200 mb-4">
         {title}
