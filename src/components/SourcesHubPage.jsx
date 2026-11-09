@@ -23,11 +23,12 @@ function SourceCard({ row, loading, error, onManage }) {
   const Icon = SOURCE_ICONS[row.source] || Plug
   const status = getSourceLabel(row, loading, error)
   const unavailable = row.state === 'cooldown' || row.state === 'recovery_eligible' || row.state === 'recovery_in_progress' || row.source === 'upwork'
+  const verified = row.enabled && (row.state === 'verified_recently' || row.state === 'collected_in_latest_run')
   return (
     <article className="sources-hub-card">
       <div className="sources-hub-card-top">
         <div className="sources-hub-icon"><Icon size={21} aria-hidden="true" /></div>
-        <span className={unavailable ? 'sources-hub-status is-unavailable' : 'sources-hub-status'}>{status}</span>
+        <span className={`sources-hub-status${unavailable ? ' is-unavailable' : verified ? ' is-verified' : ' is-neutral'}`}>{status}</span>
       </div>
       <h3>{row.name}</h3>
       <p>{SOURCE_DESCRIPTIONS[row.source] || 'Configured acquisition source.'}</p>
