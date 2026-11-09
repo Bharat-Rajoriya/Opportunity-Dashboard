@@ -49,6 +49,7 @@ import { useModalFocus } from './hooks/useModalFocus'
 import OpportunityPlatformFilters from './components/OpportunityPlatformFilters'
 import { getOpportunityPlatformOptions, matchesOpportunityPlatforms, sortOpportunities, toggleOpportunityPlatform } from './services/opportunityPlatforms'
 import WorkspaceShell from './components/WorkspaceShell'
+import { useThemePreference } from './hooks/useThemePreference'
 import WorkspaceOverview from './components/WorkspaceOverview'
 import UnifiedSearchPage from './components/UnifiedSearchPage'
 import SavedSearchesPage from './components/SavedSearchesPage'
@@ -82,6 +83,7 @@ import './responsive-a11y.css'
 import './opportunity-platforms.css'
 import './ui-refresh-v1.css'
 import './ui-refresh-v2.css'
+import './theme-preference.css'
 
 const REJECTION_REASONS = [
   ['not_relevant', 'Not relevant'],
@@ -160,6 +162,7 @@ function formatFollowUpDate(dateString) {
 }
 
 function App() {
+  const { preference: themePreference, setPreference: setThemePreference } = useThemePreference()
   // -----------------------------------------------------
   // STATE
   // -----------------------------------------------------
@@ -3814,6 +3817,8 @@ function App() {
       activeSection={activePage === 'settings' ? 'settings' : activePage === 'diagnostics' ? 'diagnostics' : activePage === 'search' ? 'search' : activePage === 'sources' ? 'sources' : activePage === 'saved-searches' ? 'saved-searches' : activeWorkspaceSection}
       onNavigate={navigateWorkspaceSection}
       onSignOut={handleSignOut}
+      themePreference={themePreference}
+      onChangeTheme={setThemePreference}
     >
       <div className="workspace-content">
         <header className="workspace-page-header">

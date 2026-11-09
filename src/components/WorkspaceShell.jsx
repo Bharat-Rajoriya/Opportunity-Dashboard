@@ -1,6 +1,6 @@
 import {
   BriefcaseBusiness, CalendarClock, Compass, LayoutDashboard,
-  LogOut, MessageSquareText, Settings2, Activity, Sparkles, Search, Plug, Bookmark,
+  LogOut, MessageSquareText, Settings2, Activity, Sparkles, Search, Plug, Bookmark, Moon, Sun, Monitor,
 } from 'lucide-react'
 import { WORKSPACE_SECTIONS } from '../config/workspaceUi'
 
@@ -11,7 +11,7 @@ const icons = {
 }
 
 export default function WorkspaceShell({
-  workspaceName, userEmail, activeSection, onNavigate, onSignOut, children,
+  workspaceName, userEmail, activeSection, onNavigate, onSignOut, themePreference = 'system', onChangeTheme, children,
 }) {
   const name = String(workspaceName || 'My workspace').trim()
   return (
@@ -45,6 +45,22 @@ export default function WorkspaceShell({
           })}
         </nav>
         <div className="workspace-sidebar-footer">
+          <fieldset className="workspace-theme-switcher" aria-label="Appearance">
+            <legend>Appearance</legend>
+            <div className="workspace-theme-options">
+              {[
+                { id: 'system', label: 'System', Icon: Monitor },
+                { id: 'light', label: 'Light', Icon: Sun },
+                { id: 'dark', label: 'Dark', Icon: Moon },
+              ].map(({ id, label, Icon }) =>
+                <button key={id} type="button" className={themePreference === id ? 'is-active' : ''}
+                  aria-pressed={themePreference === id} onClick={() => onChangeTheme?.(id)}
+                  title={id === 'system' ? 'Follow your device appearance' : `Use ${label.toLowerCase()} appearance`}>
+                  <Icon size={14} aria-hidden="true" /><span>{label}</span>
+                </button>
+              )}
+            </div>
+          </fieldset>
           <div className="workspace-account">
             <span className="workspace-account-avatar" aria-hidden="true">{name.charAt(0).toUpperCase() || 'W'}</span>
             <span className="workspace-account-copy">

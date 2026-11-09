@@ -5,6 +5,19 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>opportunity-dashboard</title>
+    <script>
+      // Apply persisted preference before first paint; manual theme wins over OS.
+      (() => {
+        let preference = 'system';
+        try { preference = localStorage.getItem('opportunity-dashboard-theme') || 'system'; } catch {}
+        const dark = preference === 'dark' ||
+          (preference !== 'light' && window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        const theme = dark ? 'dark' : 'light';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
