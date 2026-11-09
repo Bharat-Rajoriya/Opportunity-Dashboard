@@ -278,6 +278,18 @@
 .workspace-shell .workspace-main .service-editor-body h3 { color: var(--ui-heading); }
 .workspace-shell .workspace-main .service-list-header p { color: var(--ui-body); }
 
+/* Keep text legible on the new light Tailwind-backed surfaces. */
+.workspace-shell .workspace-main :is(.text-slate-100,.text-slate-200,.text-slate-300) { color: var(--ui-heading); }
+.workspace-shell .workspace-main :is(.text-slate-400,.text-slate-500) { color: var(--ui-body); }
+.workspace-shell .workspace-main .bg-slate-800 { background-color: #f3f5fa; }
+.workspace-shell .workspace-main :is(.text-violet-300,.text-violet-400) { color: #6f37d9; }
+.workspace-shell .workspace-main :is(.bg-violet-600,.bg-violet-700) { background-color: var(--ui-purple); color: #fff; }
+.workspace-shell .workspace-main :is(.bg-violet-600,.bg-violet-700):hover:not(:disabled) { background-color: var(--ui-purple-hover); }
+.workspace-shell .workspace-main :is(.bg-slate-950,.bg-slate-900) > :is(h2,h3,strong) { color: var(--ui-heading); }
+.workspace-shell .workspace-main .engine-action-card :is(.engine-success-message,.engine-error-message) { border-radius: 12px; }
+.workspace-shell .workspace-main .engine-success-message { background: #edfdf7; color: #067a57; border-color: #b9ecd5; }
+.workspace-shell .workspace-main .engine-error-message { background: #fff1f2; color: #b42342; border-color: #ffcad3; }
+
 /* Onboarding: light editorial setup inspired by supplied progress mock. */
 .onboard-v2-shell { background: var(--ui-page); color: var(--ui-heading); }
 .onboard-v2-shell .onboard-v2-content > div:first-child h1 { color: var(--ui-heading); }
@@ -311,6 +323,9 @@
 .onboard-v2-shell .onboard-v2-content .bg-slate-950 { background-color: #fff; }
 .onboard-v2-shell .onboard-v2-content :is(h1,h2,h3,h4,strong).text-white { color: var(--ui-heading); }
 .onboard-v2-shell .onboard-v2-content .text-slate-400 { color: var(--ui-body); }
+.onboard-v2-shell .onboard-v2-content :is(.text-slate-100,.text-slate-200,.text-slate-300) { color: var(--ui-heading); }
+.onboard-v2-shell .onboard-v2-content .bg-slate-800 { background: #f3f5fa; }
+.onboard-v2-shell .onboard-v2-content :is(.text-violet-300,.text-violet-400) { color: #7033d4; }
 .onboard-v2-shell .onboard-v2-content .border-slate-800 { border-color: var(--ui-border); }
 .onboard-v2-shell .onboard-v2-content button.bg-violet-600,
 .onboard-v2-shell .onboard-v2-content button.bg-violet-700 { background: var(--ui-purple); color: #fff; border-radius: 12px; }
