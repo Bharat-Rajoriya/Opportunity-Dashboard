@@ -1,0 +1,234 @@
+/*
+ * PR #82 — Button contrast and interaction states.
+ * Final presentation layer: consistent foreground/background pairs in
+ * Light and Dark. Does not alter handlers, availability or disabled logic.
+ */
+.workspace-shell {
+  --ui-cta-bg: #7131e6;
+  --ui-cta-hover: #5923c7;
+  --ui-cta-text: #ffffff;
+  --ui-control-bg: #ffffff;
+  --ui-control-hover: #f0eaff;
+  --ui-control-text: #17243a;
+  --ui-control-border: #cdd6e4;
+  --ui-focus-ring: #8246eb;
+  --ui-disabled-bg: #e8e9f2;
+  --ui-disabled-text: #596477;
+  --ui-disabled-border: #c7cfdb;
+}
+html[data-theme="dark"] .workspace-shell {
+  --ui-cta-bg: #8751f1;
+  --ui-cta-hover: #9d6bff;
+  --ui-cta-text: #ffffff;
+  --ui-control-bg: #222d49;
+  --ui-control-hover: #343b61;
+  --ui-control-text: #f0f3ff;
+  --ui-control-border: #657296;
+  --ui-focus-ring: #c6aaff;
+  --ui-disabled-bg: #2a344d;
+  --ui-disabled-text: #c2cada;
+  --ui-disabled-border: #4b5672;
+}
+
+/* Solid CTA family. Explicit button selectors are intentional: older
+   utility rules apply text colors independently of background colors. */
+.workspace-shell .workspace-main :is(
+  button.sources-hub-refresh,
+  button.unified-search-discover,
+  button.saved-searches-primary,
+  button.find-opportunities-btn,
+  button.primary-btn,
+  button.workspace-hero-primary,
+  button.opp-v2-primary-action,
+  button.opp-v31-pitch-button,
+  button[class~="bg-violet-600"],
+  button[class~="bg-violet-700"],
+  button[class~="bg-purple-600"],
+  button[class~="bg-purple-700"]
+),
+.workspace-shell .workspace-main :is(
+  .sources-hub-refresh,
+  .unified-search-discover,
+  .saved-searches-primary,
+  .opp-v2-primary-action
+) {
+  background-color: var(--ui-cta-bg);
+  border: 1px solid var(--ui-cta-bg);
+  color: var(--ui-cta-text);
+}
+.workspace-shell .workspace-main :is(
+  button.sources-hub-refresh,
+  button.unified-search-discover,
+  button.saved-searches-primary,
+  button.find-opportunities-btn,
+  button.primary-btn,
+  button.workspace-hero-primary,
+  button.opp-v2-primary-action,
+  button.opp-v31-pitch-button,
+  button[class~="bg-violet-600"],
+  button[class~="bg-violet-700"],
+  button[class~="bg-purple-600"],
+  button[class~="bg-purple-700"]
+):hover:not(:disabled) {
+  background-color: var(--ui-cta-hover);
+  border-color: var(--ui-cta-hover);
+  color: #fff;
+}
+.workspace-shell .workspace-main :is(
+  button.sources-hub-refresh,
+  button.unified-search-discover,
+  button.saved-searches-primary,
+  button.find-opportunities-btn,
+  button.primary-btn,
+  button.workspace-hero-primary,
+  button.opp-v2-primary-action,
+  button.opp-v31-pitch-button,
+  button[class~="bg-violet-600"],
+  button[class~="bg-violet-700"],
+  button[class~="bg-purple-600"],
+  button[class~="bg-purple-700"]
+) :is(span,svg) { color: inherit; }
+
+/* Light-outline secondary actions, not white text on white fill. */
+.workspace-shell .workspace-main :is(
+  button.sources-hub-manage,
+  button.workspace-header-refresh,
+  button.workspace-hero-secondary,
+  button.secondary-btn,
+  button.service-edit-btn,
+  button.opp-v2-secondary-action,
+  button.opp-v2-source-action,
+  button.unified-search-source-link,
+  button.unified-search-advanced-toggle,
+  button.unified-search-saved-link,
+  button.unified-search-save-reveal,
+  button.unified-search-clear,
+  button.saved-searches-actions,
+  button.acq-refresh,
+  button.discovery-v2-settings-link,
+  button[class~="bg-white"]
+),
+.workspace-shell .workspace-main :is(
+  .sources-hub-action-buttons button,
+  .sources-hub-footer button,
+  .unified-search-actions button,
+  .unified-search-actions a,
+  .unified-search-summary button,
+  .saved-searches-actions button,
+  .saved-digest > button,
+  .saved-digest-preview button,
+  .discovery-v2-query-card-footer button,
+  .opp-platform-choice
+) {
+  background-color: var(--ui-control-bg);
+  border: 1px solid var(--ui-control-border);
+  color: var(--ui-control-text);
+}
+.workspace-shell .workspace-main :is(
+  button.sources-hub-manage,
+  button.workspace-header-refresh,
+  button.workspace-hero-secondary,
+  button.secondary-btn,
+  button.service-edit-btn,
+  button.opp-v2-secondary-action,
+  button.opp-v2-source-action,
+  button.unified-search-source-link,
+  button.unified-search-advanced-toggle,
+  button.unified-search-saved-link,
+  button.unified-search-save-reveal,
+  button.saved-searches-actions,
+  button.acq-refresh,
+  button.discovery-v2-settings-link,
+  button[class~="bg-white"]
+):hover:not(:disabled),
+.workspace-shell .workspace-main :is(
+  .sources-hub-action-buttons button,
+  .sources-hub-footer button,
+  .unified-search-actions button,
+  .unified-search-actions a,
+  .unified-search-summary button,
+  .saved-searches-actions button,
+  .saved-digest > button,
+  .saved-digest-preview button,
+  .discovery-v2-query-card-footer button
+):hover:not(:disabled) {
+  background-color: var(--ui-control-hover);
+  border-color: var(--ui-focus-ring);
+  color: var(--ui-control-text);
+}
+.workspace-shell .workspace-main :is(.opp-platform-choice.is-active) {
+  background: var(--ui-lavender);
+  color: var(--ui-purple);
+  border-color: var(--ui-focus-ring);
+}
+html[data-theme="dark"] .workspace-shell .workspace-main .opp-platform-choice.is-active {
+  color: #e3d2ff;
+}
+
+/* A disabled refresh action must remain readable. Avoid the pre-existing
+   0.55 opacity on pale backgrounds, which dimmed white text to near-invisible. */
+.workspace-shell .workspace-main :is(button,a[aria-disabled="true"]):disabled,
+.workspace-shell .workspace-main :is(button,a)[aria-disabled="true"] {
+  opacity: 1;
+  background-color: var(--ui-disabled-bg);
+  border-color: var(--ui-disabled-border);
+  color: var(--ui-disabled-text);
+  cursor: not-allowed;
+}
+.workspace-shell .workspace-main :is(button,a):disabled :is(svg,span),
+.workspace-shell .workspace-main :is(button,a)[aria-disabled="true"] :is(svg,span) {
+  color: inherit;
+}
+.workspace-shell .workspace-main :is(button,a):focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 3px;
+}
+
+/* Current purple backgrounds in legacy Tailwind markup must keep white ink
+   even when parent sections use dark-on-light typographic overrides. */
+.workspace-shell .workspace-main :is(button,a)[class~="bg-violet-600"]:not(:disabled),
+.workspace-shell .workspace-main :is(button,a)[class~="bg-violet-700"]:not(:disabled),
+.workspace-shell .workspace-main :is(button,a)[class~="bg-purple-600"]:not(:disabled) {
+  background-color: var(--ui-cta-bg);
+  color: #fff;
+}
+
+/* Other prominent user actions, preserving click semantics and disabled flags. */
+.workspace-shell .workspace-main .quick-capture :is(
+  .quick-capture-form > button,
+  .quick-capture-preview > button,
+  .quick-capture-row-actions button:first-child
+):not(:disabled) {
+  background-color: var(--ui-cta-bg);
+  border-color: var(--ui-cta-bg);
+  color: #fff;
+}
+.workspace-shell .workspace-main .quick-capture button:not(:disabled):hover {
+  filter: brightness(1.08);
+}
+.workspace-shell .workspace-main .sources-hub-refresh svg { color: inherit; }
+.workspace-shell .workspace-main .sources-hub-refresh:disabled {
+  background-color: var(--ui-disabled-bg);
+  border-color: var(--ui-disabled-border);
+  color: var(--ui-disabled-text);
+}
+.workspace-shell .workspace-main .saved-searches-empty button:not(:disabled),
+.workspace-shell .workspace-main .unified-search-empty button:not(:disabled),
+.workspace-shell .workspace-main .unified-search-save button[type="submit"]:not(:disabled) {
+  background: var(--ui-cta-bg);
+  border-color: var(--ui-cta-bg);
+  color: #fff;
+}
+
+/* Auth and onboarding are outside .workspace-shell. Maintain contrast there. */
+.onboard-v2-shell button[class~="bg-violet-600"]:not(:disabled),
+.onboard-v2-shell button[class~="bg-violet-700"]:not(:disabled) {
+  background: #7131e6;
+  color: #fff;
+}
+.onboard-v2-shell button:disabled { opacity: .8; cursor: not-allowed; }
+.onboard-v2-shell button:focus-visible { outline: 3px solid #9163f7; outline-offset: 3px; }
+
+/* Theme switcher sits on the persistent dark sidebar in both app themes. */
+.workspace-shell .workspace-theme-options button.is-active { background: #7440e5; color:#fff; }
+.workspace-shell .workspace-theme-options button:not(.is-active):hover { color:#fff; }
