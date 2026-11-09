@@ -7,7 +7,7 @@ const read = p => readFileSync(join(__dirname, '..', p), 'utf8')
 test('UI Refresh V1 is loaded after legacy dark styles and before V2 fixes', () => {
   const app = read('src/App.jsx')
   const imports = [...app.matchAll(/^import ['"]([^'"]+\.css)['"]$/gm)].map(x => x[1])
-  assert.deepEqual(imports.slice(-5), ['./ui-refresh-v1.css', './ui-refresh-v2.css', './theme-preference.css', './button-contrast-v1.css', './ui-quickcapture-review-pr83.css'])
+  assert.deepEqual(imports.slice(-6), ['./ui-refresh-v1.css', './ui-refresh-v2.css', './theme-preference.css', './button-contrast-v1.css', './ui-quickcapture-review-pr83.css', './opportunity-detail-theme-pr84.css'])
 })
 
 test('visual tokens align with screenshot references and remain scoped', () => {
