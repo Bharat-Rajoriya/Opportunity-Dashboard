@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ClipboardPlus, ExternalLink, ShieldAlert } from 'lucide-react'
+import { ClipboardPlus, ExternalLink, ShieldAlert, Sparkles } from 'lucide-react'
+import { generateOnboardingCopy } from '../services/opportunityEngine'
 import { validateCaptureDraft } from '../lib/manualCaptureValidation'
 import { listManualCaptures, saveManualCapture, setManualCaptureStatus, submitManualCaptureForQualification, qualifyManualCapture, recordManualSourceReview, verifyManualFreelancerSource, recoverStalledManualCapture } from '../services/manualCaptures'
 import './QuickCapturePanel.css'
@@ -16,6 +17,8 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiDraft, setAiDraft] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -26,6 +29,34 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
   }, [workspaceId])
 
   useEffect(() => { void load() }, [load])
+
+  const improveDescription = async () => {
+    if (aiLoading || saving) return
+    setError('')
+    setNotice('')
+    setAiDraft('')
+    if (title.trim().length < 4 || requirement.trim().length < 20) {
+      setError('Add a project title and at least 20 characters of your own public-project notes before using AI.')
+      return
+    }
+    setAiLoading(true)
+    try {
+      // No URL is sent and no source is fetched. Rewrite only user-provided text.
+      const result = await generateOnboardingCopy({
+        workspaceId,
+        fieldType: 'manual_capture_description',
+        roughText: requirement.trim(),
+        context: { project_title: title.trim() },
+      })
+      const candidate = String(result.generated_text || '').trim()
+      if (candidate.length < 20 || candidate.length > 5000)
+        throw new Error('The AI draft was outside the accepted description length. Your original notes were preserved.')
+      setAiDraft(candidate)
+      setNotice('AI suggested a rewrite from your notes. Inspect the draft and choose whether to use it.')
+    } catch (err) {
+      setError(err?.message || 'AI could not improve the description. Your original notes were preserved.')
+    } finally { setAiLoading(false) }
+  }
 
   const reviewDraft = event => {
     event.preventDefault()
@@ -44,7 +75,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
       // Revalidate on confirm: never assume an earlier preview is proof of a real buyer.
       const created = await saveManualCapture(workspaceId, previewToDraft(preview), opportunities)
       setRecords(existing => [created, ...existing])
-      setPreview(null); setUrl(''); setTitle(''); setRequirement(''); setOpen(false)
+      setPreview(null); setUrl(''); setTitle(''); setRequirement(''); setAiDraft(''); setOpen(false)
       setNotice('Saved for manual review. This is not yet a scored opportunity.')
     } catch (err) { setError(err?.message || 'Could not save this link.') }
     finally { setSaving(false) }
@@ -157,7 +188,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
         <h3><ClipboardPlus size={18} aria-hidden="true" /> Quick Capture</h3>
         <p>Found a client project elsewhere? Save a public URL and your notes to a private review queue.</p>
       </div>
-      <button type="button" onClick={() => { setOpen(value => !value); setPreview(null); setError('') }} aria-expanded={open}>
+      <button type="button" onClick={() => { setOpen(value => !value); setPreview(null); setAiDraft(''); setError('') }} aria-expanded={open}>
         {open ? 'Close form' : 'Add a project link'}
       </button>
     </div>
@@ -167,19 +198,35 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     </p>
     {open && <form className="quick-capture-form" onSubmit={reviewDraft}>
       <label>Public project link
-        <input type="url" required maxLength={2000} value={url} onChange={e => { setUrl(e.target.value); setPreview(null) }}
+        <input type="url" required disabled={aiLoading} maxLength={2000} value={url} onChange={e => { setUrl(e.target.value); setPreview(null); setAiDraft('') }}
           placeholder="https://www.freelancer.com/projects/..." autoComplete="url" />
       </label>
       <label>Project title
-        <input type="text" required minLength={4} maxLength={180} value={title} onChange={e => { setTitle(e.target.value); setPreview(null) }}
+        <input type="text" required disabled={aiLoading} minLength={4} maxLength={180} value={title} onChange={e => { setTitle(e.target.value); setPreview(null); setAiDraft('') }}
           placeholder="e.g. WordPress website maintenance" />
       </label>
       <label>Buyer requirement / why it matters
-        <textarea required minLength={20} maxLength={5000} rows={3} value={requirement}
-          onChange={e => { setRequirement(e.target.value); setPreview(null) }}
+        <textarea required disabled={aiLoading} minLength={20} maxLength={5000} rows={3} value={requirement}
+          onChange={e => { setRequirement(e.target.value); setPreview(null); setAiDraft('') }}
           placeholder="Paste a brief public project description. Do not include private contact information." />
       </label>
-      <button type="submit">Review capture</button>
+      <div className="quick-capture-ai-assist">
+        <button type="button" disabled={aiLoading || saving || !workspaceId || title.trim().length < 4 || requirement.trim().length < 20}
+          onClick={() => void improveDescription()}>
+          <Sparkles size={14} aria-hidden="true" /> {aiLoading ? 'Improving…' : 'Improve description with AI'}
+        </button>
+        <span className="quick-capture-ai-hint">Rewrites only the notes above. Does not open the link or verify its contents.</span>
+      </div>
+      {aiDraft && <div className="quick-capture-ai-draft" aria-label="AI suggested description">
+        <strong>Suggested description — review before using</strong>
+        <p>{aiDraft}</p>
+        <button type="button" disabled={aiLoading || saving} onClick={() => {
+          setRequirement(aiDraft); setAiDraft(''); setPreview(null);
+          setNotice('AI wording inserted. Review factual accuracy before saving.')
+        }}>Use this draft</button>
+        <button type="button" disabled={aiLoading || saving} onClick={() => setAiDraft('')}>Discard draft</button>
+      </div>}
+      <button type="submit" disabled={aiLoading || saving}>Review capture</button>
     </form>}
     {preview && open && <div className="quick-capture-preview">
       <strong>Confirm before saving</strong>

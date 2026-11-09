@@ -1,0 +1,74 @@
+/* PR #83: prevent active/hover Discovery steps from being painted as pale disabled buttons.
+   The global disabled-button color rule should not affect navigation steps. */
+.workspace-shell .workspace-main .discovery-journey-step:not(.is-current):hover:not(:disabled) {
+  background: #f0eaff;
+  border-color: #b89aee;
+  color: #43228f;
+}
+.workspace-shell .workspace-main .discovery-journey-step.is-current,
+.workspace-shell .workspace-main .discovery-journey-step.is-current:disabled,
+.workspace-shell .workspace-main .discovery-journey-step.is-current:hover {
+  background: #ebe3ff;
+  border-color: #a883f1;
+  color: #5727bd;
+  opacity: 1;
+}
+.workspace-shell .workspace-main .discovery-journey-step.is-current :is(strong,small,svg) {
+  color: inherit;
+}
+.workspace-shell .workspace-main .discovery-journey-step:not(.is-current):hover :is(strong,small,svg) {
+  color: inherit;
+}
+html[data-theme="dark"] .workspace-shell .workspace-main .discovery-journey-step:not(.is-current):hover:not(:disabled) {
+  background: #303054;
+  border-color: #8070b7;
+  color: #f3edff;
+}
+html[data-theme="dark"] .workspace-shell .workspace-main .discovery-journey-step.is-current,
+html[data-theme="dark"] .workspace-shell .workspace-main .discovery-journey-step.is-current:disabled,
+html[data-theme="dark"] .workspace-shell .workspace-main .discovery-journey-step.is-current:hover {
+  background: #352852;
+  border-color: #9674d7;
+  color: #f3eaff;
+  opacity: 1;
+}
+html[data-theme="dark"] .workspace-shell .workspace-main .discovery-journey-step :is(.discovery-journey-next,.discovery-journey-step-icon) { color: #b49bff; }
+
+/* Count pills are informational labels, not disabled buttons. */
+.workspace-shell .outreach-v2-count {
+  background: #eee7ff;
+  color: #6230b4;
+  border: 1px solid #d7c4fc;
+  border-radius: 999px;
+}
+html[data-theme="dark"] .workspace-shell .outreach-v2-count {
+  background: #31264a;
+  color: #e6d2ff;
+  border-color: #71569c;
+}
+
+/* Quick Capture AI assistant: explicit opt-in draft, not source verification. */
+.workspace-shell .quick-capture-ai-assist {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 9px;
+}
+.workspace-shell .quick-capture-ai-hint { color: var(--ui-body); font-size: 11px; line-height: 1.55; }
+.workspace-shell .quick-capture-ai-draft {
+  padding: 14px; border: 1px solid #d6c4f7;
+  border-radius: 12px; background: #f7f2ff; display: grid; gap: 10px;
+}
+.workspace-shell .quick-capture-ai-draft strong { color: #452096; }
+.workspace-shell .quick-capture-ai-draft p { color: #30264e; font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.workspace-shell .quick-capture-ai-draft button { justify-self: start; }
+.workspace-shell .quick-capture-ai-assist button:not(:disabled) {
+  background: var(--ui-control-bg); color: var(--ui-control-text);
+  border-color: var(--ui-control-border);
+}
+.workspace-shell .quick-capture-ai-assist button:hover:not(:disabled) {
+  background: var(--ui-control-hover); color: var(--ui-control-text);
+}
+html[data-theme="dark"] .workspace-shell .quick-capture-ai-draft {
+  background: #29213f; border-color: #65518b;
+}
+html[data-theme="dark"] .workspace-shell .quick-capture-ai-draft strong { color: #e3d1ff; }
+html[data-theme="dark"] .workspace-shell .quick-capture-ai-draft p { color: #d6caeb; }
+@media(max-width:650px) { .workspace-shell .quick-capture-ai-assist button { width: auto; } }
