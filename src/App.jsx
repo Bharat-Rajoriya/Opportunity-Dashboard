@@ -84,6 +84,7 @@ import './opportunity-platforms.css'
 import './ui-refresh-v1.css'
 import './ui-refresh-v2.css'
 import './theme-preference.css'
+import './button-contrast-v1.css'
 
 const REJECTION_REASONS = [
   ['not_relevant', 'Not relevant'],
