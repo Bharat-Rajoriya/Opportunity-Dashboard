@@ -8,6 +8,7 @@ const ALLOWED_FIELD_TYPES = new Set([
   'service_description',
   'good_opportunity',
   'profile_filters',
+  'manual_capture_description',
 ])
 
 function cleanString(value: unknown, maxLength = 8000) {
@@ -93,6 +94,19 @@ export default {
             },
             { status: 400 },
           )
+        }
+
+        // Manual capture assistance is a rewrite of the user's own notes,
+        // not source retrieval, source verification or project qualification.
+        if (fieldType === 'manual_capture_description') {
+          const projectTitle = cleanString(context.project_title, 180)
+          if (projectTitle.length < 4 || roughText.length < 20 || roughText.length > 5000) {
+            return Response.json(
+              { success: false, error: 'manual_capture_input_required',
+                message: 'Enter a project title and at least 20 characters of your own public-project notes first.' },
+              { status: 400 },
+            )
+          }
         }
 
         if (
@@ -246,8 +260,16 @@ export default {
 
         const generatedText = cleanString(
           result.generated_text,
-          8000,
+          fieldType === 'manual_capture_description' ? 5001 : 8000,
         )
+        if (fieldType === 'manual_capture_description' &&
+          (generatedText.length < 20 || generatedText.length > 5000)) {
+          return Response.json(
+            { success: false, error: 'invalid_manual_capture_draft',
+              message: 'The AI draft was not usable. Your original notes were preserved.' },
+            { status: 502 },
+          )
+        }
 
         const idealClientTypes = cleanStringList(
           result.ideal_client_types,
