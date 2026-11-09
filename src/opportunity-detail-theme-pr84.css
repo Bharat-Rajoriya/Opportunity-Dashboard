@@ -1,0 +1,179 @@
+/*
+ * PR #84: Opportunity source links and detail drawer.
+ * Explicitly pair foregrounds with backgrounds; avoid relying on the generic
+ * Tailwind .bg-slate-* theme overrides, which miss slash-opacity utilities.
+ * Keep source links conditional on the existing validated view.sourceUrl.
+ */
+.workspace-shell .workspace-main .opp-v2-card-actions a.opp-v2-source-action {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:38px;
+  background:#ffffff;
+  border:1px solid #ccd5e4;
+  color:#21314e;
+  opacity:1;
+  text-decoration:none;
+}
+.workspace-shell .workspace-main .opp-v2-card-actions a.opp-v2-source-action:hover,
+.workspace-shell .workspace-main .opp-v2-card-actions a.opp-v2-source-action:focus-visible {
+  background:#eee7ff;
+  border-color:#9569e4;
+  color:#5726bd;
+}
+.workspace-shell .workspace-main .opp-v2-card-actions a.opp-v2-source-action svg { color:inherit; }
+html[data-theme="dark"] .workspace-shell .workspace-main .opp-v2-card-actions a.opp-v2-source-action {
+  background:#26334e;
+  border-color:#657699;
+  color:#f1f5ff;
+  opacity:1;
+}
+html[data-theme="dark"] .workspace-shell .workspace-main .opp-v2-card-actions a.opp-v2-source-action:hover,
+html[data-theme="dark"] .workspace-shell .workspace-main .opp-v2-card-actions a.opp-v2-source-action:focus-visible {
+  background:#3a315d;
+  border-color:#a18ae0;
+  color:#fff;
+}
+
+/* All drawer surfaces explicitly opaque and thematic. In particular,
+   .bg-slate-950/60 is *not* the same selector as .bg-slate-950. */
+.workspace-shell .opp-v31-drawer {
+  --detail-surface:#ffffff;
+  --detail-nested:#f7f8fd;
+  --detail-ink:#18263f;
+  --detail-muted:#52647e;
+  --detail-border:#dce3ef;
+  --detail-link:#6937c9;
+  background:var(--detail-surface);
+  color:var(--detail-ink);
+  border-color:var(--detail-border);
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section {
+  background:var(--detail-nested);
+  border:1px solid var(--detail-border);
+  color:var(--detail-ink);
+  border-radius:14px;
+  box-shadow:none;
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section > h3 {
+  color:var(--detail-ink);
+  font-weight:750;
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section :is(.text-slate-200,.text-slate-300,.text-white) {
+  color:var(--detail-ink);
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section :is(.text-slate-400,.text-slate-500) {
+  color:var(--detail-muted);
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section :is(
+  [class*="bg-slate-950"],[class*="bg-slate-900"],[class*="bg-slate-800"]
+) {
+  background:var(--detail-surface);
+  border-color:var(--detail-border);
+  color:var(--detail-ink);
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section a {
+  color:var(--detail-link);
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section button {
+  background:var(--detail-surface);
+  color:var(--detail-ink);
+  border:1px solid var(--detail-border);
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section button:hover:not(:disabled) {
+  background:#eee8ff;
+  border-color:#b79bf0;
+  color:#5326ad;
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section button:disabled {
+  opacity:1;
+  background:#e8ebf2;
+  color:#5d687c;
+  border-color:#c8d2e0;
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section :is(button,a):focus-visible {
+  outline:3px solid #9560e8;
+  outline-offset:2px;
+}
+
+/* Preserve the *meaning* of eligibility / fit states; do not flatten every
+   colored status into a generic slate card. */
+.workspace-shell .opp-v31-drawer .opportunity-detail-section [class*="bg-emerald"] {
+  background:#e5f8ef;
+  border-color:#94d6b3;
+  color:#086b4e;
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section [class*="bg-amber"] {
+  background:#fff3d8;
+  border-color:#e7c478;
+  color:#89520a;
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section [class*="bg-rose"] {
+  background:#ffedf1;
+  border-color:#f0a5b5;
+  color:#9e294c;
+}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section :is(
+  [class*="text-emerald"],[class*="text-green"]
+) {color:#087350;}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section [class*="text-amber"] {color:#935b12;}
+.workspace-shell .opp-v31-drawer .opportunity-detail-section [class*="text-rose"] {color:#a62949;}
+
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer {
+  --detail-surface:#111c30;
+  --detail-nested:#19263d;
+  --detail-ink:#f0f4ff;
+  --detail-muted:#b3c2dc;
+  --detail-border:#364966;
+  --detail-link:#d3bcff;
+  background:var(--detail-surface);
+  color:var(--detail-ink);
+}
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer .opportunity-detail-section {
+  background:var(--detail-nested);
+  border-color:var(--detail-border);
+  color:var(--detail-ink);
+}
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer .opportunity-detail-section :is(
+  [class*="bg-slate-950"],[class*="bg-slate-900"],[class*="bg-slate-800"]
+) {
+  background:#222f49;
+  border-color:#465b79;
+  color:var(--detail-ink);
+}
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer .opportunity-detail-section button {
+  background:#253451;
+  color:#eef2ff;
+  border-color:#687a9b;
+}
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer .opportunity-detail-section button:hover:not(:disabled) {
+  background:#3a305a;
+  color:#fff;
+  border-color:#b49bf0;
+}
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer .opportunity-detail-section button:disabled {
+  background:#303950;
+  color:#c4cede;
+  border-color:#5c6981;
+}
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer .opportunity-detail-section [class*="bg-emerald"] {
+  background:#15392f;
+  border-color:#3f7962;
+  color:#9ceac8;
+}
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer .opportunity-detail-section [class*="bg-amber"] {
+  background:#40311c;
+  border-color:#866333;
+  color:#f4d08a;
+}
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer .opportunity-detail-section [class*="bg-rose"] {
+  background:#452431;
+  border-color:#88475e;
+  color:#ffbccd;
+}
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer .opportunity-detail-section :is(
+  [class*="text-emerald"],[class*="text-green"]
+) {color:#9ceac8;}
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer .opportunity-detail-section [class*="text-amber"] {color:#f4d08a;}
+html[data-theme="dark"] .workspace-shell .opp-v31-drawer .opportunity-detail-section [class*="text-rose"] {color:#ffbccd;}
