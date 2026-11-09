@@ -223,6 +223,8 @@
 .workspace-shell .sources-hub-icon { background: var(--ui-lavender); color: #7035df; border-radius: 12px; }
 .workspace-shell .sources-hub-status { border: 0; background: var(--ui-teal-bg); color: var(--ui-teal); font-size: 11px; }
 .workspace-shell .sources-hub-status.is-unavailable { background: var(--ui-warning-bg); color: var(--ui-warning); }
+.workspace-shell .sources-hub-status.is-neutral { background: #efecff; color: #6542ae; }
+.workspace-shell .sources-hub-status.is-verified { background: var(--ui-teal-bg); color: var(--ui-teal); }
 .workspace-shell .sources-hub-card > p,
 .workspace-shell .sources-hub-card .sources-hub-explanation,
 .workspace-shell .sources-hub-footer p,
