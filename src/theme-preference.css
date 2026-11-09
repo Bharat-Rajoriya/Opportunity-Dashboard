@@ -1,0 +1,201 @@
+/* PR #81 — System / Light / Dark appearance. All dark overrides are scoped. */
+.workspace-theme-switcher { min-width: 0; border: 0; margin: 0 0 10px; padding: 0; }
+.workspace-theme-switcher legend { padding: 0 0 7px; font-size: 10px; font-weight: 730; color: #bcb6df; letter-spacing: .08em; text-transform: uppercase; }
+.workspace-theme-options { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; padding: 4px; border: 1px solid #62598a; background: #151237; border-radius: 12px; }
+.workspace-theme-options button { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; min-height: 35px; padding: 6px 3px; border-radius: 8px; color: #c5bfeb; font-size: 10px; font-weight: 650; }
+.workspace-theme-options button:hover { background: #403575; color: #fff; }
+.workspace-theme-options button.is-active { background: #7440e5; color: #fff; }
+.workspace-theme-options button:focus-visible { outline: 2px solid #d4c5ff; outline-offset: 2px; }
+
+/* The original dark UI remains the source of palette semantics. Explicitly
+   override the later V1/V2 light patches when user/system preference is dark. */
+html[data-theme="dark"] { background: #080e1d; color-scheme: dark; }
+html[data-theme="dark"] .workspace-shell {
+  --ui-page:#0a1020; --ui-card:#121c31; --ui-heading:#f1f4fc;
+  --ui-body:#b1bfd7; --ui-muted:#9aaac5; --ui-border:#2e3d59;
+  --ui-lavender:#29244e; --ui-teal:#8be3c4; --ui-teal-bg:#153b33;
+  --ui-warning:#f2c47b; --ui-warning-bg:#3c301f;
+  --od-border:#2e3d59; --od-accent:#c7b5ff;
+  background:#0a1020; color:#eef2fa;
+}
+html[data-theme="dark"] .workspace-shell .workspace-main { background:#0a1020; }
+html[data-theme="dark"] .workspace-shell :is(.workspace-page-header h1,.workspace-page-header p,.workspace-header-eyebrow) { color:var(--ui-heading); }
+html[data-theme="dark"] .workspace-shell .workspace-page-header p { color:var(--ui-body); }
+html[data-theme="dark"] .workspace-shell :is(.workspace-header-refresh,.workspace-hero-secondary,
+  .service-settings-card,.workspace-metric-grid>div,.engine-action-card,.opp-v2-card,.opp-v2-fact,.opp-v31-side-card) {
+  color:var(--ui-heading); background:#121c31; border-color:var(--ui-border);
+}
+html[data-theme="dark"] .workspace-shell .workspace-overview,
+html[data-theme="dark"] .workspace-shell .workspace-overview-primary { background:#15203a; border-color:#334565; }
+html[data-theme="dark"] .workspace-shell .workspace-overview-side { background:#201d45; border-color:#4e457b; }
+html[data-theme="dark"] .workspace-shell :is(.workspace-overview h2,.workspace-overview-description,
+  .workspace-status-label,.workspace-status-line,.workspace-sources>span,.workspace-focus strong,
+  .workspace-focus p) { color:#f4f4ff; }
+html[data-theme="dark"] .workspace-shell .workspace-focus { color:#eaf0fb; background:#222b48; border-color:#50567e; }
+html[data-theme="dark"] .workspace-shell .workspace-source-tag { background:#252544; color:#e8e2ff; border-color:#565079; }
+html[data-theme="dark"] .workspace-shell :is(.opp-v2-card:hover,.unified-search-result:hover) { background:#192742; }
+html[data-theme="dark"] .workspace-shell :is(.opp-v2-decision,.opp-v2-next-action) {
+  background:#282344; border-color:#5c4b83;
+}
+html[data-theme="dark"] .workspace-shell :is(.opp-v2-decision.is-caution,.opp-v2-next-action.is-caution) { background:#39301f; border-color:#826333; }
+html[data-theme="dark"] .workspace-shell :is(.opp-v2-drawer,.opp-v2-drawer-header) { background:#131d30; border-color:var(--ui-border); }
+html[data-theme="dark"] .workspace-shell :is(.opp-v2-drawer-close,.opp-v2-drawer-evidence) { background:#1c2942; border-color:#3c4d67; color:#d8e4f5; }
+html[data-theme="dark"] .workspace-shell .opp-v2-drawer-header h2 { color:#f4f5ff; }
+html[data-theme="dark"] .workspace-shell .opp-v2-drawer-header p { color:#b1bfd7; }
+html[data-theme="dark"] .workspace-shell :is(.opp-v2-title,.opp-v2-decision strong,.opp-v2-next-action strong,
+  .opp-v2-fact dd,.opp-v31-side-card h3,.opp-v31-check strong,.opp-v31-side-card>strong) { color:#f1f4fc; }
+html[data-theme="dark"] .workspace-shell :is(.opp-v2-description,.opp-v2-fact dt,.opp-v2-next-action p,
+  .opp-v31-side-card>p,.opp-v31-check p,.opp-v31-check span,.opp-v2-evidence,
+  .opp-v2-evidence span,.opp-v2-source) { color:#b3c2d9; }
+html[data-theme="dark"] .workspace-shell .opp-v2-fact-fit[data-state="exact"] dd { color:#8de3bd; }
+html[data-theme="dark"] .workspace-shell .opp-v2-fact-fit[data-state="related"] dd { color:#f3cc82; }
+html[data-theme="dark"] .workspace-shell .opp-v2-fact-fit[data-state="unsupported"] dd { color:#f6a4b9; }
+html[data-theme="dark"] .workspace-shell .opp-v2-fact-research[data-state="partial"] dd,
+html[data-theme="dark"] .workspace-shell .opp-v2-fact-research[data-state="pending"] dd { color:#f3cc82; }
+html[data-theme="dark"] .workspace-shell .opp-v2-evidence strong { color:#c3a7ff; }
+
+/* Search, Sources, Saved */
+html[data-theme="dark"] .workspace-shell :is(.unified-search,.sources-hub,.saved-searches-page) { color:#eef2fa; }
+html[data-theme="dark"] .workspace-shell :is(.unified-search-controls,.unified-search-results,.unified-search-summary,
+  .unified-search-result,.sources-hub-card,.sources-hub-footer,.sources-hub-quick-actions,
+  .saved-searches-item,.saved-searches-empty,.saved-digest-preview,.quick-capture,
+  .quick-capture-preview,.quick-capture-list article) { background:#121c31; border-color:#30415f; color:#edf2fc; }
+html[data-theme="dark"] .workspace-shell :is(.unified-search-intro h2,.sources-hub-heading h2,.saved-searches-head h2,
+  .unified-search-result h3,.unified-search-summary h3,.sources-hub-card h3,.sources-hub-details strong,
+  .sources-hub-quick-actions strong,.sources-hub-footer div,.saved-searches-item h3,
+  .quick-capture-head h3,.quick-capture-list-title,.quick-capture-list article strong,
+  .quick-capture-preview strong) { color:#f1f5ff; }
+html[data-theme="dark"] .workspace-shell :is(.unified-search-intro p,.sources-hub-heading p,.saved-searches-head p,
+  .unified-search-meta,.unified-search-description,.unified-search-summary p,.unified-search-summary>div span,
+  .sources-hub-card>p,.sources-hub-card .sources-hub-explanation,.sources-hub-footer p,
+  .sources-hub-quick-actions p,.saved-searches-item p,.saved-searches-note,
+  .quick-capture-head p,.quick-capture-list article p,.quick-capture-list article span) { color:#adbbd5!important; }
+html[data-theme="dark"] .workspace-shell :is(.unified-search-input-wrap,.unified-search-save input,
+  .unified-search-filters select,.unified-search-results-head select,.unified-search-advanced-panel,
+  .saved-digest select,.quick-capture-form input,.quick-capture-form textarea) {
+    background:#0e1729; color:#f0f3ff; border-color:#435370;
+}
+html[data-theme="dark"] .workspace-shell .unified-search-input-wrap input { color:#f2f5fc; }
+html[data-theme="dark"] .workspace-shell :is(.unified-search-advanced-toggle,.unified-search-source-link,
+  .unified-search-active-chips button,.unified-search-save-shortcuts button,.unified-search-actions button,
+  .unified-search-actions a,.unified-search-summary button,.unified-search-empty button,
+  .sources-hub-manage,.sources-hub-footer button,.sources-hub-action-buttons button,
+  .saved-searches-actions button,.saved-digest>button,.saved-digest-preview button,
+  .quick-capture button) { background:#282344; border-color:#63549a; color:#e5dbff; }
+html[data-theme="dark"] .workspace-shell :is(.unified-search-context,.unified-search-date-note,.unified-search-evidence-note,
+  .quick-capture-explain) { background:#29233a; border-color:#645084; color:#e4d4ff; }
+html[data-theme="dark"] .workspace-shell .sources-hub-status.is-neutral { background:#302747; color:#d0bbf8; }
+html[data-theme="dark"] .workspace-shell .sources-hub-status.is-unavailable { background:#3d2f20; color:#ffda95; }
+html[data-theme="dark"] .workspace-shell .sources-hub-status.is-verified { background:#12392e; color:#9ce9ce; }
+html[data-theme="dark"] .workspace-shell .quick-capture-explain { color:#edcc9a; }
+html[data-theme="dark"] .workspace-shell .quick-capture-form label { color:#b8c8e2; }
+html[data-theme="dark"] .workspace-shell .quick-capture a { color:#c9b4ff; }
+
+/* Provider health / discovery / navigation */
+html[data-theme="dark"] .workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"],
+html[data-theme="dark"] .workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] article {
+  background:#131e33; color:#f1f5fc; border-color:#344663;
+}
+html[data-theme="dark"] .workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] article.bg-emerald-500\/5 { background:#14342d; border-color:#326c58; }
+html[data-theme="dark"] .workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] article.bg-amber-500\/5 { background:#382b20; border-color:#83603d; }
+html[data-theme="dark"] .workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] article span.rounded-full { background:#292846; border-color:#534a79; color:#d7c9ff; }
+html[data-theme="dark"] .workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] button { background:#292548; border-color:#5d5481; color:#eee4ff; }
+html[data-theme="dark"] .workspace-shell :is(.discovery-v2-panel,.discovery-v2-query-section,.discovery-journey) {
+  background:#121c31; border-color:#30415d; color:#eaf0fc;
+}
+html[data-theme="dark"] .workspace-shell :is(.discovery-v2-config-grid>div,.discovery-v2-stage,.discovery-v2-query-card,
+  .discovery-v2-bottom-grid>div,.discovery-v2-query-examples,.discovery-v2-toggle-row,.discovery-journey-step) {
+  background:#19263e; border-color:#364767; color:#e8effc;
+}
+html[data-theme="dark"] .workspace-shell .discovery-journey-step.is-current { background:#33285a; border-color:#9272d6; color:#f0eaff; }
+html[data-theme="dark"] .workspace-shell :is(.discovery-v2-panel-header h3,.discovery-v2-query-heading h3,.discovery-v2-results h4,
+  .discovery-v2-config-grid strong,.discovery-v2-stage strong,.discovery-v2-query-card-heading h4,
+  .discovery-v2-query-count strong,.discovery-v2-toggle-row strong,.discovery-v2-bottom-grid h5,
+  .discovery-v2-reason-list li,.discovery-v2-source-list strong,.discovery-v2-query-examples li,
+  .discovery-journey-heading strong,.discovery-v2-run-state strong) { color:#f0f4ff; }
+html[data-theme="dark"] .workspace-shell :is(.discovery-v2-panel-header p,.discovery-v2-query-heading p,.discovery-v2-config-note,
+  .discovery-v2-explanation,.discovery-v2-metric-note,.discovery-v2-muted,.discovery-v2-config-grid span,
+  .discovery-v2-config-grid small,.discovery-v2-stage span,.discovery-v2-stage small,
+  .discovery-v2-query-card-heading p,.discovery-v2-query-count span,.discovery-v2-toggle-row small,
+  .discovery-v2-query-examples p,.discovery-v2-query-examples small,.discovery-v2-query-footnote,
+  .discovery-v2-source-list span,.discovery-journey-heading span,.discovery-journey-step-text small) { color:#b0c0db; }
+html[data-theme="dark"] .workspace-shell :is(.discovery-v2-settings-link,.discovery-v2-query-card-footer button) { background:#30264d; border-color:#7665a5; color:#ede3ff; }
+html[data-theme="dark"] .workspace-shell .discovery-v2-editor textarea { background:#0d1729; border-color:#485879; color:#f1f4fa; }
+html[data-theme="dark"] .workspace-shell .discovery-v2-run-state { background:#1d2943; border-color:#465778; }
+html[data-theme="dark"] .workspace-shell .discovery-v2-run-state.is-success { background:#16372e; border-color:#39725c; }
+html[data-theme="dark"] .workspace-shell .discovery-v2-run-state.is-error { background:#422332; border-color:#854559; }
+html[data-theme="dark"] .workspace-shell .discovery-v2-run-state.is-running { background:#302547; border-color:#7861b1; }
+
+/* Diagnostics and outreach retain distinct warning semantics. */
+html[data-theme="dark"] .workspace-shell .acq-page { color:#eaf0fd; }
+html[data-theme="dark"] .workspace-shell :is(.acq-kpi,.acq-panel,.acq-empty,.outreach-v2-section,
+  .outreach-v2-review-card,.outreach-v2-approved-card,.outreach-v2-draft-panel,
+  .outreach-v2-approved-message,.outreach-v2-steps li,.outreach-v2-empty,.outreach-v2-feedback,
+  .outreach-v2-metadata>div,.outreach-v2-message,.outreach-v2-reason,
+  .opp-platform-toolbar) { background:#121d32; border-color:#334662; color:#edf2fe; }
+html[data-theme="dark"] .workspace-shell .outreach-v2-steps li.is-current { background:#292344; border-color:#7660ad; }
+html[data-theme="dark"] .workspace-shell :is(.acq-head h2,.acq-panel h3,.acq-empty h3,.acq-kpi strong,
+  .outreach-v2-section-heading h2,.outreach-v2-lead-title h3,.outreach-v2-steps li strong,
+  .outreach-v2-metadata strong,.outreach-v2-draft-head h4,.outreach-v2-subject,
+  .outreach-v2-subject strong) { color:#f2f4ff; }
+html[data-theme="dark"] .workspace-shell :is(.outreach-v2-section-heading p,.outreach-v2-lead-subtitle,
+  .outreach-v2-metadata>div>span,.outreach-v2-editor-note,.outreach-v2-message,
+  .outreach-v2-evidence,.outreach-v2-draft-length,.outreach-v2-subject span,
+  .outreach-v2-reason p,.acq-head p:not(.acq-eyebrow),.acq-note,.acq-kpi span,.monitor-table small) { color:#b2c0d9; }
+html[data-theme="dark"] .workspace-shell :is(.acq-controls select,.acq-refresh,.outreach-v2-field,
+  .opp-platform-choice,.opp-platform-sort select) {
+  background:#121e32; color:#eaf0fc; border-color:#4b5e7c;
+}
+html[data-theme="dark"] .workspace-shell .opp-platform-choice.is-active { background:#342957; border-color:#8f72d3; color:#f4eaff; }
+
+/* Re-theme Tailwind legacy cards without affecting the intentionally dark sidebar. */
+html[data-theme="dark"] .workspace-shell .workspace-main :is(.bg-slate-900,.bg-slate-950,.bg-slate-900\/80,.bg-slate-800) {
+  background-color:#121c31;
+}
+html[data-theme="dark"] .workspace-shell .workspace-main :is(h1,h2,h3,h4,strong).text-white { color:#f3f5ff; }
+html[data-theme="dark"] .workspace-shell .workspace-main :is(.text-slate-100,.text-slate-200,.text-slate-300) { color:#dce6f6; }
+html[data-theme="dark"] .workspace-shell .workspace-main :is(.text-slate-400,.text-slate-500) { color:#b0bdd3; }
+html[data-theme="dark"] .workspace-shell .workspace-main :is(.border-slate-700,.border-slate-800) { border-color:#344562; }
+html[data-theme="dark"] .workspace-shell .workspace-main .service-editor-panel,
+html[data-theme="dark"] .workspace-shell .workspace-main .service-editor-header { background:#111c30; border-color:#314461; }
+html[data-theme="dark"] .workspace-shell .workspace-main .service-editor-header h2,
+html[data-theme="dark"] .workspace-shell .workspace-main .service-list-header h3 { color:#f3f5ff; }
+html[data-theme="dark"] .workspace-shell .workspace-main .service-editor-body :is(input,textarea,select) { background:#0c1627; border-color:#405370; color:#f1f4fc; }
+html[data-theme="dark"] .workspace-shell .workspace-main .service-editor-body label:not(.service-active-control) { color:#cbd6eb; }
+
+/* Onboarding is a separate app surface: follow device preference too. */
+html[data-theme="dark"] .onboard-v2-shell { background:#080f1e; color:#eef1ff; }
+html[data-theme="dark"] .onboard-v2-shell :is(.onboard-v2-progress,.onboard-v3-milestone,.onboard-v2-step,
+  .profile-v2-summary,.profile-v2-identity-grid>div,.profile-v2-check,.onboard-v3-intro-notes>div) {
+  background:#131e34; color:#ecf1fc; border-color:#334463;
+}
+html[data-theme="dark"] .onboard-v2-shell :is(.onboard-v3-milestone.is-current,.onboard-v2-step.is-current) { background:#2e254c; border-color:#8d75d9; }
+html[data-theme="dark"] .onboard-v2-shell :is(.onboard-v3-milestone.is-previous,.onboard-v2-step.is-previous) { background:#18332e; border-color:#447966; }
+html[data-theme="dark"] .onboard-v2-shell :is(.onboard-v2-content>div:first-child h1,.onboard-v2-progress-heading h2,
+  .onboard-v3-milestone strong,.onboard-v2-step strong,.profile-v2-summary-header h3,
+  .profile-v2-identity-grid strong,.profile-v2-check strong) { color:#f5f5ff; }
+html[data-theme="dark"] .onboard-v2-shell :is(.onboard-v2-progress-heading>p,.onboard-v3-milestone small,
+  .onboard-v2-guide p,.profile-v2-summary-header p,.profile-v2-check span,.onboard-v2-progress-note) { color:#b7c5dc; }
+html[data-theme="dark"] .onboard-v2-shell :is(.onboard-v2-workspace,.onboard-v2-guide) { background:#252040; border-color:#5c4982; color:#ded1ff; }
+html[data-theme="dark"] .onboard-v2-shell .onboard-v2-content :is(input:not([type='checkbox']),textarea,select) { background:#101b2e; border-color:#405374; color:#f0f4fd; }
+html[data-theme="dark"] .onboard-v2-shell .onboard-v2-content :is(.bg-slate-900,.bg-slate-950,.bg-slate-800) { background:#121d32; }
+html[data-theme="dark"] .onboard-v2-shell .onboard-v2-content :is(.text-slate-100,.text-slate-200,.text-slate-300) { color:#e1e8f7; }
+html[data-theme="dark"] .onboard-v2-shell .onboard-v2-content :is(h1,h2,h3,h4,strong).text-white { color:#f5f5ff; }
+html[data-theme="dark"] .onboard-v2-shell .onboard-v2-content .text-slate-400 { color:#b6c4db; }
+html[data-theme="dark"] .onboard-v2-shell .onboard-v2-content .text-violet-300 { color:#cab5ff; }
+
+/* Across viewport and keyboard preferences */
+html[data-theme="dark"] .workspace-shell :focus-visible,
+html[data-theme="dark"] .onboard-v2-shell :focus-visible { outline-color:#d8c7ff; }
+html[data-theme="dark"] .workspace-shell :is(input,textarea,select) { accent-color:#9a74f5; }
+@media(max-width:1000px) {
+  .workspace-theme-switcher { margin:0 8px 0 0; padding:0; }
+  .workspace-theme-switcher legend { display:none; }
+  .workspace-theme-options { padding:2px; gap:1px; }
+  .workspace-theme-options button { min-height:33px; padding:5px; }
+  .workspace-theme-options button span { display:none; }
+}
+@media(max-width:420px) {
+  .workspace-theme-switcher { margin-right:4px; }
+  .workspace-theme-options button { min-width:29px; }
+}
