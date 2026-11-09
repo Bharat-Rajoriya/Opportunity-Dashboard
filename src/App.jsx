@@ -80,6 +80,7 @@ import './discovery-v2.css'
 import './profile-experience-v2.css'
 import './responsive-a11y.css'
 import './opportunity-platforms.css'
+import './ui-refresh-v1.css'
 
 const REJECTION_REASONS = [
   ['not_relevant', 'Not relevant'],
