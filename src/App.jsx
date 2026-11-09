@@ -8287,7 +8287,7 @@ function OpportunityStatusActions({
 
 function DrawerSection({ title, children }) {
   return (
-    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5">
+    <div className="opportunity-detail-section bg-slate-950/60 border border-slate-800 rounded-xl p-5">
 
       <h3 className="text-sm font-medium text-slate-200 mb-4">
         {title}
