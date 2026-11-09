@@ -54,7 +54,7 @@ export default function WorkspaceShell({
                 { id: 'dark', label: 'Dark', Icon: Moon },
               ].map(({ id, label, Icon }) =>
                 <button key={id} type="button" className={themePreference === id ? 'is-active' : ''}
-                  aria-pressed={preference === id} onClick={() => onChangeTheme?.(id)}
+                  aria-pressed={themePreference === id} onClick={() => onChangeTheme?.(id)}
                   title={id === 'system' ? 'Follow your device appearance' : `Use ${label.toLowerCase()} appearance`}>
                   <Icon size={14} aria-hidden="true" /><span>{label}</span>
                 </button>
