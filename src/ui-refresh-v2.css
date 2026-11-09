@@ -1,0 +1,280 @@
+/*
+ * UI Refresh V2: complete the light-theme migration and keep Sign out reachable.
+ * Loads after ui-refresh-v1.css; presentation only (no provider/AI status changes).
+ */
+
+/* Sidebar: the navigation area scrolls, while the account and sign-out remain visible. */
+.workspace-shell .workspace-sidebar {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  background: #1f1b49;
+  display: flex;
+  flex-direction: column;
+}
+.workspace-shell .workspace-sidebar .workspace-brand,
+.workspace-shell .workspace-sidebar .workspace-sidebar-rule { flex-shrink: 0; }
+.workspace-shell .workspace-navigation {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #7771bc transparent;
+  padding-right: 3px;
+  padding-bottom: 12px;
+}
+.workspace-shell .workspace-nav-link { color: #cecaf2; }
+.workspace-shell .workspace-nav-link svg { color: #aaa4fd; }
+.workspace-shell .workspace-nav-link.is-active { background: #493bd1; color: #fff; }
+.workspace-shell .workspace-nav-link.is-active svg { color: #fff; }
+.workspace-shell .workspace-nav-group-label { color: #ada8d1; }
+.workspace-shell .workspace-sidebar-footer {
+  margin-top: 0;
+  flex: 0 0 auto;
+  padding: 12px 8px max(12px, env(safe-area-inset-bottom));
+  background: #1f1b49;
+  border-top: 1px solid #ffffff30;
+  position: relative;
+  z-index: 1;
+}
+.workspace-shell .workspace-signout {
+  color: #f2edff;
+  min-height: 43px;
+  font-size: 13px;
+  padding: 10px 12px;
+  border: 1px solid #8176c045;
+  border-radius: 11px;
+}
+.workspace-shell .workspace-signout:hover,
+.workspace-shell .workspace-signout:focus-visible { background: #433a82; color: #fff; }
+
+/* Provider activity: these were dark Tailwind sections with light-mode ink. */
+.workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] {
+  background: #fff;
+  border-color: var(--ui-border);
+  color: var(--ui-heading);
+}
+.workspace-shell .workspace-main #provider-health-heading { color: var(--ui-heading); }
+.workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] > div > div > p.text-slate-400,
+.workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] > p.text-slate-500 {
+  color: var(--ui-body);
+}
+.workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] article {
+  background: #fdfdff;
+  border: 1px solid var(--ui-border);
+  border-radius: 15px;
+  color: var(--ui-heading);
+}
+.workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] article.bg-emerald-500\/5 {
+  background: #effcf7; border-color: #a6e7cd;
+}
+.workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] article.bg-amber-500\/5 {
+  background: #fff8e9; border-color: #ecd3a0;
+}
+.workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] article :is(h3,strong,.text-slate-100,.text-slate-200,.text-white) {
+  color: var(--ui-heading);
+}
+.workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] article :is(.text-slate-300,.text-slate-400) {
+  color: var(--ui-body);
+}
+.workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] article span.rounded-full {
+  background: #f0eaff; border-color: #dbd1f6; color: #6846bc;
+}
+.workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] button {
+  background: #fff; color: var(--ui-heading);
+  border: 1px solid var(--ui-border); border-radius: 11px;
+}
+.workspace-shell .workspace-main section[aria-labelledby="provider-health-heading"] button:hover:not(:disabled) {
+  background: var(--ui-lavender); border-color: #bea9f4;
+}
+
+/* Discovery run summary and query editor */
+.workspace-shell :is(.discovery-v2-panel,.discovery-v2-query-section) {
+  background: #fff; border: 1px solid var(--ui-border); border-radius: 18px;
+  color: var(--ui-heading);
+}
+.workspace-shell :is(.discovery-v2-panel-header h3,.discovery-v2-query-heading h3,.discovery-v2-results h4) {
+  color: var(--ui-heading);
+}
+.workspace-shell :is(.discovery-v2-panel-header p,.discovery-v2-query-heading p,.discovery-v2-config-note,.discovery-v2-explanation,.discovery-v2-metric-note,.discovery-v2-muted) {
+  color: var(--ui-body);
+}
+.workspace-shell .discovery-v2-kicker { color: #753be4; }
+.workspace-shell :is(.discovery-v2-config-grid > div,.discovery-v2-stage,.discovery-v2-query-card,.discovery-v2-bottom-grid > div,.discovery-v2-query-examples,.discovery-v2-toggle-row) {
+  background: #f9faff; border: 1px solid var(--ui-border); border-radius: 13px;
+}
+.workspace-shell :is(.discovery-v2-config-grid span,.discovery-v2-config-grid small,.discovery-v2-stage span,.discovery-v2-stage small,
+  .discovery-v2-query-card-heading p,.discovery-v2-query-count span,.discovery-v2-toggle-row small,.discovery-v2-query-examples p,
+  .discovery-v2-query-examples small,.discovery-v2-editor p,.discovery-v2-query-card-footer > span,.discovery-v2-query-footnote,
+  .discovery-v2-source-list span) { color: var(--ui-body); }
+.workspace-shell :is(.discovery-v2-config-grid strong,.discovery-v2-stage strong,.discovery-v2-query-card-heading h4,.discovery-v2-query-count strong,
+  .discovery-v2-toggle-row strong,.discovery-v2-bottom-grid h5,.discovery-v2-reason-list li,.discovery-v2-source-list strong,.discovery-v2-query-examples li,
+  .discovery-v2-query-footnote strong,.discovery-v2-editor label) { color: var(--ui-heading); }
+.workspace-shell .discovery-v2-results { border-top-color: var(--ui-border); }
+.workspace-shell .discovery-v2-source-list li { border-color: var(--ui-border); }
+.workspace-shell .discovery-v2-reason-list li strong { background: #eee7ff; color: #6233c0; }
+.workspace-shell .discovery-v2-query-label { color: #7950cb; }
+.workspace-shell .discovery-v2-query-icon { background: #f2ebff; color: #6934ca; border-color: #d9c5fc; }
+.workspace-shell .discovery-v2-query-icon.is-custom { background: #e8faf3; color: #117c65; border-color: #b0e6cd; }
+.workspace-shell .discovery-v2-query-examples { min-height: 130px; }
+.workspace-shell .discovery-v2-query-examples li::before { color: #7b35ef; }
+.workspace-shell .discovery-v2-query-footnote { border-top-color: var(--ui-border); }
+.workspace-shell :is(.discovery-v2-settings-link,.discovery-v2-query-card-footer button) {
+  background: #fff; color: #5638ad; border-color: #d4c6f6; border-radius: 11px;
+}
+.workspace-shell :is(.discovery-v2-settings-link,.discovery-v2-query-card-footer button):hover:not(:disabled) {
+  background: #f1eaff; border-color: #bca3f3;
+}
+.workspace-shell .discovery-v2-editor textarea {
+  background: #fff; color: var(--ui-heading); border-color: #d5deeb;
+}
+.workspace-shell .discovery-v2-run-state {
+  background: #f6f5ff; color: var(--ui-body); border-color: #ddd6fa;
+}
+.workspace-shell .discovery-v2-run-state strong { color: var(--ui-heading); }
+.workspace-shell .discovery-v2-run-state p { color: var(--ui-body); }
+.workspace-shell .discovery-v2-run-state.is-success { background: #effcf7; border-color: #a6e7cd; }
+.workspace-shell .discovery-v2-run-state.is-success svg { color: #087d70; }
+.workspace-shell .discovery-v2-run-state.is-error { background: #fff1f3; border-color: #f1c0cc; }
+.workspace-shell .discovery-v2-run-state.is-error svg { color: #c43d5c; }
+.workspace-shell .discovery-v2-run-state.is-running { background: #f0eaff; border-color: #d6c5ff; }
+.workspace-shell .discovery-v2-run-state.is-running svg { color: #753de0; }
+.workspace-shell .discovery-v2-regenerate-status { background: #effcf7; border-color: #abe0ca; color: #087d70; }
+.workspace-shell .discovery-v2-truncation { color: #91580d; }
+
+/* Discovery navigation: light panels, distinct selected state. */
+.workspace-shell .discovery-journey {
+  background: #fff; border: 1px solid var(--ui-border); border-radius: 18px;
+}
+.workspace-shell .discovery-journey-heading strong { color: var(--ui-heading); }
+.workspace-shell .discovery-journey-heading span { color: var(--ui-body); }
+.workspace-shell .discovery-journey-step {
+  background: #f9faff; color: var(--ui-heading); border: 1px solid var(--ui-border);
+}
+.workspace-shell .discovery-journey-step:hover:not(:disabled) { background: #f3efff; border-color: #c7b1fa; }
+.workspace-shell .discovery-journey-step.is-current { background: #eee8ff; border-color: #ae8cf6; color: #6331c7; }
+.workspace-shell .discovery-journey-step-icon { color: #7542dc; }
+.workspace-shell .discovery-journey-step-text small { color: var(--ui-body); }
+.workspace-shell .discovery-journey-next { color: #6c56a0; }
+.workspace-shell .discovery-journey-caution { color: #875616; }
+
+/* Manual capture: match the Sources page rather than retaining dark islands. */
+.workspace-shell .quick-capture {
+  background: #fff; border-color: var(--ui-border); border-radius: 18px; color: var(--ui-heading);
+}
+.workspace-shell .quick-capture-head h3,
+.workspace-shell .quick-capture-list-title,
+.workspace-shell .quick-capture-list article strong,
+.workspace-shell .quick-capture-preview strong { color: var(--ui-heading); }
+.workspace-shell :is(.quick-capture-head p,.quick-capture-list>p,.quick-capture-list article span,.quick-capture-list article p,
+  .quick-capture-list-title span,.quick-capture-preview p) { color: var(--ui-body); }
+.workspace-shell .quick-capture-form label { color: var(--ui-body); }
+.workspace-shell .quick-capture-form :is(input,textarea) {
+  background: #fff; color: var(--ui-heading); border-color: #d5deeb;
+}
+.workspace-shell .quick-capture :is(.quick-capture-preview,.quick-capture-list article) {
+  background: #faf9ff; border-color: var(--ui-border);
+}
+.workspace-shell .quick-capture-explain { color: #885c20; background: #fff7e7; }
+.workspace-shell .quick-capture button {
+  color: #6736be; background: #f5efff; border-color: #d6c1f8;
+}
+.workspace-shell .quick-capture-form>button,
+.workspace-shell .quick-capture-preview>button,
+.workspace-shell .quick-capture-row-actions button:first-child {
+  background: var(--ui-purple); color: #fff; border-color: var(--ui-purple);
+}
+.workspace-shell .quick-capture a { color: #7138d0; }
+.workspace-shell .quick-capture-error { color: #b42342; }
+.workspace-shell .quick-capture-success { color: #087d70; }
+.workspace-shell .quick-capture-row-actions small { color: #896129; }
+
+/* Diagnostics + run history panels. */
+.workspace-shell .acq-page { color: var(--ui-heading); }
+.workspace-shell .acq-head h2,
+.workspace-shell :is(.acq-panel,.acq-empty,.monitor-heading) h3 { color: var(--ui-heading); }
+.workspace-shell :is(.acq-head p:not(.acq-eyebrow),.acq-note,.acq-kpi span,.acq-empty p,.monitor-table small) {
+  color: var(--ui-body);
+}
+.workspace-shell :is(.acq-kpi,.acq-panel,.acq-empty) {
+  color: var(--ui-heading); background: #fff; border: 1px solid var(--ui-border); border-radius: 17px;
+}
+.workspace-shell .acq-controls label { color: var(--ui-body); }
+.workspace-shell :is(.acq-controls select,.acq-refresh,.acq-error button) {
+  background: #fff; color: var(--ui-heading); border-color: var(--ui-border);
+}
+.workspace-shell .acq-panel :is(th,td) { border-color: var(--ui-border); }
+.workspace-shell .acq-panel thead th { color: var(--ui-body); }
+.workspace-shell .acq-error { color: #af2346; background: #fff2f4; border-color: #eebfca; }
+.workspace-shell .acq-warning { color: #8b5715; background: #fff7e7; border-color: #efd8ac; }
+.workspace-shell .monitor-status.is-error { color: #b52648; border-color: #e6a8b9; }
+.workspace-shell .monitor-status.is-warning { color: #8d5709; border-color: #e3c487; }
+.workspace-shell .monitor-status.is-info { color: #2857a0; border-color: #9bbded; }
+.workspace-shell .monitor-status.is-ok { color: #086b54; border-color: #a9daca; }
+
+/* Outreach and saved platform controls. */
+.workspace-shell :is(.outreach-v2-section,.outreach-v2-review-card,.outreach-v2-approved-card,.outreach-v2-draft-panel,
+  .outreach-v2-approved-message,.outreach-v2-steps li,.outreach-v2-empty,.outreach-v2-feedback,.outreach-v2-metadata>div,
+  .outreach-v2-message,.outreach-v2-reason) {
+  background: #fff; color: var(--ui-heading); border: 1px solid var(--ui-border); border-radius: 16px;
+}
+.workspace-shell .outreach-v2-steps li.is-current { background: #f0eaff; border-color: #b99ef4; }
+.workspace-shell :is(.outreach-v2-section-heading h2,.outreach-v2-lead-title h3,.outreach-v2-empty h3,
+  .outreach-v2-steps li strong,.outreach-v2-metadata strong,.outreach-v2-draft-head h4,
+  .outreach-v2-subject,.outreach-v2-subject strong) { color: var(--ui-heading); }
+.workspace-shell :is(.outreach-v2-section-heading p,.outreach-v2-steps li small,.outreach-v2-lead-subtitle,.outreach-v2-metadata>div>span,
+  .outreach-v2-editor-note,.outreach-v2-message,.outreach-v2-evidence,.outreach-v2-draft-length,
+  .outreach-v2-subject span,.outreach-v2-reason,.outreach-v2-reason p) { color: var(--ui-body); }
+.workspace-shell :is(.outreach-v2-eyebrow,.outreach-v2-source,.outreach-v2-reason strong) { color: #7040c7; }
+.workspace-shell .outreach-v2-count { color: #6a38ca; background: #f0eaff; border-color: #ddd0ff; }
+.workspace-shell .outreach-v2-evidence strong { color: #6a38ca; }
+.workspace-shell .outreach-v2-metadata .outreach-v2-fit-exact { color: #08745c; }
+.workspace-shell .outreach-v2-metadata .outreach-v2-fit-related { color: #956014; }
+.workspace-shell .outreach-v2-metadata .outreach-v2-fit-unsupported { color: #b02c4a; }
+.workspace-shell .outreach-v2-original { color: #6636bd; border-color: #d8c9f8; }
+.workspace-shell :is(.outreach-v2-caution,.outreach-v2-research-caution) {
+  background: #fff8e9; border-color: #ebd7ac; color: #84571d;
+}
+.workspace-shell .outreach-v2-research-caution { background: #eff6ff; border-color: #c8d8f2; color: #335a8d; }
+.workspace-shell .outreach-v2-field { background: #fff; border-color: #d6dfea; color: var(--ui-heading); }
+.workspace-shell .opp-platform-toolbar { background: #fff; border-color: var(--ui-border); }
+.workspace-shell .opp-platform-heading,
+.workspace-shell .opp-platform-sort label { color: var(--ui-body); }
+.workspace-shell .opp-platform-choice {
+  background: #fff; border-color: var(--ui-border); color: var(--ui-heading);
+}
+.workspace-shell .opp-platform-choice:hover { background: #f5f0ff; border-color: #cbb7f9; }
+.workspace-shell .opp-platform-choice.is-active { background: #ede5ff; border-color: #ac8bf3; color: #6130c4; }
+.workspace-shell .opp-platform-choice span { background: #edf0f6; color: #516178; }
+.workspace-shell .opp-platform-choice.is-active span { background: #7941d6; color: white; }
+.workspace-shell .opp-platform-sort select { color: var(--ui-heading); background: white; border-color: var(--ui-border); }
+
+/* Keep narrow and mobile navigation usable without clipping. */
+@media (max-width: 1000px) {
+  .workspace-shell .workspace-sidebar {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    padding: 9px 16px 0;
+  }
+  .workspace-shell .workspace-sidebar .workspace-navigation {
+    order: 3; flex: 1 0 100%; overflow-x: auto; overflow-y: hidden;
+    min-height: auto; width: 100%; padding: 8px 0 9px;
+    scrollbar-width: thin;
+  }
+  .workspace-shell .workspace-sidebar-footer { margin-left: auto; border: 0; padding: 0; }
+  .workspace-shell .workspace-signout {
+    display: flex; align-items: center; width: auto; min-height: 38px; margin: 0;
+    padding: 8px 10px;
+  }
+}
+@media (max-width: 740px) {
+  .workspace-shell .discovery-v2-config-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .workspace-shell .discovery-v2-stage-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .workspace-shell .acq-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 370px) {
+  .workspace-shell .discovery-v2-config-grid { grid-template-columns: 1fr; }
+}

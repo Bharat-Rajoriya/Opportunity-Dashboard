@@ -4,10 +4,10 @@ const { readFileSync } = require('node:fs')
 const { join } = require('node:path')
 const read = p => readFileSync(join(__dirname, '..', p), 'utf8')
 
-test('UI Refresh V1 is imported last so it can override old dark surfaces', () => {
+test('UI Refresh V1 is loaded after legacy dark styles and before V2 fixes', () => {
   const app = read('src/App.jsx')
   const imports = [...app.matchAll(/^import ['"]([^'"]+\.css)['"]$/gm)].map(x => x[1])
-  assert.equal(imports.at(-1), './ui-refresh-v1.css')
+  assert.deepEqual(imports.slice(-2), ['./ui-refresh-v1.css', './ui-refresh-v2.css'])
 })
 
 test('visual tokens align with screenshot references and remain scoped', () => {

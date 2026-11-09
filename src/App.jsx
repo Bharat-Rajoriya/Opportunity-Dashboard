@@ -81,6 +81,7 @@ import './profile-experience-v2.css'
 import './responsive-a11y.css'
 import './opportunity-platforms.css'
 import './ui-refresh-v1.css'
+import './ui-refresh-v2.css'
 
 const REJECTION_REASONS = [
   ['not_relevant', 'Not relevant'],
