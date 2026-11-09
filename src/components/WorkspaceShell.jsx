@@ -3,7 +3,6 @@ import {
   LogOut, MessageSquareText, Settings2, Activity, Sparkles, Search, Plug, Bookmark, Moon, Sun, Monitor,
 } from 'lucide-react'
 import { WORKSPACE_SECTIONS } from '../config/workspaceUi'
-import { useThemePreference } from '../hooks/useThemePreference'
 
 const icons = {
   overview: LayoutDashboard, search: Search, 'saved-searches': Bookmark, sources: Plug, discovery: Compass,
@@ -12,10 +11,9 @@ const icons = {
 }
 
 export default function WorkspaceShell({
-  workspaceName, userEmail, activeSection, onNavigate, onSignOut, children,
+  workspaceName, userEmail, activeSection, onNavigate, onSignOut, themePreference = 'system', onChangeTheme, children,
 }) {
   const name = String(workspaceName || 'My workspace').trim()
-  const { preference, setPreference } = useThemePreference()
   return (
     <div className="workspace-shell">
       <aside className="workspace-sidebar" aria-label="Workspace navigation">
@@ -55,8 +53,8 @@ export default function WorkspaceShell({
                 { id: 'light', label: 'Light', Icon: Sun },
                 { id: 'dark', label: 'Dark', Icon: Moon },
               ].map(({ id, label, Icon }) =>
-                <button key={id} type="button" className={preference === id ? 'is-active' : ''}
-                  aria-pressed={preference === id} onClick={() => setPreference(id)}
+                <button key={id} type="button" className={themePreference === id ? 'is-active' : ''}
+                  aria-pressed={preference === id} onClick={() => onChangeTheme?.(id)}
                   title={id === 'system' ? 'Follow your device appearance' : `Use ${label.toLowerCase()} appearance`}>
                   <Icon size={14} aria-hidden="true" /><span>{label}</span>
                 </button>
