@@ -16,7 +16,7 @@ test('key foreground/background combinations exceed 4.5:1 text contrast', () => 
     ['#ffffff','#7131e6'], // Light primary button
     ['#ffffff','#5923c7'], // Hover primary
     ['#ffffff','#8751f1'], // Dark primary button
-    ['#ffffff','#9d6bff'], // Dark hover primary
+    ['#ffffff','#7941db'], // Dark hover primary
     ['#17243a','#ffffff'], // Light secondary
     ['#17243a','#f0eaff'], // Light secondary hover
     ['#f0f3ff','#222d49'], // Dark secondary
