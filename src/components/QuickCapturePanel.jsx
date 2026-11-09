@@ -188,7 +188,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
         <h3><ClipboardPlus size={18} aria-hidden="true" /> Quick Capture</h3>
         <p>Found a client project elsewhere? Save a public URL and your notes to a private review queue.</p>
       </div>
-      <button type="button" onClick={() => { setOpen(value => !value); setPreview(null); setError('') }} aria-expanded={open}>
+      <button type="button" onClick={() => { setOpen(value => !value); setPreview(null); setAiDraft(''); setError('') }} aria-expanded={open}>
         {open ? 'Close form' : 'Add a project link'}
       </button>
     </div>
@@ -198,20 +198,20 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     </p>
     {open && <form className="quick-capture-form" onSubmit={reviewDraft}>
       <label>Public project link
-        <input type="url" required maxLength={2000} value={url} onChange={e => { setUrl(e.target.value); setPreview(null); setAiDraft('') }}
+        <input type="url" required disabled={aiLoading} maxLength={2000} value={url} onChange={e => { setUrl(e.target.value); setPreview(null); setAiDraft('') }}
           placeholder="https://www.freelancer.com/projects/..." autoComplete="url" />
       </label>
       <label>Project title
-        <input type="text" required minLength={4} maxLength={180} value={title} onChange={e => { setTitle(e.target.value); setPreview(null); setAiDraft('') }}
+        <input type="text" required disabled={aiLoading} minLength={4} maxLength={180} value={title} onChange={e => { setTitle(e.target.value); setPreview(null); setAiDraft('') }}
           placeholder="e.g. WordPress website maintenance" />
       </label>
       <label>Buyer requirement / why it matters
-        <textarea required minLength={20} maxLength={5000} rows={3} value={requirement}
+        <textarea required disabled={aiLoading} minLength={20} maxLength={5000} rows={3} value={requirement}
           onChange={e => { setRequirement(e.target.value); setPreview(null); setAiDraft('') }}
           placeholder="Paste a brief public project description. Do not include private contact information." />
       </label>
       <div className="quick-capture-ai-assist">
-        <button type="button" disabled={aiLoading || saving || title.trim().length < 4 || requirement.trim().length < 20}
+        <button type="button" disabled={aiLoading || saving || !workspaceId || title.trim().length < 4 || requirement.trim().length < 20}
           onClick={() => void improveDescription()}>
           <Sparkles size={14} aria-hidden="true" /> {aiLoading ? 'Improving…' : 'Improve description with AI'}
         </button>
