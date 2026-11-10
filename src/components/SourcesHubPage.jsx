@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Activity, ArrowUpRight, BriefcaseBusiness, Search, ShieldAlert, Plug, RefreshCw } from 'lucide-react'
 import { buildProviderMonitorRows } from '../lib/providerHealthPresentation'
 import QuickCapturePanel from './QuickCapturePanel'
@@ -60,6 +61,7 @@ export default function SourcesHubPage({
   workspaceId,
   opportunities = [],
 }) {
+  const [manualCaptureRequest, setManualCaptureRequest] = useState(0)
   const rows = buildProviderMonitorRows({
     enabledSources, providerHealth, sourceAnalytics, latestRunCounts: sourceCounts,
   }).filter(row => ['google', 'freelancer', 'upwork'].includes(row.source))
@@ -80,9 +82,20 @@ export default function SourcesHubPage({
       {error && <p role="alert" className="sources-hub-error"><ShieldAlert size={17} aria-hidden="true" /> Status metrics could not be refreshed: {error}</p>}
       <div className="sources-hub-grid">
         {rows.map(row => <SourceCard key={row.source} row={row} loading={loading} error={error} onManage={onManage} />)}
-
+        <article className="sources-hub-card sources-hub-manual-source" aria-labelledby="sources-fiverr-heading">
+          <div className="sources-hub-card-top">
+            <div className="sources-hub-icon"><Plug size={21} aria-hidden="true" /></div>
+            <span className="sources-hub-status is-neutral">Manual only</span>
+          </div>
+          <h3 id="sources-fiverr-heading">Fiverr</h3>
+          <p>Save a Fiverr project link you already have. Fiverr buyer briefs are matched through Fiverr, not exposed as a general public feed for our collector.</p>
+          <p className="sources-hub-explanation">No Fiverr API connection, automated scraping, buyer verification, or automatic discovery. Manually captured links require review before any optional AI triage.</p>
+          <button type="button" className="sources-hub-manage" onClick={() => setManualCaptureRequest(value => value + 1)}>
+            Add Fiverr link with Quick Capture <ArrowUpRight size={15} aria-hidden="true" />
+          </button>
+        </article>
       </div>
-      <QuickCapturePanel workspaceId={workspaceId} opportunities={opportunities} />
+      <QuickCapturePanel workspaceId={workspaceId} opportunities={opportunities} openRequest={manualCaptureRequest} />
       <div className="sources-hub-quick-actions" aria-label="Next discovery steps">
         <div><strong>Ready to continue?</strong><p>Browse saved client requests or open the existing discovery engine. Neither action starts a provider request by itself.</p></div>
         <div className="sources-hub-action-buttons">
