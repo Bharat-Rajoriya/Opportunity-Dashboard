@@ -1,0 +1,74 @@
+/*
+ * PR #85 — Discovery and workspace notification theme parity.
+ * Scoped to the signed-in workspace so auth and provider evidence semantics
+ * are unaffected. These are status messages, not verified acquisition claims.
+ */
+.workspace-shell {
+  --notice-success-bg: #e9faf2;
+  --notice-success-border: #a6e3c4;
+  --notice-success-ink: #075b43;
+  --notice-running-bg: #f0eaff;
+  --notice-running-border: #c8b2f5;
+  --notice-running-ink: #562a9e;
+  --notice-error-bg: #fff0f3;
+  --notice-error-border: #f2b8c3;
+  --notice-error-ink: #9d2540;
+}
+html[data-theme="dark"] .workspace-shell {
+  --notice-success-bg: #13392e;
+  --notice-success-border: #357964;
+  --notice-success-ink: #aff2d6;
+  --notice-running-bg: #302449;
+  --notice-running-border: #7964ab;
+  --notice-running-ink: #eadcff;
+  --notice-error-bg: #3e2332;
+  --notice-error-border: #a0546f;
+  --notice-error-ink: #ffd2dc;
+}
+/* The light UI refresh previously forced a mint banner in both themes. */
+.workspace-shell .workspace-main .engine-success-message,
+.workspace-shell .workspace-main .settings-success-message {
+  background: var(--notice-success-bg);
+  border: 1px solid var(--notice-success-border);
+  color: var(--notice-success-ink);
+  border-radius: 12px;
+  opacity: 1;
+}
+/* While searching, show a distinct purple in-progress state, not success. */
+.workspace-shell .workspace-main .engine-success-message.is-running {
+  background: var(--notice-running-bg);
+  border: 1px solid var(--notice-running-border);
+  color: var(--notice-running-ink);
+}
+.workspace-shell .workspace-main .engine-error-message,
+.workspace-shell .workspace-main .settings-error-message {
+  background: var(--notice-error-bg);
+  border: 1px solid var(--notice-error-border);
+  color: var(--notice-error-ink);
+  border-radius: 12px;
+  opacity: 1;
+}
+/* Preserve the text color if legacy content contains nested typography. */
+.workspace-shell .workspace-main :is(
+  .engine-success-message,.engine-error-message,
+  .settings-success-message,.settings-error-message
+) :is(span,strong,p,svg) { color: inherit; }
+
+/* Existing Discovery control-center run states need readable text too. */
+.workspace-shell .discovery-v2-run-state.is-running {
+  background: var(--notice-running-bg);
+  border-color: var(--notice-running-border);
+  color: var(--notice-running-ink);
+}
+.workspace-shell .discovery-v2-run-state.is-success {
+  background: var(--notice-success-bg);
+  border-color: var(--notice-success-border);
+  color: var(--notice-success-ink);
+}
+.workspace-shell .discovery-v2-run-state.is-error {
+  background: var(--notice-error-bg);
+  border-color: var(--notice-error-border);
+  color: var(--notice-error-ink);
+}
+.workspace-shell .discovery-v2-run-state:is(.is-running,.is-success,.is-error)
+  :is(strong,p,small,svg) { color: inherit; }

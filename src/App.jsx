@@ -87,6 +87,7 @@ import './theme-preference.css'
 import './button-contrast-v1.css'
 import './ui-quickcapture-review-pr83.css'
 import './opportunity-detail-theme-pr84.css'
+import './engine-status-theme-pr85.css'
 
 const REJECTION_REASONS = [
   ['not_relevant', 'Not relevant'],
@@ -3976,7 +3977,7 @@ function App() {
           />
 
           {searchMessage && (
-            <div role="status" className="engine-success-message">
+            <div role="status" className={`engine-success-message${searchRunning ? ' is-running' : ''}`}>
               {searchMessage}
             </div>
           )}
