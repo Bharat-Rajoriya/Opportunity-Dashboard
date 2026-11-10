@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ClipboardPlus, ExternalLink, ShieldAlert, Sparkles } from 'lucide-react'
 import { generateOnboardingCopy } from '../services/opportunityEngine'
-import { validateCaptureDraft } from '../lib/manualCaptureValidation'
+import { validateCaptureDraft, manualCaptureSourceLabel } from '../lib/manualCaptureValidation'
 import { listManualCaptures, saveManualCapture, setManualCaptureStatus, submitManualCaptureForQualification, qualifyManualCapture, recordManualSourceReview, verifyManualFreelancerSource, recoverStalledManualCapture } from '../services/manualCaptures'
 import './QuickCapturePanel.css'
 
-export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
+export default function QuickCapturePanel({ workspaceId, opportunities = [], openRequest = 0 }) {
   const [open, setOpen] = useState(false)
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
@@ -19,6 +19,18 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
   const [notice, setNotice] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiDraft, setAiDraft] = useState('')
+  const linkInputRef = useRef(null)
+
+  useEffect(() => {
+    if (openRequest > 0) setOpen(true)
+  }, [openRequest])
+
+  useEffect(() => {
+    if (open && openRequest > 0) {
+      linkInputRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      linkInputRef.current?.focus({ preventScroll: true })
+    }
+  }, [open, openRequest])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -182,7 +194,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     finally { setSaving(false) }
   }
 
-  return <section className="quick-capture" aria-label="Quick Capture manual review">
+  return <section id="quick-capture" className="quick-capture" aria-label="Quick Capture manual review">
     <div className="quick-capture-head">
       <div>
         <h3><ClipboardPlus size={18} aria-hidden="true" /> Quick Capture</h3>
@@ -198,7 +210,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     </p>
     {open && <form className="quick-capture-form" onSubmit={reviewDraft}>
       <label>Public project link
-        <input type="url" required disabled={aiLoading} maxLength={2000} value={url} onChange={e => { setUrl(e.target.value); setPreview(null); setAiDraft('') }}
+        <input ref={linkInputRef} type="url" required disabled={aiLoading} maxLength={2000} value={url} onChange={e => { setUrl(e.target.value); setPreview(null); setAiDraft('') }}
           placeholder="https://www.freelancer.com/projects/..." autoComplete="url" />
       </label>
       <label>Project title
@@ -231,7 +243,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
     {preview && open && <div className="quick-capture-preview">
       <strong>Confirm before saving</strong>
       <p><b>Project:</b> {preview.title}</p>
-      <p><b>Source:</b> {preview.source_platform}</p>
+      <p><b>Source:</b> {manualCaptureSourceLabel(preview.source_url, preview.source_platform)}</p>
       <p><b>Description:</b> {preview.requirement}</p>
       <a href={preview.source_url} target="_blank" rel="noopener noreferrer">Inspect original link <ExternalLink size={14} aria-hidden="true" /></a>
       <button type="button" disabled={saving} onClick={() => void save()}>{saving ? 'Saving…' : 'Save to review queue'}</button>
@@ -246,7 +258,7 @@ export default function QuickCapturePanel({ workspaceId, opportunities = [] }) {
         ? <p>No captured links yet.</p>
         : records.map(record => <article key={record.id}>
           <div><strong>{record.title}</strong>
-            <span>{record.source_platform} · {({ dismissed: 'Dismissed', pending_qualification: 'Ready for AI triage', qualifying: 'AI triage in progress', qualified: 'Accepted — manual review needed', rejected: 'Rejected by AI triage', duplicate: 'Already in Opportunities', failed: 'AI triage failed' })[record.status] || 'Needs review'}</span>
+            <span>{manualCaptureSourceLabel(record.source_url, record.source_platform)} · {({ dismissed: 'Dismissed', pending_qualification: 'Ready for AI triage', qualifying: 'AI triage in progress', qualified: 'Accepted — manual review needed', rejected: 'Rejected by AI triage', duplicate: 'Already in Opportunities', failed: 'AI triage failed' })[record.status] || 'Needs review'}</span>
             <p>{record.requirement}</p>
             {record.qualification_reason && <p className="quick-capture-qualification-reason">Qualification: {record.qualification_reason}</p>}
             {record.status === 'qualified' && record.source_platform === 'freelancer' &&
