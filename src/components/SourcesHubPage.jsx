@@ -88,7 +88,7 @@ export default function SourcesHubPage({
             <span className="sources-hub-status is-neutral">Manual only</span>
           </div>
           <h3 id="sources-fiverr-heading">Fiverr</h3>
-          <p>Save a Fiverr project link you already have. Fiverr buyer briefs are matched through Fiverr, not exposed as a general public feed for our collector.</p>
+          <p>Have a Fiverr buyer brief or legitimate project link you can access? Save it manually. Seller Gig pages are advertisements, not buyer opportunities.</p>
           <p className="sources-hub-explanation">No Fiverr API connection, automated scraping, buyer verification, or automatic discovery. Manually captured links require review before any optional AI triage.</p>
           <button type="button" className="sources-hub-manage" onClick={() => setManualCaptureRequest(value => value + 1)}>
             Add Fiverr link with Quick Capture <ArrowUpRight size={15} aria-hidden="true" />
