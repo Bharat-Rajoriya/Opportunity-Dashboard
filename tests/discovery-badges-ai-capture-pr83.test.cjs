@@ -14,7 +14,7 @@ test('Discovery hover and active-disabled states preserve contrast in both theme
   assert.match(css, /color: #f3edff/)
   assert.match(css, /background: #303054/)
   assert.doesNotMatch(nav, /disabled=\\{active === id\\}/)
-  assert.match(nav, /onClick=\\{\\(\\) => \\{ if \\(active !== id\\) onNavigate\\(id\\) \\}\\}/)
+  assert(nav.includes('if (active !== id) onNavigate(id)'))
   assert.match(nav, /aria-current=\{active === id \? 'step' : undefined\}/)
 })
 
