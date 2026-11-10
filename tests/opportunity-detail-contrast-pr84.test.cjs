@@ -66,5 +66,5 @@ test('new drawer rules are imported last, without touching source URL validation
   const app=read('src/App.jsx')
   const imports=[...app.matchAll(/^import ['"]([^'"]+\.css)['"]$/gm)].map(m=>m[1])
   assert.equal(imports.at(-2),'./opportunity-detail-theme-pr84.css')
-  assert.equal(imports.at(-2),'./ui-quickcapture-review-pr83.css')
+  assert.equal(imports.at(-3),'./ui-quickcapture-review-pr83.css')
 })
