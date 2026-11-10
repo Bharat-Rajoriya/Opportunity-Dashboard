@@ -17,8 +17,8 @@ export default function DiscoveryJourneyNav({ active, onNavigate }) {
       <div className="discovery-journey-steps">
         {STEPS.map(({ id, label, detail, Icon }, index) => (
           <button type="button" key={id} className={`discovery-journey-step${active === id ? ' is-current' : ''}`}
-            aria-current={active === id ? 'step' : undefined} onClick={() => onNavigate(id)}
-            disabled={active === id}>
+            aria-current={active === id ? 'step' : undefined}
+            onClick={() => { if (active !== id) onNavigate(id) }}>
             <span className="discovery-journey-step-icon"><Icon size={17} aria-hidden="true" /></span>
             <span className="discovery-journey-step-text"><strong>{label}</strong><small>{detail}</small></span>
             {index < STEPS.length - 1 && <ArrowRight className="discovery-journey-next" size={15} aria-hidden="true" />}
