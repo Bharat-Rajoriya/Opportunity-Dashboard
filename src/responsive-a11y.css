@@ -48,3 +48,30 @@
 @media(prefers-reduced-motion:reduce){
   .workspace-shell .responsive-clear-filters{transition:none}
 }
+
+/* UI Quality V1: keep unusually long project URLs and generated copy from
+   expanding the responsive grid or overflowing drawers. No global overflow
+   clipping: dialogs and sticky controls must remain reachable. */
+.workspace-shell .workspace-main,
+.workspace-shell .workspace-content,
+.workspace-shell :is(.opp-v2-card,.opp-v2-drawer,.unified-search-results,.sources-hub-card,
+  .saved-searches-item,.quick-capture,.discovery-v2-panel,.outreach-v2-section) {
+  min-width:0;
+}
+.workspace-shell :is(.opp-v2-description,.opp-v2-drawer-evidence,.opportunity-detail-section p,
+  .unified-search-description,.quick-capture-preview p,.quick-capture-ai-draft p,
+  .outreach-v2-message,.discovery-v2-explanation) {
+  overflow-wrap:anywhere;
+}
+.workspace-shell .workspace-navigation {
+  overscroll-behavior:contain;
+}
+@media(max-width:1000px) {
+  .workspace-shell .workspace-navigation {
+    scroll-padding-inline:12px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .workspace-shell .workspace-nav-link {
+    flex-shrink:0;
+  }
+}
