@@ -59,7 +59,7 @@ test('new scoped CSS is loaded last, and does not change project data', () => {
   const app=read('src/App.jsx')
   const css=read('src/ui-quickcapture-review-pr83.css')
   const imports=[...app.matchAll(/^import ['"]([^'"]+\.css)['"]$/gm)].map(m=>m[1])
-  assert.equal(imports.at(-2),'./ui-quickcapture-review-pr83.css')
+  assert.equal(imports.at(-3),'./ui-quickcapture-review-pr83.css')
   assert(!css.includes('fetch('))
   assert(!css.includes('supabase.'))
   assert(css.includes('.quick-capture-ai-draft'))
