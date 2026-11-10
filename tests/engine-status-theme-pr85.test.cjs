@@ -1,3 +1,4 @@
+const { assertStylesInOrder } = require('./helpers/style-order.cjs')
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const { readFileSync } = require('node:fs')
@@ -37,8 +38,7 @@ test('dark palette explicitly overrides the legacy light success notification', 
     '.discovery-v2-run-state.is-error']) {
     assert(css.includes(kind), 'Missing banner treatment: '+kind)
   }
-  const imports = [...app.matchAll(/^import ['"]([^'"]+\.css)['"]$/gm)].map(m=>m[1])
-  assert.equal(imports.at(-1),'./engine-status-theme-pr85.css')
+  assertStylesInOrder('./opportunity-detail-theme-pr84.css', './engine-status-theme-pr85.css')
 })
 
 test('status notification text colors meet WCAG AA contrast in light and dark', () => {

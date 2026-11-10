@@ -1,3 +1,4 @@
+const { assertStylesInOrder } = require('./helpers/style-order.cjs')
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const { readFileSync } = require('node:fs')
@@ -64,7 +65,5 @@ test('source link and drawer text colors meet WCAG 4.5:1',()=>{
 
 test('new drawer rules are imported last, without touching source URL validation',()=>{
   const app=read('src/App.jsx')
-  const imports=[...app.matchAll(/^import ['"]([^'"]+\.css)['"]$/gm)].map(m=>m[1])
-  assert.equal(imports.at(-2),'./opportunity-detail-theme-pr84.css')
-  assert.equal(imports.at(-3),'./ui-quickcapture-review-pr83.css')
+  assertStylesInOrder('./ui-quickcapture-review-pr83.css', './opportunity-detail-theme-pr84.css', './engine-status-theme-pr85.css')
 })

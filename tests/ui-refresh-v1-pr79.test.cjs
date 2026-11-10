@@ -1,3 +1,4 @@
+const { assertStylesInOrder } = require('./helpers/style-order.cjs')
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const { readFileSync } = require('node:fs')
@@ -6,8 +7,7 @@ const read = p => readFileSync(join(__dirname, '..', p), 'utf8')
 
 test('UI Refresh V1 is loaded after legacy dark styles and before V2 fixes', () => {
   const app = read('src/App.jsx')
-  const imports = [...app.matchAll(/^import ['"]([^'"]+\.css)['"]$/gm)].map(x => x[1])
-  assert.deepEqual(imports.slice(-7), ['./ui-refresh-v1.css', './ui-refresh-v2.css', './theme-preference.css', './button-contrast-v1.css', './ui-quickcapture-review-pr83.css', './opportunity-detail-theme-pr84.css', './engine-status-theme-pr85.css'])
+  assertStylesInOrder('./ui-refresh-v1.css', './ui-refresh-v2.css', './theme-preference.css', './button-contrast-v1.css', './ui-quickcapture-review-pr83.css', './opportunity-detail-theme-pr84.css', './engine-status-theme-pr85.css')
 })
 
 test('visual tokens align with screenshot references and remain scoped', () => {

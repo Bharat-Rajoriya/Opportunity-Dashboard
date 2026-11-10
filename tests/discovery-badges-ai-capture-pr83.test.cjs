@@ -1,3 +1,4 @@
+const { assertStylesInOrder } = require('./helpers/style-order.cjs')
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const { readFileSync } = require('node:fs')
@@ -12,7 +13,8 @@ test('Discovery hover and active-disabled states preserve contrast in both theme
   assert.match(css, /\.discovery-journey-step\.is-current:disabled/)
   assert.match(css, /color: #f3edff/)
   assert.match(css, /background: #303054/)
-  assert.match(nav, /disabled=\{active === id\}/)
+  assert.doesNotMatch(nav, /disabled=\\{active === id\\}/)
+  assert(nav.includes('if (active !== id) onNavigate(id)'))
   assert.match(nav, /aria-current=\{active === id \? 'step' : undefined\}/)
 })
 
@@ -58,8 +60,7 @@ test('manual copy backend requires JWT, workspace access and actual user notes',
 test('new scoped CSS is loaded last, and does not change project data', () => {
   const app=read('src/App.jsx')
   const css=read('src/ui-quickcapture-review-pr83.css')
-  const imports=[...app.matchAll(/^import ['"]([^'"]+\.css)['"]$/gm)].map(m=>m[1])
-  assert.equal(imports.at(-3),'./ui-quickcapture-review-pr83.css')
+  assertStylesInOrder('./button-contrast-v1.css', './ui-quickcapture-review-pr83.css', './opportunity-detail-theme-pr84.css')
   assert(!css.includes('fetch('))
   assert(!css.includes('supabase.'))
   assert(css.includes('.quick-capture-ai-draft'))

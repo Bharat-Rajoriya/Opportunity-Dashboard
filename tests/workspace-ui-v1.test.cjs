@@ -37,7 +37,7 @@ test('navigation anchors preserve existing search and outreach actions', () => {
   assert(app.includes('onClick={() => void approveOpportunity(lead)}'))
   assert(app.includes('onClick={() => void markOutreachAsSent(lead)}'))
   assert(shell.includes('onClick={onSignOut}'))
-  assert(shell.includes('aria-pressed={selected}'))
+  assert(shell.includes("aria-current={selected ? 'page' : undefined}"))
   assert(css.includes('@media(max-width:1000px)'))
   assert(css.includes('prefers-reduced-motion'))
 })
