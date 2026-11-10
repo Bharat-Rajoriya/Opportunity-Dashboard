@@ -31,6 +31,21 @@ export function capturePlatform(url) {
   return 'other'
 }
 
+/**
+ * Presentation-only source label. Fiverr manually saved links continue to
+ * use source_platform='other' until a fully reviewed backend contract exists.
+ * Never infer official API verification from a domain.
+ */
+export function manualCaptureSourceLabel(sourceUrl, sourcePlatform = 'other') {
+  try {
+    const host = new URL(sourceUrl).hostname.toLowerCase()
+    if (host === 'fiverr.com' || host.endsWith('.fiverr.com')) return 'Fiverr (manual)'
+  } catch { /* Leave unknown URLs generic. */ }
+  return sourcePlatform === 'freelancer' ? 'Freelancer'
+    : sourcePlatform === 'upwork' ? 'Upwork'
+      : 'Other (manual)'
+}
+
 export function validateCaptureDraft(draft = {}) {
   const source_url = normalizeCaptureUrl(draft.url)
   const title = String(draft.title || '').trim()
