@@ -30,7 +30,7 @@ test('button repair loads after theme selectors', () => {
   const app = read('src/App.jsx')
   const imports = [...app.matchAll(/^import ['"]([^'"]+\.css)['"]$/gm)].map(m=>m[1])
   assert.equal(imports.at(-1),'./engine-status-theme-pr85.css')
-  assert.equal(imports.at(-2),'./ui-quickcapture-review-pr83.css')
+  assert.equal(imports.at(-4),'./button-contrast-v1.css')
 })
 
 test('primary refresh and shared CTAs have contrast and disabled states', () => {
