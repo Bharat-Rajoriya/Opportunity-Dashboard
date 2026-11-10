@@ -34,7 +34,7 @@ export default function WorkspaceShell({
                   {section.group === 'manage' ? 'PREFERENCES' : 'WORKSPACE'}
                 </p>}
                 <button type="button" onClick={() => onNavigate(section.id)}
-                  aria-pressed={selected}
+                  aria-current={selected ? 'page' : undefined}
                   className={`workspace-nav-link${selected ? ' is-active' : ''}`}>
                   <Icon size={18} strokeWidth={1.9} aria-hidden="true" />
                   <span>{section.label}</span>
@@ -54,7 +54,8 @@ export default function WorkspaceShell({
                 { id: 'dark', label: 'Dark', Icon: Moon },
               ].map(({ id, label, Icon }) =>
                 <button key={id} type="button" className={themePreference === id ? 'is-active' : ''}
-                  aria-pressed={themePreference === id} onClick={() => onChangeTheme?.(id)}
+                  aria-pressed={themePreference === id} aria-label={`${label} appearance`}
+                  onClick={() => onChangeTheme?.(id)}
                   title={id === 'system' ? 'Follow your device appearance' : `Use ${label.toLowerCase()} appearance`}>
                   <Icon size={14} aria-hidden="true" /><span>{label}</span>
                 </button>
