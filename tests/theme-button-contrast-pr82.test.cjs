@@ -1,3 +1,4 @@
+const { assertStylesInOrder } = require('./helpers/style-order.cjs')
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const { readFileSync } = require('node:fs')
@@ -28,9 +29,7 @@ test('key foreground/background combinations exceed 4.5:1 text contrast', () => 
 
 test('button repair loads after theme selectors', () => {
   const app = read('src/App.jsx')
-  const imports = [...app.matchAll(/^import ['"]([^'"]+\.css)['"]$/gm)].map(m=>m[1])
-  assert.equal(imports.at(-1),'./engine-status-theme-pr85.css')
-  assert.equal(imports.at(-4),'./button-contrast-v1.css')
+  assertStylesInOrder('./theme-preference.css', './button-contrast-v1.css', './ui-quickcapture-review-pr83.css')
 })
 
 test('primary refresh and shared CTAs have contrast and disabled states', () => {
